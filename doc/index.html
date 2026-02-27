@@ -10,13 +10,29 @@
 </head>
 <body class="bg-neutral-950 text-neutral-100 font-sans">
 
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-neutral-950/80 backdrop-blur border-b border-neutral-800">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
+      <a href="#home" data-page="home" class="shrink-0">
+        <img src="/logo.png" alt="悠然标签页" class="w-7 h-7 rounded" />
+      </a>
+      <div class="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+        <a href="#home" data-page="home" class="text-neutral-400 hover:text-white transition-colors" data-i18n="nav.home">首页</a>
+        <a href="#privacy" data-page="privacy" class="text-neutral-400 hover:text-white transition-colors" data-i18n="nav.privacy">隐私政策</a>
+        <a href="#guide" data-page="guide" class="text-neutral-400 hover:text-white transition-colors" data-i18n="nav.guide">使用手册</a>
+        <a href="#changelog" data-page="changelog" class="text-neutral-400 hover:text-white transition-colors" data-i18n="nav.changelog">版本说明</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="page-home">
   <!-- Hero -->
   <header class="relative overflow-hidden">
     <div class="absolute inset-0 bg-linear-to-br from-indigo-600/20 via-transparent to-purple-600/20"></div>
     <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-500/30 rounded-full blur-[120px]"></div>
     <div class="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-500/30 rounded-full blur-[120px]"></div>
     <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-64 bg-sky-500/20 rounded-full blur-[100px]"></div>
-    <div class="relative max-w-5xl mx-auto px-6 pt-20 pb-24 text-center">
+    <div class="relative max-w-5xl mx-auto px-6 pt-28 pb-24 text-center">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm text-neutral-300 mb-8">
         <span class="w-2 h-2 rounded-full bg-green-400"></span>
         <span data-i18n="hero.badge">适用于 Chrome、Edge、Firefox</span>
@@ -246,6 +262,114 @@
       </a>
     </div>
   </section>
+  </div>
+
+  <div id="page-privacy" class="hidden">
+    <div class="max-w-3xl mx-auto px-6 pt-24 pb-20">
+      <h1 class="text-3xl font-bold mb-8" data-i18n="privacy.title">隐私政策</h1>
+      <p class="text-sm text-neutral-500 mb-8" data-i18n="privacy.updated">最后更新：2026 年 2 月 27 日</p>
+      <div class="space-y-6 text-neutral-300 leading-relaxed">
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.intro.title">概述</h2>
+          <p data-i18n="privacy.intro.desc">悠然标签页（以下简称"本扩展"）是一款开源的浏览器新标签页扩展。我们高度重视您的隐私，本扩展不会收集、存储或传输任何用户个人数据。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.collect.title">数据收集</h2>
+          <p data-i18n="privacy.collect.desc">本扩展不收集任何个人信息或使用数据。所有配置数据（包括站点列表、主题设置、背景设置等）均保存在浏览器本地存储中，不会发送到任何外部服务器。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.storage.title">本地存储</h2>
+          <p data-i18n="privacy.storage.desc">本扩展使用浏览器的本地存储（localStorage / chrome.storage.local）来保存您的个性化设置。这些数据完全存储在您的设备上，您可以随时通过扩展的导出功能备份数据，也可以通过卸载扩展清除所有数据。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.network.title">网络请求</h2>
+          <p data-i18n="privacy.network.desc">本扩展仅在获取站点图标时发起网络请求，用于从公共图标服务获取网站的 favicon。除此之外，本扩展不会向任何服务器发送请求。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.thirdparty.title">第三方服务</h2>
+          <p data-i18n="privacy.thirdparty.desc">本扩展不集成任何第三方分析、广告或追踪服务。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.permissions.title">权限说明</h2>
+          <p data-i18n="privacy.permissions.desc">本扩展仅申请运行所需的最小权限，不请求访问您的浏览历史、书签或其他敏感信息。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.changes.title">政策变更</h2>
+          <p data-i18n="privacy.changes.desc">如本隐私政策有任何变更，我们将在此页面更新。由于本扩展不收集任何数据，预计本政策不会发生重大变化。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.opensource.title">开源透明</h2>
+          <p data-i18n="privacy.opensource.desc" data-i18n-mode="html">本扩展完全开源，源代码托管在 <a href="https://github.com/dufu1991/youran-tab" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">GitHub</a>，欢迎任何人审查代码以验证我们的隐私承诺。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.contact.title">联系方式</h2>
+          <p data-i18n="privacy.contact.desc" data-i18n-mode="html">如有任何隐私相关的问题或疑虑，请通过 <a href="https://github.com/dufu1991/youran-tab/issues" target="_blank" class="text-indigo-400 hover:text-indigo-300 underline">GitHub Issues</a> 与我们联系。</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-guide" class="hidden">
+    <div class="max-w-3xl mx-auto px-6 pt-24 pb-20">
+      <h1 class="text-3xl font-bold mb-8" data-i18n="guide.title">使用手册</h1>
+      <div class="space-y-8 text-neutral-300 leading-relaxed">
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.install.title">安装</h2>
+          <p data-i18n="guide.install.desc">从 Chrome 应用商店、Edge 扩展商店或 Firefox 附加组件中搜索"悠然标签页"并安装。安装后打开新标签页即可使用。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.theme.title">主题概览</h2>
+          <p data-i18n="guide.theme.desc">在设置面板中可选择经典、便当、终端或极简 4 种主题。每种主题都有独立的配置项，切换主题不会丢失其他主题的设置。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.classic.title">经典主题</h2>
+          <p data-i18n="guide.classic.desc" data-i18n-mode="html">标准图标网格布局，鼠标悬停时显示毛玻璃卡片背景。可配置项包括：容器宽度（400-1400px）、列数（3-8 列）、圆角、卡片透明度、毛玻璃模糊度、图标大小。列数会根据站点数量自动收缩，避免出现多余的空列。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.bento.title">便当主题</h2>
+          <p data-i18n="guide.bento.desc" data-i18n-mode="html">提供两种布局模式：<br />1. <strong>动态布局</strong>（默认）：卡片大小由点击次数决定，使用 Treemap 算法自动排列。点击越多的站点占据越大面积，新添加的站点也有初始面积。页面加载时快照点击次数，点击后不会立即重排。<br />2. <strong>固定网格</strong>：所有卡片等分，按设定列数排列。<br />可配置项包括：容器宽度、间距（4-32px）、圆角、卡片透明度、毛玻璃模糊度、图标大小、布局模式切换、固定模式列数。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.terminalDetail.title">终端主题</h2>
+          <p data-i18n="guide.terminalDetail.desc" data-i18n-mode="html">完整的命令行交互界面，支持全键盘操作。可用命令如下：<br /><br /><dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5"><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">h</code></dt><dd>显示帮助信息</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">ls</code></dt><dd>列出所有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">数字</code></dt><dd>输入编号跳转到对应站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">add</code></dt><dd>添加新站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">edit</code></dt><dd>编辑已有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">rm</code></dt><dd>删除站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code></dt><dd>搜索</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code></dt><dd>切换主题</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code></dt><dd>切换暗色模式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code></dt><dd>切换语言</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">engine</code></dt><dd>切换搜索引擎</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code></dt><dd>切换配色方案</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code></dt><dd>切换光标样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code></dt><dd>切换提示符样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">width</code></dt><dd>设置终端宽度</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">set</code></dt><dd>打开设置面板</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">clear</code></dt><dd>清屏</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code></dt><dd>导出配置</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code></dt><dd>导入配置</dd></dl><br />提供 9 种配色方案（green、amber、blue、cyan、purple、pink、red、orange、mono）和 4 种光标样式（细线、粗线、块状、下划线）。输入命令不带参数后，可用方向键选择选项，Enter 确认，Esc 取消。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.minimal.title">极简主题</h2>
+          <p data-i18n="guide.minimal.desc">纯文字列表风格，无图标无卡片，只显示站点名称链接。页面会自动显示当前日期。该主题无专属配置项。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.search.title">搜索功能</h2>
+          <p data-i18n="guide.search.desc" data-i18n-mode="html">内置 12 个搜索引擎：Google、Bing、百度、DuckDuckGo、Yahoo、Yandex、搜狗、Ecosia、Brave、Startpage、Naver、Perplexity。点击搜索栏左侧的图标即可切换引擎。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可搜索。经典和便当主题可选择是否显示搜索引擎 Logo。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.background.title">背景设置</h2>
+          <p data-i18n="guide.background.desc" data-i18n-mode="html">仅经典和便当主题支持背景设置。提供 5 种背景模式：<br />1. <strong>无背景</strong>：使用默认纯黑或纯白底色。<br />2. <strong>纯色</strong>：最多保存 12 个预设颜色，可新增随机生成颜色或删除已有颜色。<br />3. <strong>渐变</strong>：与纯色类似，最多 12 个预设渐变方案。<br />4. <strong>图片</strong>：最多上传 12 张背景图片，上传时自动压缩。<br />5. <strong>随机</strong>：从以上已保存的纯色、渐变和图片中随机选取。<br />亮色模式和暗色模式的背景配置相互独立。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.darkmode.title">暗色模式</h2>
+          <p data-i18n="guide.darkmode.desc">支持自动跟随系统、手动亮色和手动暗色 3 种模式。暗色模式下可以为站点配置独立的图标。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.importexport.title">导入导出</h2>
+          <p data-i18n="guide.importexport.desc" data-i18n-mode="html">在设置面板中可将站点配置导出为 JSON 文件，方便备份或迁移到其他设备。导入时选择之前导出的 JSON 文件即可恢复配置，导入会自动去重。终端主题也可以使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code> 和 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code> 命令完成相同操作。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.align.title">对齐方式</h2>
+          <p data-i18n="guide.align.desc">内容支持顶部、居中、底部 3 种垂直对齐方式。每种主题的对齐方式独立保存，互不影响。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.reset.title">重置设置</h2>
+          <p data-i18n="guide.reset.desc">可将所有设置重置为默认值。重置后会保留已添加的站点数据和点击计数，仅恢复外观和功能配置到初始状态。</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-changelog" class="hidden">
+    <div class="max-w-3xl mx-auto px-6 pt-24 pb-20">
+      <div id="changelog-content" class="prose prose-invert prose-neutral max-w-none prose-headings:font-semibold prose-h1:text-3xl prose-h1:mb-8 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-base prose-h3:mt-6 prose-h3:mb-3 prose-blockquote:text-neutral-500 prose-blockquote:border-indigo-500/50 prose-blockquote:not-italic prose-li:text-neutral-300"></div>
+    </div>
+  </div>
 
   <!-- Footer -->
   <footer class="border-t border-neutral-800 py-8">
