@@ -2,12 +2,12 @@ import { writable, derived } from 'svelte/store'
 
 const STORAGE_KEY_LOCALE = 'newtab_locale'
 
-const supportedLocales = ['en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'es-ES', 'ru-RU', 'fr-FR', 'de-DE', 'it-IT']
+const supportedLocales = ['en-US', 'zh-CN', 'zh-TW', 'ja', 'ko', 'es', 'ru', 'fr', 'de', 'it']
 
 const localeNames = {
   'en-US': 'English', 'zh-CN': '简体中文', 'zh-TW': '繁體中文',
-  'ja-JP': '日本語', 'ko-KR': '한국어', 'es-ES': 'Español',
-  'ru-RU': 'Русский', 'fr-FR': 'Français', 'de-DE': 'Deutsch', 'it-IT': 'Italiano',
+  'ja': '日本語', 'ko': '한국어', 'es': 'Español',
+  'ru': 'Русский', 'fr': 'Français', 'de': 'Deutsch', 'it': 'Italiano',
 }
 
 const messages = {
@@ -251,7 +251,7 @@ const messages = {
     search: { placeholder: '搜尋...' },
     settings: { theme: '主題', mode: '模式', align: '位置', language: '語言', search: '搜尋引擎', options: '選項', editMode: '編輯模式', showSearch: '顯示搜尋框', editModeHint: '編輯模式 — 點擊可編輯或刪除', editModeDone: '完成', bentoCols: '欄數', bentoWidth: '寬度', bentoGap: '間距', bentoRadius: '圓角', bentoFixed: '等分網格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '圖示大小', showLogo: '引擎圖示', showTitle: '網站標題', langAuto: '跟隨瀏覽器', resetSettings: '重設', resetConfirm: '確定將所有設定恢復為預設值嗎？網站資料將保留。', background: '背景', bgNone: '無', bgSolid: '純色', bgGradient: '漸層', bgImage: '圖片', bgRandom: '隨機', bgCustomColor: '自訂顏色', bgUpload: '上傳圖片', bgClearAll: '清除全部', bgAddGradient: '隨機漸層', bgImageHint: '最多 12 張，儲存在本地，每次載入隨機', bgRandomSolid: '純色', bgRandomGradient: '漸層', bgRandomImage: '圖片', bgRandomAll: '全部', exportSites: '匯出站點列表', importSites: '匯入站點' },
   },
-  'ja-JP': {
+  'ja': {
     appName: '悠然タブ',
     theme: { terminal: 'ターミナル', default: 'クラシック', minimal: 'ミニマル', bento: 'ベントー' },
     mode: { light: 'ライト', dark: 'ダーク', auto: 'システム' },
@@ -331,7 +331,7 @@ const messages = {
     search: { placeholder: '検索...' },
     settings: { theme: 'テーマ', mode: 'モード', align: '位置', language: '言語', search: '検索エンジン', options: 'オプション', editMode: '編集モード', showSearch: '検索バーを表示', editModeHint: '編集モード — クリックで編集・削除', editModeDone: '完了', bentoCols: '列数', bentoWidth: '幅', bentoGap: '間隔', bentoRadius: '角丸', bentoFixed: '均等グリッド', bentoOpacity: '透明度', bentoBlur: 'ぼかし', bentoIconSize: 'アイコンサイズ', showLogo: 'エンジンロゴ', showTitle: 'サイト名', langAuto: 'ブラウザに従う', resetSettings: '設定をリセット', resetConfirm: 'すべての設定をデフォルトに戻しますか？サイトデータは保持されます。', background: '背景', bgNone: 'なし', bgSolid: '単色', bgGradient: 'グラデーション', bgImage: '画像', bgRandom: 'ランダム', bgCustomColor: 'カスタムカラー', bgUpload: 'アップロード', bgClearAll: 'すべて削除', bgAddGradient: 'ランダムグラデーション', bgImageHint: '最大 12 枚、ローカル保存、読み込み毎にランダム', bgRandomSolid: '単色', bgRandomGradient: 'グラデーション', bgRandomImage: '画像', bgRandomAll: 'すべて', exportSites: 'サイトリストをエクスポート', importSites: 'サイトをインポート' },
   },
-  'ko-KR': {
+  'ko': {
     appName: 'Youran Tab',
     theme: { terminal: '터미널', default: '클래식', minimal: '미니멀', bento: '벤토' },
     mode: { light: '라이트', dark: '다크', auto: '시스템' },
@@ -411,7 +411,7 @@ const messages = {
     search: { placeholder: '검색...' },
     settings: { theme: '테마', mode: '모드', align: '정렬', language: '언어', search: '검색 엔진', options: '옵션', editMode: '편집 모드', showSearch: '검색창 표시', editModeHint: '편집 모드 — 클릭하여 편집 또는 삭제', editModeDone: '완료', bentoCols: '열 수', bentoWidth: '너비', bentoGap: '간격', bentoRadius: '둥글기', bentoFixed: '균등 그리드', bentoOpacity: '투명도', bentoBlur: '흐림', bentoIconSize: '아이콘 크기', showLogo: '엔진 로고', showTitle: '사이트 이름', langAuto: '브라우저 따르기', resetSettings: '설정 초기화', resetConfirm: '모든 설정을 기본값으로 되돌리시겠습니까? 사이트 데이터는 유지됩니다.', background: '배경', bgNone: '없음', bgSolid: '단색', bgGradient: '그라데이션', bgImage: '이미지', bgRandom: '랜덤', bgCustomColor: '사용자 지정 색상', bgUpload: '업로드', bgClearAll: '모두 삭제', bgAddGradient: '랜덤 그라데이션', bgImageHint: '최대 12개, 로컬 저장, 로드 시 랜덤', bgRandomSolid: '단색', bgRandomGradient: '그라데이션', bgRandomImage: '이미지', bgRandomAll: '전체', exportSites: '사이트 목록 내보내기', importSites: '사이트 가져오기' },
   },
-  'es-ES': {
+  'es': {
     appName: 'Youran Tab',
     theme: { terminal: 'Terminal', default: 'Clásico', minimal: 'Mínimo', bento: 'Bento' },
     mode: { light: 'Claro', dark: 'Oscuro', auto: 'Sistema' },
@@ -490,7 +490,7 @@ const messages = {
     search: { placeholder: 'Buscar...' },
     settings: { theme: 'Tema', mode: 'Modo', align: 'Alineación', language: 'Idioma', search: 'Buscador', options: 'Opciones', editMode: 'Modo edición', showSearch: 'Mostrar buscador', editModeHint: 'Modo edición — clic para editar o eliminar', editModeDone: 'Listo', bentoCols: 'Columnas', bentoWidth: 'Ancho', bentoGap: 'Espacio', bentoRadius: 'Radio', bentoFixed: 'Cuadrícula igual', bentoOpacity: 'Opacidad', bentoBlur: 'Desenfoque', bentoIconSize: 'Tamaño icono', showLogo: 'Logo del motor', showTitle: 'Títulos de sitios', langAuto: 'Seguir navegador', resetSettings: 'Restablecer ajustes', resetConfirm: '¿Restablecer todos los ajustes a los valores predeterminados? Los datos de sitios se conservarán.', background: 'Fondo', bgNone: 'Ninguno', bgSolid: 'Sólido', bgGradient: 'Degradado', bgImage: 'Imagen', bgRandom: 'Aleatorio', bgCustomColor: 'Color personalizado', bgUpload: 'Subir', bgClearAll: 'Borrar todo', bgAddGradient: 'Degradado aleatorio', bgImageHint: 'Máx. 12 imágenes, almacenadas localmente, aleatorio en cada carga', bgRandomSolid: 'Sólido', bgRandomGradient: 'Degradado', bgRandomImage: 'Imagen', bgRandomAll: 'Todo', exportSites: 'Exportar lista de sitios', importSites: 'Importar sitios' },
   },
-  'ru-RU': {
+  'ru': {
     appName: 'Youran Tab',
     theme: { terminal: 'Терминал', default: 'Классика', minimal: 'Минимал', bento: 'Бенто' },
     mode: { light: 'Светлая', dark: 'Тёмная', auto: 'Система' },
@@ -569,7 +569,7 @@ const messages = {
     search: { placeholder: 'Поиск...' },
     settings: { theme: 'Тема', mode: 'Режим', align: 'Выравнивание', language: 'Язык', search: 'Поисковик', options: 'Параметры', editMode: 'Режим редактирования', showSearch: 'Показать поиск', editModeHint: 'Режим редактирования — нажмите для изменения или удаления', editModeDone: 'Готово', bentoCols: 'Столбцы', bentoWidth: 'Ширина', bentoGap: 'Отступ', bentoRadius: 'Радиус', bentoFixed: 'Равная сетка', bentoOpacity: 'Прозрачность', bentoBlur: 'Размытие', bentoIconSize: 'Размер иконок', showLogo: 'Логотип поисковика', showTitle: 'Названия сайтов', langAuto: 'Язык браузера', resetSettings: 'Сбросить настройки', resetConfirm: 'Сбросить все настройки до значений по умолчанию? Данные сайтов будут сохранены.', background: 'Фон', bgNone: 'Нет', bgSolid: 'Цвет', bgGradient: 'Градиент', bgImage: 'Изображение', bgRandom: 'Случайный', bgCustomColor: 'Свой цвет', bgUpload: 'Загрузить', bgClearAll: 'Очистить всё', bgAddGradient: 'Случайный градиент', bgImageHint: 'Макс. 12 изображений, хранятся локально, случайное при каждой загрузке', bgRandomSolid: 'Цвет', bgRandomGradient: 'Градиент', bgRandomImage: 'Изображение', bgRandomAll: 'Все', exportSites: 'Экспорт списка сайтов', importSites: 'Импорт сайтов' },
   },
-  'fr-FR': {
+  'fr': {
     appName: 'Youran Tab',
     theme: { terminal: 'Terminal', default: 'Classique', minimal: 'Minimal', bento: 'Bento' },
     mode: { light: 'Clair', dark: 'Sombre', auto: 'Système' },
@@ -648,7 +648,7 @@ const messages = {
     search: { placeholder: 'Rechercher...' },
     settings: { theme: 'Thème', mode: 'Mode', align: 'Alignement', language: 'Langue', search: 'Moteur', options: 'Options', editMode: 'Mode édition', showSearch: 'Afficher la recherche', editModeHint: 'Mode édition — cliquez pour modifier ou supprimer', editModeDone: 'Terminé', bentoCols: 'Colonnes', bentoWidth: 'Largeur', bentoGap: 'Espacement', bentoRadius: 'Rayon', bentoFixed: 'Grille égale', bentoOpacity: 'Opacité', bentoBlur: 'Flou', bentoIconSize: 'Taille icône', showLogo: 'Logo du moteur', showTitle: 'Titres des sites', langAuto: 'Suivre le navigateur', resetSettings: 'Réinitialiser les paramètres', resetConfirm: 'Réinitialiser tous les paramètres par défaut ? Les données des sites seront conservées.', background: 'Arrière-plan', bgNone: 'Aucun', bgSolid: 'Uni', bgGradient: 'Dégradé', bgImage: 'Image', bgRandom: 'Aléatoire', bgCustomColor: 'Couleur personnalisée', bgUpload: 'Télécharger', bgClearAll: 'Tout effacer', bgAddGradient: 'Dégradé aléatoire', bgImageHint: 'Max 12 images, stockées localement, aléatoire à chaque chargement', bgRandomSolid: 'Uni', bgRandomGradient: 'Dégradé', bgRandomImage: 'Image', bgRandomAll: 'Tout', exportSites: 'Exporter la liste des sites', importSites: 'Importer des sites' },
   },
-  'de-DE': {
+  'de': {
     appName: 'Youran Tab',
     theme: { terminal: 'Terminal', default: 'Klassisch', minimal: 'Minimal', bento: 'Bento' },
     mode: { light: 'Hell', dark: 'Dunkel', auto: 'System' },
@@ -727,7 +727,7 @@ const messages = {
     search: { placeholder: 'Suchen...' },
     settings: { theme: 'Thema', mode: 'Modus', align: 'Ausrichtung', language: 'Sprache', search: 'Suchmaschine', options: 'Optionen', editMode: 'Bearbeitungsmodus', showSearch: 'Suchleiste anzeigen', editModeHint: 'Bearbeitungsmodus — klicken zum Bearbeiten oder Löschen', editModeDone: 'Fertig', bentoCols: 'Spalten', bentoWidth: 'Breite', bentoGap: 'Abstand', bentoRadius: 'Radius', bentoFixed: 'Gleiches Raster', bentoOpacity: 'Deckkraft', bentoBlur: 'Unschärfe', bentoIconSize: 'Symbolgröße', showLogo: 'Suchmaschinen-Logo', showTitle: 'Seitentitel', langAuto: 'Browser folgen', resetSettings: 'Einstellungen zurücksetzen', resetConfirm: 'Alle Einstellungen auf Standard zurücksetzen? Websitedaten bleiben erhalten.', background: 'Hintergrund', bgNone: 'Keiner', bgSolid: 'Einfarbig', bgGradient: 'Verlauf', bgImage: 'Bild', bgRandom: 'Zufällig', bgCustomColor: 'Eigene Farbe', bgUpload: 'Hochladen', bgClearAll: 'Alle löschen', bgAddGradient: 'Zufälliger Verlauf', bgImageHint: 'Max. 12 Bilder, lokal gespeichert, zufällig bei jedem Laden', bgRandomSolid: 'Einfarbig', bgRandomGradient: 'Verlauf', bgRandomImage: 'Bild', bgRandomAll: 'Alle', exportSites: 'Seitenliste exportieren', importSites: 'Seiten importieren' },
   },
-  'it-IT': {
+  'it': {
     appName: 'Youran Tab',
     theme: { terminal: 'Terminale', default: 'Classico', minimal: 'Minimale', bento: 'Bento' },
     mode: { light: 'Chiaro', dark: 'Scuro', auto: 'Sistema' },

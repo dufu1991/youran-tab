@@ -1,8 +1,22 @@
-# 悠然标签页
+<p align="center">
+  <img src="https://youran-tab.du-fu.com/logo.png" alt="悠然标签页" width="80" height="80" />
+</p>
 
-一款开源、高度可定制的浏览器新标签页扩展，适用于 Chrome、Edge、Firefox 以及 360、QQ、搜狗等国产浏览器。
+<h1 align="center">悠然标签页</h1>
 
-所有数据存储在本地，无需登录，不收集任何信息。
+<p align="center">
+  一款开源、高度可定制的浏览器新标签页扩展，适用于 Chrome、Edge、Firefox 以及 360、QQ、搜狗等国产浏览器。
+  <br />
+  所有数据存储在本地，无需登录，不收集任何信息。
+  <br /><br />
+  <a href="https://youran-tab.du-fu.com/">官网</a>
+</p>
+
+## 安装
+
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/TODO?style=for-the-badge&logo=googlechrome&logoColor=white&label=Chrome)](https://chromewebstore.google.com/detail/TODO)
+[![Edge Add-ons](https://img.shields.io/badge/dynamic/json?style=for-the-badge&logo=microsoftedge&logoColor=white&label=Edge&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2FTODO)](https://microsoftedge.microsoft.com/addons/detail/TODO)
+[![Firefox Add-ons](https://img.shields.io/amo/v/TODO?style=for-the-badge&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/firefox/addon/TODO/)
 
 ## 主题
 
@@ -25,13 +39,13 @@
 
 支持 10 种语言，自动检测浏览器语言：
 
-`zh-CN` `zh-TW` `en-US` `ja-JP` `ko-KR` `es-ES` `fr-FR` `de-DE` `ru-RU` `it-IT`
+`简体中文` `繁體中文` `English` `日本語` `한국어` `Español` `Français` `Deutsch` `Русский` `Italiano`
 
 ## 技术栈
 
-- [Svelte 5](https://svelte.dev/) — UI 框架
-- [Vite 7](https://vite.dev/) — 构建工具
-- [Tailwind CSS 4](https://tailwindcss.com/) — 样式框架
+- [Svelte](https://svelte.dev/) — UI 框架
+- [Vite](https://vite.dev/) — 构建工具
+- [Tailwind](https://tailwindcss.com/) — 样式框架
 - [Bun](https://bun.sh/) — 包管理与运行时
 
 ## 开发
