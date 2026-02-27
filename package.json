@@ -1,0 +1,23 @@
+{
+  "name": "youran-tab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:firefox": "vite build && node scripts/build-firefox.js",
+    "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip .",
+    "pack:edge": "mkdir -p release && cd dist && zip -r ../release/youran-tab-edge.zip .",
+    "pack:firefox": "mkdir -p release && cd dist-firefox && zip -r ../release/youran-tab-firefox.zip .",
+    "release": "bun run build && bun run pack && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@tailwindcss/vite": "^4.2.1",
+    "svelte": "^5.53.3",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.3.1"
+  }
+}
