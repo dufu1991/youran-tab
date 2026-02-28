@@ -1,7 +1,12 @@
 import { getCachedIconUrl, fetchAndCacheIcon } from './iconCache.js'
 
+// 检测浏览器类型
+const isEdge = /\bEdg\//.test(navigator.userAgent)
+const isFirefox = /\bFirefox\//.test(navigator.userAgent)
+
 // 图标源定义
 export const iconSources = {
+  auto: { name: 'Auto' },
   google: { name: 'Google' },
   extractor: { name: 'Extractor' },
   horse: { name: 'icon.horse' },
@@ -10,9 +15,21 @@ export const iconSources = {
 // 可选的在线源 key 列表
 export const pickableSourceKeys = Object.keys(iconSources)
 
+function getBrowserFavicon(url, hostname) {
+  if (isFirefox) {
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
+  }
+  if (isEdge) {
+    return `chrome-search://ntpicon/?size=48@2.000000x&url=${encodeURIComponent(url)}`
+  }
+  // MV3 使用 _favicon/ 路径，需要 manifest 中声明 favicon 权限
+  return chrome.runtime.getURL(`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`)
+}
+
 export function getFaviconBySource(url, source = 'auto') {
   try {
-    const hostname = new URL(url).hostname
+    const u = new URL(url)
+    const hostname = u.hostname
     switch (source) {
       case 'extractor':
         return `https://www.faviconextractor.com/favicon/${hostname}`
@@ -22,7 +39,7 @@ export function getFaviconBySource(url, source = 'auto') {
         return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
       case 'auto':
       default:
-        return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
+        return getBrowserFavicon(u.href, hostname)
     }
   } catch {
     return ''
@@ -45,6 +62,7 @@ export function resolveSiteIcon(site, dark = false) {
     return site.customIcon || ''
   }
   const remoteUrl = getFaviconBySource(site.url, site.iconSource || 'auto')
+  if (!remoteUrl.startsWith('http')) return remoteUrl
   return getCachedIconUrl(remoteUrl) || remoteUrl
 }
 
@@ -53,7 +71,7 @@ const _caching = new Set()
 export function handleIconLoad(e, site) {
   if (site.iconSource === 'custom') return
   const remoteUrl = getFaviconBySource(site.url, site.iconSource || 'auto')
-  if (!remoteUrl || getCachedIconUrl(remoteUrl) || _caching.has(remoteUrl)) return
+  if (!remoteUrl || !remoteUrl.startsWith('http') || getCachedIconUrl(remoteUrl) || _caching.has(remoteUrl)) return
   _caching.add(remoteUrl)
   fetchAndCacheIcon(remoteUrl).finally(() => _caching.delete(remoteUrl))
 }

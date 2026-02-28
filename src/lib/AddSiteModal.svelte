@@ -16,7 +16,7 @@
   let separateDark = $state(!!init.customIconDark)
   let iconRadius = $state(init.iconRadius ?? 4)
 
-  let activeSource = $derived((iconSource === 'auto' || !iconSource) ? 'google' : iconSource)
+  let activeSource = $derived(iconSource || 'auto')
   let fullUrl = $derived(url.includes('://') ? url : 'https://' + url)
   let hasUrl = $derived(url.trim().length > 0)
 
@@ -187,11 +187,11 @@
 
       <div class="flex justify-end gap-3 pt-2">
         <button type="button"
-          class="px-4 py-2 rounded-lg {dark ? 'text-neutral-400 hover:bg-neutral-700' : 'text-neutral-600 hover:bg-neutral-100'}"
+          class="px-4 py-2 rounded-lg {dark ? 'text-neutral-200 hover:bg-neutral-700' : 'text-neutral-600 hover:bg-neutral-100'}"
           onclick={() => onclose?.()}
         >{$t('site.cancel')}</button>
         <button type="submit"
-          class="px-4 py-2 text-white rounded-lg {dark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-neutral-800 hover:bg-neutral-700'}"
+          class="px-4 py-2 rounded-lg {dark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-neutral-800 text-white hover:bg-neutral-700'}"
         >{$t('site.save')}</button>
       </div>
     </form>

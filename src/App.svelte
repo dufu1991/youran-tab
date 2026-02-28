@@ -3,6 +3,8 @@
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import { saveImages } from './lib/bgImages.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
+  import ExportModal from './lib/ExportModal.svelte'
+  import ImportModal from './lib/ImportModal.svelte'
   import TerminalTheme from './lib/themes/TerminalTheme.svelte'
   import DefaultTheme from './lib/themes/DefaultTheme.svelte'
   import MinimalTheme from './lib/themes/MinimalTheme.svelte'
@@ -16,6 +18,8 @@
 
   let showModal = $state(false)
   let editingSite = $state(null)
+  let showExportModal = $state(false)
+  let showImportModal = $state(false)
 
   let ThemeComponent = $derived(themeComponents[$theme] || DefaultTheme)
 
@@ -72,62 +76,6 @@
   }
   function handleDelete(id) { sites.remove(id) }
 
-  function exportSites() {
-    const data = $sites.map(s => {
-      const o = { name: s.name, url: s.url, iconSource: s.iconSource || 'auto' }
-      if (s.iconSource === 'custom') {
-        if (s.customIcon) o.customIcon = s.customIcon
-        if (s.customIconDark) o.customIconDark = s.customIconDark
-      }
-      if (s.iconRadius != null) o.iconRadius = s.iconRadius
-      return o
-    })
-    const json = JSON.stringify(data)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'youran-tab-sites.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  function importSites() {
-    const fileInput = document.createElement('input')
-    fileInput.type = 'file'
-    fileInput.accept = '.json'
-    fileInput.onchange = async () => {
-      const file = fileInput.files?.[0]
-      if (!file) return
-      const text = await file.text()
-      const data = JSON.parse(text)
-      if (!Array.isArray(data)) { alert($t('terminal.importError')); return }
-      let count = 0
-      const existing = $sites
-      for (const item of data) {
-        if (!item.name || !item.url) continue
-        let url = item.url
-        if (!/^https?:\/\//.test(url)) url = 'https://' + url
-        const site = { name: item.name, url }
-        if (item.iconSource) site.iconSource = item.iconSource
-        if (item.customIcon) site.customIcon = item.customIcon
-        if (item.customIconDark) site.customIconDark = item.customIconDark
-        if (item.iconRadius != null) site.iconRadius = item.iconRadius
-        const dup = existing.some(s =>
-          s.name === site.name && s.url === site.url &&
-          (s.iconSource || 'auto') === (site.iconSource || 'auto') &&
-          (s.customIcon || '') === (site.customIcon || '') &&
-          (s.customIconDark || '') === (site.customIconDark || '') &&
-          (s.iconRadius ?? null) === (site.iconRadius ?? null)
-        )
-        if (dup) continue
-        sites.add(site)
-        count++
-      }
-      alert($t('terminal.imported', count))
-    }
-    fileInput.click()
-  }
 </script>
 
 <div class="w-full h-full relative">
@@ -557,17 +505,17 @@
 
         <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
 
-        <!-- 导出 / 导入站点 -->
+        <!-- 导出 / 导入数据 -->
         <div class="flex gap-2">
           <button
             class="flex-1 py-1.5 rounded text-xs transition-all
               {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-            onclick={exportSites}
+            onclick={() => showExportModal = true}
           >{$t('settings.exportSites')}</button>
           <button
             class="flex-1 py-1.5 rounded text-xs transition-all
               {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-            onclick={importSites}
+            onclick={() => showImportModal = true}
           >{$t('settings.importSites')}</button>
         </div>
 
@@ -588,5 +536,13 @@
       onsave={handleSave}
       onclose={() => { showModal = false; editingSite = null }}
     />
+  {/if}
+
+  {#if showExportModal}
+    <ExportModal dark={$isDark} onclose={() => showExportModal = false} />
+  {/if}
+
+  {#if showImportModal}
+    <ImportModal dark={$isDark} onclose={() => showImportModal = false} />
   {/if}
 </div>

@@ -60,7 +60,7 @@
       {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm">
       <span>✏️ {$t('settings.editModeHint')}</span>
       <button
-        class="px-3 py-0.5 rounded text-xs bg-white/20 hover:bg-white/30 transition-colors"
+        class="px-3 py-0.5 rounded text-xs transition-colors {dark ? 'bg-black/15 hover:bg-black/25' : 'bg-white/20 hover:bg-white/30'}"
         onclick={() => editMode.set(false)}
       >{$t('settings.editModeDone')}</button>
     </div>

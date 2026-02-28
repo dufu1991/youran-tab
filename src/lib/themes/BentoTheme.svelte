@@ -2,7 +2,7 @@
   import { t } from '../i18n.js'
   import { get } from 'svelte/store'
   import { getCachedIconUrl, fetchAndCacheIcon } from '../iconCache.js'
-  import { getFavicon, getFaviconFallback, resolveSiteIcon, handleIconLoad } from '../favicon.js'
+  import { resolveSiteIcon, handleIconLoad, getFaviconFallback } from '../favicon.js'
   import { editMode, showSearchBar, showEngineLogo, showSiteTitle, clickCounts, bentoConfig, searchEngine, searchEngines, doSearch, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore } from '../stores.js'
 
   let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete } = $props()
@@ -52,16 +52,7 @@
     }
   }
 
-  let engineUrl = $derived(searchEngines[$searchEngine]?.url || '')
-  let engineRemoteUrl = $derived(engineUrl ? getFavicon(engineUrl) : '')
-  let engineLogo = $derived(engineRemoteUrl ? (getCachedIconUrl(engineRemoteUrl) || engineRemoteUrl) : '')
-  let engineLogoFallback = $derived(engineUrl ? getFaviconFallback(engineUrl) : '')
-
-  function handleEngineLogoLoad() {
-    if (engineRemoteUrl && !getCachedIconUrl(engineRemoteUrl)) {
-      fetchAndCacheIcon(engineRemoteUrl)
-    }
-  }
+  let engineIcon = $derived(searchEngines[$searchEngine]?.icon || '')
 
   // Squarified treemap
   function treemap(items, w, h) {
@@ -132,6 +123,15 @@
     const items = siteList
       .map(s => ({ id: s.id, name: s.name, url: s.url, value: (counts[s.id] || 0) + 1 }))
       .sort((a, b) => b.value - a.value)
+    // 限制最大最小比例，避免最小区域太小看不清图标和文字
+    if (items.length > 1) {
+      const maxVal = items[0].value
+      const minAllowed = maxVal * 0.15  // 最小不低于最大值的 15%
+      const maxAllowed = maxVal         // 最大保持不变
+      for (const item of items) {
+        item.value = Math.max(minAllowed, Math.min(maxAllowed, item.value))
+      }
+    }
     return treemap(items, cw, ch)
   }
 
@@ -152,7 +152,7 @@
     <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-3 py-2
       {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm">
       <span>✏️ {$t('settings.editModeHint')}</span>
-      <button class="px-3 py-0.5 rounded text-xs bg-white/20 hover:bg-white/30 transition-colors"
+      <button class="px-3 py-0.5 rounded text-xs transition-colors {dark ? 'bg-black/15 hover:bg-black/25' : 'bg-white/20 hover:bg-white/30'}"
         onclick={() => editMode.set(false)}>{$t('settings.editModeDone')}</button>
     </div>
   {/if}
@@ -165,10 +165,8 @@
         style="max-width: {cfg.width}px; margin-bottom: {cfg.gap}px">
         <div class="flex items-center w-full transition-colors"
           style="border-radius: {cfg.radius}px; padding: 12px 20px; {cardStyle}">
-          {#if $showEngineLogo && engineLogo}
-            <img src={engineLogo} alt="" class="w-5 h-5 mr-3 shrink-0"
-              onload={handleEngineLogoLoad}
-              onerror={(e) => { e.target.src = engineLogoFallback }} />
+          {#if $showEngineLogo && engineIcon}
+            <img src={engineIcon} alt="" class="w-5 h-5 mr-3 shrink-0" />
           {/if}
           <input type="text" bind:value={query} placeholder={$t('search.placeholder')}
             class="flex-1 bg-transparent outline-none text-sm text-black" />

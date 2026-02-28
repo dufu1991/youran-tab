@@ -1,7 +1,8 @@
 <script>
   import { onMount } from 'svelte'
-  import { sites, theme, mode, showSettings, terminalConfig, searchEngine, searchEngines, doSearch } from '../stores.js'
+  import { sites, theme, mode, showSettings, terminalConfig, searchEngine, searchEngines, doSearch, clickCounts } from '../stores.js'
   import { t, localeSetting, supportedLocales, localeNames } from '../i18n.js'
+  import { buildExportData, downloadJson, getExportFilename, detectImportData, checkVersionMatch, getCurrentVersion, importSitesData, importSettingsData } from '../dataTransfer.js'
 
   let { dark = false, align = 'top' } = $props()
 
@@ -47,16 +48,7 @@
   })
 
   onMount(() => {
-    let attempts = 0
-    function tryFocus() {
-      if (document.activeElement !== inputEl && attempts < 10) {
-        inputEl?.focus()
-        attempts++
-        requestAnimationFrame(tryFocus)
-      }
-    }
-    requestAnimationFrame(tryFocus)
-    setTimeout(() => inputEl?.focus(), 200)
+    inputEl?.focus()
 
     function onKey(e) {
       if (e.target === inputEl || e.metaKey || e.ctrlKey || e.altKey) return
@@ -203,7 +195,7 @@
         ['prompt', $t('terminal.promptDesc'), promptChar],
         ['width <px|full>', $t('terminal.widthDesc'), String($terminalConfig.width || 'full')],
         ['set', $t('terminal.setDesc'), ''],
-        ['export', $t('terminal.exportDesc'), ''],
+        ['export [all|sites|settings]', $t('terminal.exportDesc'), ''],
         ['import', $t('terminal.importDesc'), ''],
         ['clear', $t('terminal.clearDesc'), ''],
       ]
@@ -355,24 +347,18 @@
       history = []
 
     } else if (cmd === 'export') {
-      const data = $sites.map(s => {
-        const o = { name: s.name, url: s.url, iconSource: s.iconSource || 'auto' }
-        if (s.iconSource === 'custom') {
-          if (s.customIcon) o.customIcon = s.customIcon
-          if (s.customIconDark) o.customIconDark = s.customIconDark
-        }
-        if (s.iconRadius != null) o.iconRadius = s.iconRadius
-        return o
-      })
-      const json = JSON.stringify(data)
-      const blob = new Blob([json], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'youran-tab-sites.json'
-      a.click()
-      URL.revokeObjectURL(url)
-      push($t('terminal.exported', data.length))
+      const subCmd = args[1]?.toLowerCase() || 'all'
+      const validTypes = ['all', 'sites', 'settings']
+      if (!validTypes.includes(subCmd)) {
+        push($t('terminal.exportUsage'))
+        return
+      }
+      const data = buildExportData(subCmd, $sites, $clickCounts)
+      downloadJson(data, getExportFilename(subCmd))
+      const count = data.sites?.length || 0
+      if (subCmd === 'sites') push($t('terminal.exportedSites', count))
+      else if (subCmd === 'settings') push($t('terminal.exportedSettings'))
+      else push($t('terminal.exportedAll', count))
 
     } else if (cmd === 'import') {
       const fileInput = document.createElement('input')
@@ -381,32 +367,31 @@
       fileInput.onchange = async () => {
         const file = fileInput.files?.[0]
         if (!file) return
-        const text = await file.text()
-        const data = JSON.parse(text)
-        if (!Array.isArray(data)) { push($t('terminal.importError')); return }
-        let count = 0
-        const existing = $sites
-        for (const item of data) {
-          if (!item.name || !item.url) continue
-          let url = item.url
-          if (!/^https?:\/\//.test(url)) url = 'https://' + url
-          const site = { name: item.name, url }
-          if (item.iconSource) site.iconSource = item.iconSource
-          if (item.customIcon) site.customIcon = item.customIcon
-          if (item.customIconDark) site.customIconDark = item.customIconDark
-          if (item.iconRadius != null) site.iconRadius = item.iconRadius
-          const dup = existing.some(s =>
-            s.name === site.name && s.url === site.url &&
-            (s.iconSource || 'auto') === (site.iconSource || 'auto') &&
-            (s.customIcon || '') === (site.customIcon || '') &&
-            (s.customIconDark || '') === (site.customIconDark || '') &&
-            (s.iconRadius ?? null) === (site.iconRadius ?? null)
-          )
-          if (dup) continue
-          sites.add(site)
-          count++
+        let parsed
+        try {
+          const text = await file.text()
+          parsed = JSON.parse(text)
+        } catch {
+          push($t('terminal.importError'))
+          return
         }
-        push($t('terminal.imported', count))
+        const detected = detectImportData(parsed)
+        if (!detected) { push($t('terminal.importError')); return }
+        if (detected.type !== 'legacy' && !checkVersionMatch(detected.version)) {
+          push($t('terminal.versionMismatch', detected.version, getCurrentVersion()))
+          return
+        }
+        if (detected.hasSites) {
+          const siteItems = detected.type === 'legacy' ? detected.data : detected.data.sites
+          const count = importSitesData(siteItems, sites, $sites, clickCounts)
+          push($t('terminal.importedSites', count))
+        }
+        if (detected.hasSettings) {
+          importSettingsData(detected.data.settings)
+          push($t('terminal.importedSettings'))
+          push($t('terminal.reloading'))
+          setTimeout(() => location.reload(), 1500)
+        }
       }
       fileInput.click()
 

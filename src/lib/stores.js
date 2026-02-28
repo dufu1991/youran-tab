@@ -28,7 +28,9 @@ function createSitesStore() {
   return {
     subscribe,
     add(site) {
-      update((sites) => [...sites, { ...site, id: Date.now().toString() }])
+      const id = crypto.randomUUID()
+      update((sites) => [...sites, { ...site, id }])
+      return id
     },
     remove(id) {
       update((sites) => sites.filter((s) => s.id !== id))
@@ -177,18 +179,14 @@ export const terminalConfig = createTerminalConfigStore()
 const STORAGE_KEY_ENGINE = 'newtab_engine'
 
 export const searchEngines = {
-  google:     { name: 'Google',      url: 'https://www.google.com/search?q=' },
-  bing:       { name: 'Bing',        url: 'https://www.bing.com/search?q=' },
-  baidu:      { name: 'Baidu',       url: 'https://www.baidu.com/s?wd=' },
-  duckduckgo: { name: 'DuckDuckGo',  url: 'https://duckduckgo.com/?q=' },
-  yahoo:      { name: 'Yahoo',       url: 'https://search.yahoo.com/search?p=' },
-  yandex:     { name: 'Yandex',      url: 'https://yandex.com/search/?text=' },
-  sogou:      { name: 'Sogou',       url: 'https://www.sogou.com/web?query=' },
-  ecosia:     { name: 'Ecosia',      url: 'https://www.ecosia.org/search?q=' },
-  brave:      { name: 'Brave',       url: 'https://search.brave.com/search?q=' },
-  startpage:  { name: 'Startpage',   url: 'https://www.startpage.com/do/search?q=' },
-  naver:      { name: 'Naver',       url: 'https://search.naver.com/search.naver?query=' },
-  perplexity: { name: 'Perplexity',  url: 'https://www.perplexity.ai/search?q=' },
+  google:     { name: 'Google',      url: 'https://www.google.com/search?q=',                    icon: 'engines/google-color.svg' },
+  bing:       { name: 'Bing',        url: 'https://www.bing.com/search?q=',                      icon: 'engines/bing-color-icon.svg' },
+  baidu:      { name: 'Baidu',       url: 'https://www.baidu.com/s?wd=',                         icon: 'engines/baidu-color.svg' },
+  duckduckgo: { name: 'DuckDuckGo',  url: 'https://duckduckgo.com/?q=',                          icon: 'engines/duckduckgo-icon.svg' },
+  yahoo:      { name: 'Yahoo',       url: 'https://search.yahoo.com/search?p=',                  icon: 'engines/yahoo-icon.svg' },
+  yandex:     { name: 'Yandex',      url: 'https://yandex.com/search/?text=',                    icon: 'engines/yandex.svg' },
+  brave:      { name: 'Brave',       url: 'https://search.brave.com/search?q=',                  icon: 'engines/icons8-brave-web-browser.svg' },
+  perplexity: { name: 'Perplexity',  url: 'https://www.perplexity.ai/search?q=',                 icon: 'engines/perplexity-ai-icon.svg' },
 }
 
 function createEngineStore() {
@@ -216,6 +214,9 @@ function createClickCountStore() {
     subscribe,
     increment(siteId) {
       update((counts) => ({ ...counts, [siteId]: (counts[siteId] || 0) + 1 }))
+    },
+    set(siteId, count) {
+      update((counts) => ({ ...counts, [siteId]: count }))
     },
   }
 }
