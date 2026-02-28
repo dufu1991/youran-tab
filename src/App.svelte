@@ -1,5 +1,5 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, searchEngine, searchEngines, editMode, showSearchBar, showEngineLogo, showSiteTitle, bentoConfig, defaultConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, searchEngine, searchEngines, editMode, showSearchBar, showEngineLogo, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign } from './lib/stores.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import { saveImages } from './lib/bgImages.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
@@ -9,9 +9,13 @@
   import DefaultTheme from './lib/themes/DefaultTheme.svelte'
   import MinimalTheme from './lib/themes/MinimalTheme.svelte'
   import BentoTheme from './lib/themes/BentoTheme.svelte'
+  import GlassTheme from './lib/themes/GlassTheme.svelte'
+  import BubbleTheme from './lib/themes/BubbleTheme.svelte'
+  import PixelTheme from './lib/themes/PixelTheme.svelte'
+  import SketchTheme from './lib/themes/SketchTheme.svelte'
 
-  const themeKeys = ['default', 'bento', 'terminal', 'minimal']
-  const themeComponents = { terminal: TerminalTheme, default: DefaultTheme, minimal: MinimalTheme, bento: BentoTheme }
+  const themeKeys = ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch']
+  const themeComponents = { terminal: TerminalTheme, default: DefaultTheme, minimal: MinimalTheme, bento: BentoTheme, glass: GlassTheme, bubble: BubbleTheme, pixel: PixelTheme, sketch: SketchTheme }
   const modes = ['auto', 'light', 'dark']
   const bgTypes = ['none', 'solid', 'gradient', 'image', 'random']
   const randomScopes = ['solid', 'gradient', 'image', 'all']
@@ -114,7 +118,7 @@
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.theme')}
             </div>
-            <div class="inline-flex rounded overflow-hidden">
+            <div class="grid grid-cols-4 rounded overflow-hidden">
               {#each themeKeys as key}
                 <button
                   class="px-2.5 py-1 text-xs transition-all
@@ -198,7 +202,7 @@
               </button>
             </label>
             {#if $showSearchBar}
-              {#if $theme === 'default' || $theme === 'bento'}
+              {#if $theme !== 'terminal' && $theme !== 'minimal'}
                 <label class="flex items-center justify-between cursor-pointer mb-1">
                   <span class="text-sm">{$t('settings.showLogo')}</span>
                   <button
@@ -229,7 +233,7 @@
         {/if}
 
         <!-- 背景 -->
-        {#if $theme === 'default' || $theme === 'bento'}
+        {#if $theme !== 'terminal' && $theme !== 'minimal'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
           <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
@@ -340,7 +344,7 @@
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.options')}
             </div>
-            {#if $theme === 'default' || $theme === 'bento'}
+            {#if $theme === 'default' || $theme === 'bento' || $theme === 'sketch'}
               <!-- 显示站点标题 -->
               <label class="flex items-center justify-between cursor-pointer">
                 <span class="text-sm">{$t('settings.showTitle')}</span>
@@ -503,9 +507,57 @@
           </div>
         {/if}
 
-        <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
+        <!-- Glass 主题配置 -->
+        {#if $theme === 'glass'}
+          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
+          <div class="space-y-1">
+            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
+              {$t('theme.glass')}
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <span class="flex-1">{$t('settings.glassCols')}</span>
+              <input type="range" min="1" max="4" step="1" value={$glassConfig.cols}
+                oninput={(e) => glassConfig.set('cols', +e.target.value)}
+                class="w-36 accent-white" />
+              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$glassConfig.cols}</span>
+            </label>
+          </div>
+        {/if}
 
-        <!-- 导出 / 导入数据 -->
+        <!-- Bubble 主题配置 -->
+        {#if $theme === 'bubble'}
+          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
+          <div class="space-y-1">
+            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
+              {$t('theme.bubble')}
+            </div>
+            <div>
+              <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
+                {$t('settings.bubbleLayout')}
+              </div>
+              <div class="inline-flex rounded overflow-hidden">
+                {#each ['fixed', 'random'] as layoutMode}
+                  <button
+                    class="px-2.5 py-1 text-xs transition-all
+                      {$bubbleConfig.layout === layoutMode
+                        ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
+                        : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                    onclick={() => bubbleConfig.set('layout', layoutMode)}
+                  >{$t('settings.bubble' + layoutMode.charAt(0).toUpperCase() + layoutMode.slice(1))}</button>
+                {/each}
+              </div>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <span class="flex-1">{$t('settings.bubbleSize')}</span>
+              <input type="range" min="48" max="120" step="4" value={$bubbleConfig.size}
+                oninput={(e) => bubbleConfig.set('size', +e.target.value)}
+                class="w-36 accent-white" />
+              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bubbleConfig.size}</span>
+            </label>
+          </div>
+        {/if}
+
+        <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
         <div class="flex gap-2">
           <button
             class="flex-1 py-1.5 rounded text-xs transition-all

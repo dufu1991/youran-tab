@@ -61,7 +61,7 @@
       </h1>
       <p class="text-lg sm:text-xl text-neutral-400 max-w-2xl mx-auto mb-10 leading-relaxed" data-i18n="hero.desc" data-i18n-mode="html">
         一款开源、高度可定制的浏览器新标签页扩展。<br />
-        4 种主题、10 种语言、多种背景，打造专属你的浏览器起始页。
+        8 种主题、10 种语言、多种背景，打造专属你的浏览器起始页。
       </p>
       <div class="flex items-center justify-center gap-2 sm:gap-4">
         <a href="https://chromewebstore.google.com" target="_blank"
@@ -86,7 +86,7 @@
 
   <!-- 主题展示 -->
   <section class="max-w-5xl mx-auto px-6 py-20">
-    <h2 class="text-3xl font-bold text-center mb-4" data-i18n="themes.title">4 种主题，随心切换</h2>
+    <h2 class="text-3xl font-bold text-center mb-4" data-i18n="themes.title">8 种主题，随心切换</h2>
     <p class="text-neutral-400 text-center mb-14 max-w-lg mx-auto" data-i18n="themes.subtitle">每种主题都有独立的配置项，满足不同使用习惯。</p>
     <!-- 预览图 -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14 -my-2.5">
@@ -105,6 +105,22 @@
       <div class="text-center">
         <img src="/preview-minimal.png" alt="极简主题预览" class="rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/40" />
         <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.minimal.title">极简</p>
+      </div>
+      <div class="text-center">
+        <img src="/preview-glass.png" alt="玻璃主题预览" class="rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/40" />
+        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.glass.title">玻璃</p>
+      </div>
+      <div class="text-center">
+        <img src="/preview-bubble.png" alt="气泡主题预览" class="rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/40" />
+        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.bubble.title">气泡</p>
+      </div>
+      <div class="text-center">
+        <img src="/preview-pixel.png" alt="像素主题预览" class="rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/40" />
+        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.pixel.title">像素</p>
+      </div>
+      <div class="text-center">
+        <img src="/preview-sticky.png" alt="便签主题预览" class="rounded-xl ring-1 ring-white/10 shadow-lg shadow-black/40" />
+        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.sticky.title">便签</p>
       </div>
     </div>
     <!-- 主题说明 -->
@@ -132,6 +148,30 @@
         <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center mb-4 text-xl">🍃</div>
         <h3 class="text-lg font-semibold mb-2" data-i18n="themes.minimal.title">极简</h3>
         <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.minimal.desc">去除一切多余元素，只保留站点。干净、专注、无干扰。</p>
+      </div>
+      <!-- 玻璃 -->
+      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center mb-4 text-xl">🪟</div>
+        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.glass.title">玻璃</h3>
+        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.glass.desc">毛玻璃药丸卡片，横向列表布局，列数可调，简洁现代。</p>
+      </div>
+      <!-- 气泡 -->
+      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4 text-xl">🫧</div>
+        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.bubble.title">气泡</h3>
+        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.bubble.desc">圆形气泡悬浮效果，支持固定排列与随机散布，大小可调。</p>
+      </div>
+      <!-- 像素 -->
+      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center mb-4 text-xl">👾</div>
+        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.pixel.title">像素</h3>
+        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.pixel.desc">像素复古风格，命令行式搜索框，菜单列表交互。</p>
+      </div>
+      <!-- 便签 -->
+      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center mb-4 text-xl">📌</div>
+        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.sticky.title">便签</h3>
+        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.sticky.desc">便利贴公告板风格，图钉装饰，彩色纸张，瀑布流布局。</p>
       </div>
     </div>
   </section>
@@ -337,7 +377,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.theme.title">主题概览</h2>
-          <p data-i18n="guide.theme.desc">在设置面板中可选择经典、便当、终端或极简 4 种主题。每种主题都有独立的配置项，切换主题不会丢失其他主题的设置。</p>
+          <p data-i18n="guide.theme.desc">在设置面板中可选择经典、便当、终端、极简、玻璃、气泡、像素或便签 8 种主题。每种主题都有独立的配置项，切换主题不会丢失其他主题的设置。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.classic.title">经典主题</h2>
@@ -356,12 +396,28 @@
           <p data-i18n="guide.minimal.desc">纯文字列表风格，无图标无卡片，只显示站点名称链接。该主题无专属配置项。</p>
         </section>
         <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.glass.title">玻璃主题</h2>
+          <p data-i18n="guide.glass.desc" data-i18n-mode="html">毛玻璃药丸卡片横向列表布局。可配置项包括：列数（1-4 列）。搜索栏嵌入主界面，始终显示站点标题。适合搭配图片或渐变背景使用。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.bubble.title">气泡主题</h2>
+          <p data-i18n="guide.bubble.desc" data-i18n-mode="html">圆形气泡悬浮效果，不显示站点标题。提供两种布局模式：<br />1. <strong>固定排列</strong>（默认）：气泡按顺序排列，间距均匀。<br />2. <strong>随机散布</strong>：气泡随机散布在画布上，使用碰撞检测算法保证不重叠。<br />可配置项包括：布局模式切换、气泡大小（48-120px）。搜索栏以可展开的搜索气泡形式呈现。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.pixel.title">像素主题</h2>
+          <p data-i18n="guide.pixel.desc" data-i18n-mode="html">像素复古风格，菜单列表交互。站点以列表形式展示，始终显示站点标题。搜索栏采用命令行提示符样式，可显示搜索引擎图标。鼠标悬停时有扫描线动画效果。该主题无专属配置项。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.sticky.title">便签主题</h2>
+          <p data-i18n="guide.sticky.desc" data-i18n-mode="html">便利贴公告板风格，采用 CSS 多列瀑布流布局。每张便签有彩色背景和图钉装饰，角度随机倾斜，底部内边距不一产生高矮不同的效果。<br />亮色模式为软木板背景，暗色模式为深色木板背景。搜索栏以便签卡片形式嵌入，带有手绘虚线输入框。可配置项包括：显示或隐藏站点标题。</p>
+        </section>
+        <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.search.title">搜索功能</h2>
           <p data-i18n="guide.search.desc" data-i18n-mode="html">内置 12 个搜索引擎：Google、Bing、百度、DuckDuckGo、Yahoo、Yandex、搜狗、Ecosia、Brave、Startpage、Naver、Perplexity。点击搜索栏左侧的图标即可切换引擎。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可搜索。经典和便当主题可选择是否显示搜索引擎 Logo。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.background.title">背景设置</h2>
-          <p data-i18n="guide.background.desc" data-i18n-mode="html">仅经典和便当主题支持背景设置。提供 5 种背景模式：<br />1. <strong>无背景</strong>：使用默认纯黑或纯白底色。<br />2. <strong>纯色</strong>：最多保存 12 个预设颜色，可新增随机生成颜色或删除已有颜色。<br />3. <strong>渐变</strong>：与纯色类似，最多 12 个预设渐变方案。<br />4. <strong>图片</strong>：最多上传 12 张背景图片，上传时自动压缩。<br />5. <strong>随机</strong>：从以上已保存的纯色、渐变和图片中随机选取。<br />亮色模式和暗色模式的背景配置相互独立。</p>
+          <p data-i18n="guide.background.desc" data-i18n-mode="html">除终端和极简主题外，其他主题均支持背景设置。提供 5 种背景模式：<br />1. <strong>无背景</strong>：使用默认纯黑或纯白底色。<br />2. <strong>纯色</strong>：最多保存 12 个预设颜色，可新增随机生成颜色或删除已有颜色。<br />3. <strong>渐变</strong>：与纯色类似，最多 12 个预设渐变方案。<br />4. <strong>图片</strong>：最多上传 12 张背景图片，上传时自动压缩。<br />5. <strong>随机</strong>：从以上已保存的纯色、渐变和图片中随机选取。<br />亮色模式和暗色模式的背景配置相互独立。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.darkmode.title">暗色模式</h2>

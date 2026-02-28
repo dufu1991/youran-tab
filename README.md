@@ -26,10 +26,14 @@
 | 便当 | 卡片式布局，固定或自适应网格，自动统计点击次数并根据频率放大 |
 | 终端 | 完整命令行交互，9 种配色、4 种光标样式、可自定义提示符 |
 | 极简 | 去除一切多余元素，只保留站点 |
+| 玻璃 | 毛玻璃药丸卡片，横向列表布局，列数可调 |
+| 气泡 | 圆形气泡悬浮效果，支持固定排列与随机散布，大小可调 |
+| 像素 | 像素复古风格，命令行式搜索框，菜单列表交互 |
+| 便签 | 便利贴公告板风格，图钉装饰，彩色纸张，瀑布流布局 |
 
 ## 功能
 
-- 12 个搜索引擎，一键切换
+- 8 个搜索引擎，一键切换
 - 多种背景模式：纯色、渐变、图片、随机，亮色与暗色独立配置
 - 暗色模式，自动跟随系统或手动切换
 - 3 种在线图标源，支持自定义上传，暗色模式独立图标
@@ -71,10 +75,10 @@ bun run release
 
 | 浏览器 | 安装方式 |
 |--------|----------|
-| Chrome | Chrome 应用商店 |
-| Edge | Edge 插件市场 |
-| Firefox | Firefox 附加组件 |
-| 360、QQ、搜狗、猎豹等 | 通过 Edge 插件市场安装，完全兼容 |
+| Chrome | [Chrome 应用商店](https://chromewebstore.google.com/detail/TODO) |
+| Edge | [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/TODO) |
+| Firefox | [Firefox 附加组件](https://addons.mozilla.org/firefox/addon/TODO/) |
+| 360、QQ、搜狗、猎豹等 | 通过 [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/TODO) 安装，完全兼容 |
 
 ## License
 

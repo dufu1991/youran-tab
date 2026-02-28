@@ -128,7 +128,7 @@ export const showSiteTitle = createShowSiteTitleStore()
 const STORAGE_KEY_ALIGN = 'newtab_align'
 
 function createThemeAlignStore() {
-  const defaults = { default: 'top', bento: 'center', terminal: 'top', minimal: 'center' }
+  const defaults = { default: 'top', bento: 'center', terminal: 'top', minimal: 'center', glass: 'center', bubble: 'center', pixel: 'top', sketch: 'top' }
   const initial = loadFromStorage(STORAGE_KEY_ALIGN, defaults)
   const { subscribe, update } = writable({ ...defaults, ...initial })
   subscribe((v) => localStorage.setItem(STORAGE_KEY_ALIGN, JSON.stringify(v)))
@@ -155,6 +155,38 @@ function createDefaultConfigStore() {
 }
 
 export const defaultConfig = createDefaultConfigStore()
+
+// 玻璃主题配置
+const STORAGE_KEY_GLASS = 'newtab_glass'
+
+function createGlassConfigStore() {
+  const defaults = { cols: 2 }
+  const initial = loadFromStorage(STORAGE_KEY_GLASS, defaults)
+  const { subscribe, update } = writable({ ...defaults, ...initial })
+  subscribe((v) => localStorage.setItem(STORAGE_KEY_GLASS, JSON.stringify(v)))
+  return {
+    subscribe,
+    set(key, val) { update((c) => ({ ...c, [key]: val })) },
+  }
+}
+
+export const glassConfig = createGlassConfigStore()
+
+// 气泡主题配置
+const STORAGE_KEY_BUBBLE = 'newtab_bubble'
+
+function createBubbleConfigStore() {
+  const defaults = { layout: 'fixed', size: 80 }
+  const initial = loadFromStorage(STORAGE_KEY_BUBBLE, defaults)
+  const { subscribe, update } = writable({ ...defaults, ...initial })
+  subscribe((v) => localStorage.setItem(STORAGE_KEY_BUBBLE, JSON.stringify(v)))
+  return {
+    subscribe,
+    set(key, val) { update((c) => ({ ...c, [key]: val })) },
+  }
+}
+
+export const bubbleConfig = createBubbleConfigStore()
 
 // 终端自定义设置
 const STORAGE_KEY_TERM = 'newtab_terminal'

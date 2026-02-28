@@ -105,7 +105,7 @@
   })
 
   const optionsMap = {
-    theme: ['default', 'bento', 'terminal', 'minimal'],
+    theme: ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch'],
     mode: ['auto', 'light', 'dark'],
     color: colorNames,
     engine: () => Object.keys(searchEngines),
@@ -252,7 +252,7 @@
 
     } else if (args[0].toLowerCase() === 'theme') {
       const val = args[1]?.toLowerCase()
-      const valid = ['default', 'bento', 'terminal', 'minimal']
+      const valid = ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch']
       if (val && valid.includes(val)) {
         theme.set(val); push($t('terminal.themeSet', val))
       } else {

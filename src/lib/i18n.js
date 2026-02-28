@@ -13,7 +13,7 @@ const localeNames = {
 const messages = {
   'en-US': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Terminal', default: 'Classic', minimal: 'Minimal', bento: 'Bento' },
+    theme: { terminal: 'Terminal', default: 'Classic', minimal: 'Minimal', bento: 'Bento', glass: 'Glass', bubble: 'Bubble', pixel: 'Pixel', sketch: 'Sticky' },
     mode: { light: 'Light', dark: 'Dark', auto: 'System' },
     cursor: { bar: 'Bar', wide: 'Wide', block: 'Block', underline: 'Underline' },
     color: { green: 'Green', amber: 'Amber', blue: 'Blue', cyan: 'Cyan', purple: 'Purple', pink: 'Pink', red: 'Red', orange: 'Orange', mono: 'Mono' },
@@ -95,7 +95,7 @@ const messages = {
       unknown: 'Unknown command: {0}. Type h for help.',
     },
     search: { placeholder: 'Search the web...' },
-    settings: { theme: 'Theme', mode: 'Mode', align: 'Align', language: 'Language', search: 'Search', options: 'Options', editMode: 'Edit mode', showSearch: 'Show search bar', editModeHint: 'Edit mode — click to edit or delete', editModeDone: 'Done', bentoCols: 'Columns', bentoWidth: 'Width', bentoGap: 'Gap', bentoRadius: 'Radius', bentoFixed: 'Equal grid', bentoOpacity: 'Opacity', bentoBlur: 'Blur', bentoIconSize: 'Icon size', showLogo: 'Engine logo', showTitle: 'Site titles', langAuto: 'Follow browser', resetSettings: 'Reset settings', resetConfirm: 'Reset all settings to default? Site data will be kept.', background: 'Background', bgNone: 'None', bgSolid: 'Solid', bgGradient: 'Gradient', bgImage: 'Image', bgRandom: 'Random', bgCustomColor: 'Custom color', bgUpload: 'Upload', bgClearAll: 'Clear all', bgAddGradient: 'Random gradient', bgImageHint: 'Max 12 images, stored locally, random on each load', bgRandomSolid: 'Solid', bgRandomGradient: 'Gradient', bgRandomImage: 'Image', bgRandomAll: 'All', exportSites: 'Export sites', importSites: 'Import sites' },
+    settings: { theme: 'Theme', mode: 'Mode', align: 'Align', language: 'Language', search: 'Search', options: 'Options', editMode: 'Edit mode', showSearch: 'Show search bar', editModeHint: 'Edit mode — click to edit or delete', editModeDone: 'Done', bentoCols: 'Columns', bentoWidth: 'Width', bentoGap: 'Gap', bentoRadius: 'Radius', bentoFixed: 'Equal grid', bentoOpacity: 'Opacity', bentoBlur: 'Blur', bentoIconSize: 'Icon size', glassCols: 'Columns', bubbleLayout: 'Layout', bubbleFixed: 'Fixed', bubbleRandom: 'Random', bubbleSize: 'Size', showLogo: 'Engine logo', showTitle: 'Site titles', langAuto: 'Follow browser', resetSettings: 'Reset settings', resetConfirm: 'Reset all settings to default? Site data will be kept.', background: 'Background', bgNone: 'None', bgSolid: 'Solid', bgGradient: 'Gradient', bgImage: 'Image', bgRandom: 'Random', bgCustomColor: 'Custom color', bgUpload: 'Upload', bgClearAll: 'Clear all', bgAddGradient: 'Random gradient', bgImageHint: 'Max 12 images, stored locally, random on each load', bgRandomSolid: 'Solid', bgRandomGradient: 'Gradient', bgRandomImage: 'Image', bgRandomAll: 'All', exportSites: 'Export sites', importSites: 'Import sites' },
     dataTransfer: {
       exportTitle: 'Export Data', exportBtn: 'Export', importTitle: 'Import Data', importBtn: 'Import',
       typeSites: 'Sites only', typeSettings: 'Settings only', typeSitesAndSettings: 'Sites + Settings',
@@ -109,7 +109,7 @@ const messages = {
   },
   'zh-CN': {
     appName: '悠然标签页',
-    theme: { terminal: '终端', default: '经典', minimal: '极简', bento: '便当' },
+    theme: { terminal: '终端', default: '经典', minimal: '极简', bento: '便当', glass: '玻璃', bubble: '气泡', pixel: '像素', sketch: '便签' },
     mode: { light: '亮色', dark: '暗色', auto: '跟随系统' },
     cursor: { bar: '竖线', wide: '粗线', block: '方块', underline: '下划线' },
     color: { green: '绿色', amber: '琥珀', blue: '蓝色', cyan: '青色', purple: '紫色', pink: '粉色', red: '红色', orange: '橙色', mono: '黑白' },
@@ -191,7 +191,7 @@ const messages = {
       unknown: '未知命令：{0}。输入 h 查看帮助。',
     },
     search: { placeholder: '搜索...' },
-    settings: { theme: '主题', mode: '模式', align: '对齐', language: '语言', search: '搜索引擎', options: '选项', editMode: '编辑模式', showSearch: '显示搜索框', editModeHint: '编辑模式 — 点击可编辑或删除', editModeDone: '完成', bentoCols: '列数', bentoWidth: '宽度', bentoGap: '间距', bentoRadius: '圆角', bentoFixed: '等分网格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '图标大小', showLogo: '引擎图标', showTitle: '站点标题', langAuto: '跟随浏览器', resetSettings: '重置设置', resetConfirm: '确定将所有设置恢复为默认值吗？站点数据将保留。', background: '背景', bgNone: '无', bgSolid: '纯色', bgGradient: '渐变', bgImage: '图片', bgRandom: '随机', bgCustomColor: '自定义颜色', bgUpload: '上传图片', bgClearAll: '清除全部', bgAddGradient: '随机渐变', bgImageHint: '最多 12 张，存储在本地，每次加载随机', bgRandomSolid: '纯色', bgRandomGradient: '渐变', bgRandomImage: '图片', bgRandomAll: '全部', exportSites: '导出站点列表', importSites: '导入站点' },
+    settings: { theme: '主题', mode: '模式', align: '对齐', language: '语言', search: '搜索引擎', options: '选项', editMode: '编辑模式', showSearch: '显示搜索框', editModeHint: '编辑模式 — 点击可编辑或删除', editModeDone: '完成', bentoCols: '列数', bentoWidth: '宽度', bentoGap: '间距', bentoRadius: '圆角', bentoFixed: '等分网格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '图标大小', glassCols: '列数', bubbleLayout: '布局模式', bubbleFixed: '固定排列', bubbleRandom: '随机散布', bubbleSize: '大小', showLogo: '引擎图标', showTitle: '站点标题', langAuto: '跟随浏览器', resetSettings: '重置设置', resetConfirm: '确定将所有设置恢复为默认值吗？站点数据将保留。', background: '背景', bgNone: '无', bgSolid: '纯色', bgGradient: '渐变', bgImage: '图片', bgRandom: '随机', bgCustomColor: '自定义颜色', bgUpload: '上传图片', bgClearAll: '清除全部', bgAddGradient: '随机渐变', bgImageHint: '最多 12 张，存储在本地，每次加载随机', bgRandomSolid: '纯色', bgRandomGradient: '渐变', bgRandomImage: '图片', bgRandomAll: '全部', exportSites: '导出站点列表', importSites: '导入站点' },
     dataTransfer: {
       exportTitle: '导出数据', exportBtn: '导出', importTitle: '导入数据', importBtn: '导入',
       typeSites: '仅站点', typeSettings: '仅设置', typeSitesAndSettings: '站点 + 设置',
@@ -205,7 +205,7 @@ const messages = {
   },
   'zh-TW': {
     appName: '悠然標籤頁',
-    theme: { terminal: '終端', default: '經典', minimal: '極簡', bento: '便當' },
+    theme: { terminal: '終端', default: '經典', minimal: '極簡', bento: '便當', glass: '玻璃', bubble: '氣泡', pixel: '像素', sketch: '便簽' },
     mode: { light: '亮色', dark: '暗色', auto: '跟隨系統' },
     cursor: { bar: '豎線', wide: '粗線', block: '方塊', underline: '底線' },
     color: { green: '綠色', amber: '琥珀', blue: '藍色', cyan: '青色', purple: '紫色', pink: '粉色', red: '紅色', orange: '橙色', mono: '黑白' },
@@ -287,7 +287,7 @@ const messages = {
       unknown: '未知指令：{0}。輸入 h 查看說明。',
     },
     search: { placeholder: '搜尋...' },
-    settings: { theme: '主題', mode: '模式', align: '位置', language: '語言', search: '搜尋引擎', options: '選項', editMode: '編輯模式', showSearch: '顯示搜尋框', editModeHint: '編輯模式 — 點擊可編輯或刪除', editModeDone: '完成', bentoCols: '欄數', bentoWidth: '寬度', bentoGap: '間距', bentoRadius: '圓角', bentoFixed: '等分網格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '圖示大小', showLogo: '引擎圖示', showTitle: '網站標題', langAuto: '跟隨瀏覽器', resetSettings: '重設', resetConfirm: '確定將所有設定恢復為預設值嗎？網站資料將保留。', background: '背景', bgNone: '無', bgSolid: '純色', bgGradient: '漸層', bgImage: '圖片', bgRandom: '隨機', bgCustomColor: '自訂顏色', bgUpload: '上傳圖片', bgClearAll: '清除全部', bgAddGradient: '隨機漸層', bgImageHint: '最多 12 張，儲存在本地，每次載入隨機', bgRandomSolid: '純色', bgRandomGradient: '漸層', bgRandomImage: '圖片', bgRandomAll: '全部', exportSites: '匯出站點列表', importSites: '匯入站點' },
+    settings: { theme: '主題', mode: '模式', align: '位置', language: '語言', search: '搜尋引擎', options: '選項', editMode: '編輯模式', showSearch: '顯示搜尋框', editModeHint: '編輯模式 — 點擊可編輯或刪除', editModeDone: '完成', bentoCols: '欄數', bentoWidth: '寬度', bentoGap: '間距', bentoRadius: '圓角', bentoFixed: '等分網格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '圖示大小', showLogo: '引擎圖示', showTitle: '網站標題', langAuto: '跟隨瀏覽器', resetSettings: '重設', resetConfirm: '確定將所有設定恢復為預設值嗎？網站資料將保留。', background: '背景', bgNone: '無', bgSolid: '純色', bgGradient: '漸層', bgImage: '圖片', bgRandom: '隨機', bgCustomColor: '自訂顏色', bgUpload: '上傳圖片', bgClearAll: '清除全部', bgAddGradient: '隨機漸層', bgImageHint: '最多 12 張，儲存在本地，每次載入隨機', bgRandomSolid: '純色', bgRandomGradient: '漸層', bgRandomImage: '圖片', bgRandomAll: '全部', exportSites: '匯出站點列表', importSites: '匯入站點', glassCols: '欄數', bubbleLayout: '佈局模式', bubbleFixed: '固定排列', bubbleRandom: '隨機散佈', bubbleSize: '大小' },
     dataTransfer: {
       exportTitle: '匯出資料', exportBtn: '匯出', importTitle: '匯入資料', importBtn: '匯入',
       typeSites: '僅站點', typeSettings: '僅設定', typeSitesAndSettings: '站點 + 設定',
@@ -301,7 +301,7 @@ const messages = {
   },
   'ja': {
     appName: '悠然タブ',
-    theme: { terminal: 'ターミナル', default: 'クラシック', minimal: 'ミニマル', bento: 'ベントー' },
+    theme: { terminal: 'ターミナル', default: 'クラシック', minimal: 'ミニマル', bento: 'ベントー', glass: 'グラス', bubble: 'バブル', pixel: 'ピクセル', sketch: 'ふせん' },
     mode: { light: 'ライト', dark: 'ダーク', auto: 'システム' },
     cursor: { bar: 'バー', wide: 'ワイド', block: 'ブロック', underline: 'アンダーライン' },
     color: { green: 'グリーン', amber: 'アンバー', blue: 'ブルー', cyan: 'シアン', purple: 'パープル', pink: 'ピンク', red: 'レッド', orange: 'オレンジ', mono: 'モノ' },
@@ -383,7 +383,7 @@ const messages = {
       unknown: '不明なコマンド：{0}。h で確認してください。',
     },
     search: { placeholder: '検索...' },
-    settings: { theme: 'テーマ', mode: 'モード', align: '位置', language: '言語', search: '検索エンジン', options: 'オプション', editMode: '編集モード', showSearch: '検索バーを表示', editModeHint: '編集モード — クリックで編集・削除', editModeDone: '完了', bentoCols: '列数', bentoWidth: '幅', bentoGap: '間隔', bentoRadius: '角丸', bentoFixed: '均等グリッド', bentoOpacity: '透明度', bentoBlur: 'ぼかし', bentoIconSize: 'アイコンサイズ', showLogo: 'エンジンロゴ', showTitle: 'サイト名', langAuto: 'ブラウザに従う', resetSettings: '設定をリセット', resetConfirm: 'すべての設定をデフォルトに戻しますか？サイトデータは保持されます。', background: '背景', bgNone: 'なし', bgSolid: '単色', bgGradient: 'グラデーション', bgImage: '画像', bgRandom: 'ランダム', bgCustomColor: 'カスタムカラー', bgUpload: 'アップロード', bgClearAll: 'すべて削除', bgAddGradient: 'ランダムグラデーション', bgImageHint: '最大 12 枚、ローカル保存、読み込み毎にランダム', bgRandomSolid: '単色', bgRandomGradient: 'グラデーション', bgRandomImage: '画像', bgRandomAll: 'すべて', exportSites: 'サイトリストをエクスポート', importSites: 'サイトをインポート' },
+    settings: { theme: 'テーマ', mode: 'モード', align: '位置', language: '言語', search: '検索エンジン', options: 'オプション', editMode: '編集モード', showSearch: '検索バーを表示', editModeHint: '編集モード — クリックで編集・削除', editModeDone: '完了', bentoCols: '列数', bentoWidth: '幅', bentoGap: '間隔', bentoRadius: '角丸', bentoFixed: '均等グリッド', bentoOpacity: '透明度', bentoBlur: 'ぼかし', bentoIconSize: 'アイコンサイズ', showLogo: 'エンジンロゴ', showTitle: 'サイト名', langAuto: 'ブラウザに従う', resetSettings: '設定をリセット', resetConfirm: 'すべての設定をデフォルトに戻しますか？サイトデータは保持されます。', background: '背景', bgNone: 'なし', bgSolid: '単色', bgGradient: 'グラデーション', bgImage: '画像', bgRandom: 'ランダム', bgCustomColor: 'カスタムカラー', bgUpload: 'アップロード', bgClearAll: 'すべて削除', bgAddGradient: 'ランダムグラデーション', bgImageHint: '最大 12 枚、ローカル保存、読み込み毎にランダム', bgRandomSolid: '単色', bgRandomGradient: 'グラデーション', bgRandomImage: '画像', bgRandomAll: 'すべて', exportSites: 'サイトリストをエクスポート', importSites: 'サイトをインポート', glassCols: '列数', bubbleLayout: 'レイアウト', bubbleFixed: '固定配置', bubbleRandom: 'ランダム', bubbleSize: 'サイズ' },
     dataTransfer: {
       exportTitle: 'データをエクスポート', exportBtn: 'エクスポート', importTitle: 'データをインポート', importBtn: 'インポート',
       typeSites: 'サイトのみ', typeSettings: '設定のみ', typeSitesAndSettings: 'サイト + 設定',
@@ -397,7 +397,7 @@ const messages = {
   },
   'ko': {
     appName: 'Youran Tab',
-    theme: { terminal: '터미널', default: '클래식', minimal: '미니멀', bento: '벤토' },
+    theme: { terminal: '터미널', default: '클래식', minimal: '미니멀', bento: '벤토', glass: '글래스', bubble: '버블', pixel: '픽셀', sketch: '메모지' },
     mode: { light: '라이트', dark: '다크', auto: '시스템' },
     cursor: { bar: '바', wide: '굵은 바', block: '블록', underline: '밑줄' },
     color: { green: '초록', amber: '앰버', blue: '파랑', cyan: '청록', purple: '보라', pink: '분홍', red: '빨강', orange: '주황', mono: '흑백' },
@@ -479,7 +479,7 @@ const messages = {
       unknown: '알 수 없는 명령어: {0}. h를 입력하세요.',
     },
     search: { placeholder: '검색...' },
-    settings: { theme: '테마', mode: '모드', align: '정렬', language: '언어', search: '검색 엔진', options: '옵션', editMode: '편집 모드', showSearch: '검색창 표시', editModeHint: '편집 모드 — 클릭하여 편집 또는 삭제', editModeDone: '완료', bentoCols: '열 수', bentoWidth: '너비', bentoGap: '간격', bentoRadius: '둥글기', bentoFixed: '균등 그리드', bentoOpacity: '투명도', bentoBlur: '흐림', bentoIconSize: '아이콘 크기', showLogo: '엔진 로고', showTitle: '사이트 이름', langAuto: '브라우저 따르기', resetSettings: '설정 초기화', resetConfirm: '모든 설정을 기본값으로 되돌리시겠습니까? 사이트 데이터는 유지됩니다.', background: '배경', bgNone: '없음', bgSolid: '단색', bgGradient: '그라데이션', bgImage: '이미지', bgRandom: '랜덤', bgCustomColor: '사용자 지정 색상', bgUpload: '업로드', bgClearAll: '모두 삭제', bgAddGradient: '랜덤 그라데이션', bgImageHint: '최대 12개, 로컬 저장, 로드 시 랜덤', bgRandomSolid: '단색', bgRandomGradient: '그라데이션', bgRandomImage: '이미지', bgRandomAll: '전체', exportSites: '사이트 목록 내보내기', importSites: '사이트 가져오기' },
+    settings: { theme: '테마', mode: '모드', align: '정렬', language: '언어', search: '검색 엔진', options: '옵션', editMode: '편집 모드', showSearch: '검색창 표시', editModeHint: '편집 모드 — 클릭하여 편집 또는 삭제', editModeDone: '완료', bentoCols: '열 수', bentoWidth: '너비', bentoGap: '간격', bentoRadius: '둥글기', bentoFixed: '균등 그리드', bentoOpacity: '투명도', bentoBlur: '흐림', bentoIconSize: '아이콘 크기', showLogo: '엔진 로고', showTitle: '사이트 이름', langAuto: '브라우저 따르기', resetSettings: '설정 초기화', resetConfirm: '모든 설정을 기본값으로 되돌리시겠습니까? 사이트 데이터는 유지됩니다.', background: '배경', bgNone: '없음', bgSolid: '단색', bgGradient: '그라데이션', bgImage: '이미지', bgRandom: '랜덤', bgCustomColor: '사용자 지정 색상', bgUpload: '업로드', bgClearAll: '모두 삭제', bgAddGradient: '랜덤 그라데이션', bgImageHint: '최대 12개, 로컬 저장, 로드 시 랜덤', bgRandomSolid: '단색', bgRandomGradient: '그라데이션', bgRandomImage: '이미지', bgRandomAll: '전체', exportSites: '사이트 목록 내보내기', importSites: '사이트 가져오기', glassCols: '열 수', bubbleLayout: '레이아웃', bubbleFixed: '고정 배열', bubbleRandom: '랜덤 배치', bubbleSize: '크기' },
     dataTransfer: {
       exportTitle: '데이터 내보내기', exportBtn: '내보내기', importTitle: '데이터 가져오기', importBtn: '가져오기',
       typeSites: '사이트만', typeSettings: '설정만', typeSitesAndSettings: '사이트 + 설정',
@@ -493,7 +493,7 @@ const messages = {
   },
   'es': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Terminal', default: 'Clásico', minimal: 'Mínimo', bento: 'Bento' },
+    theme: { terminal: 'Terminal', default: 'Clásico', minimal: 'Mínimo', bento: 'Bento', glass: 'Cristal', bubble: 'Burbuja', pixel: 'Pixel', sketch: 'Nota' },
     mode: { light: 'Claro', dark: 'Oscuro', auto: 'Sistema' },
     cursor: { bar: 'Barra', wide: 'Ancha', block: 'Bloque', underline: 'Subrayado' },
     color: { green: 'Verde', amber: 'Ámbar', blue: 'Azul', cyan: 'Cian', purple: 'Púrpura', pink: 'Rosa', red: 'Rojo', orange: 'Naranja', mono: 'Mono' },
@@ -571,10 +571,11 @@ const messages = {
       reloading: 'Configuración importada. Recargando...',
       versionMismatch: 'Versión incompatible: archivo {0}, actual {1}',
       optionHint: 'opciones (↑↓ cambiar, → elegir)',
+      langAuto: 'Seguir el idioma del navegador',
       unknown: 'Comando desconocido: {0}. Escribe h.',
     },
     search: { placeholder: 'Buscar...' },
-    settings: { theme: 'Tema', mode: 'Modo', align: 'Alineación', language: 'Idioma', search: 'Buscador', options: 'Opciones', editMode: 'Modo edición', showSearch: 'Mostrar buscador', editModeHint: 'Modo edición — clic para editar o eliminar', editModeDone: 'Listo', bentoCols: 'Columnas', bentoWidth: 'Ancho', bentoGap: 'Espacio', bentoRadius: 'Radio', bentoFixed: 'Cuadrícula igual', bentoOpacity: 'Opacidad', bentoBlur: 'Desenfoque', bentoIconSize: 'Tamaño icono', showLogo: 'Logo del motor', showTitle: 'Títulos de sitios', langAuto: 'Seguir navegador', resetSettings: 'Restablecer ajustes', resetConfirm: '¿Restablecer todos los ajustes a los valores predeterminados? Los datos de sitios se conservarán.', background: 'Fondo', bgNone: 'Ninguno', bgSolid: 'Sólido', bgGradient: 'Degradado', bgImage: 'Imagen', bgRandom: 'Aleatorio', bgCustomColor: 'Color personalizado', bgUpload: 'Subir', bgClearAll: 'Borrar todo', bgAddGradient: 'Degradado aleatorio', bgImageHint: 'Máx. 12 imágenes, almacenadas localmente, aleatorio en cada carga', bgRandomSolid: 'Sólido', bgRandomGradient: 'Degradado', bgRandomImage: 'Imagen', bgRandomAll: 'Todo', exportSites: 'Exportar lista de sitios', importSites: 'Importar sitios' },
+    settings: { theme: 'Tema', mode: 'Modo', align: 'Alineación', language: 'Idioma', search: 'Buscador', options: 'Opciones', editMode: 'Modo edición', showSearch: 'Mostrar buscador', editModeHint: 'Modo edición — clic para editar o eliminar', editModeDone: 'Listo', bentoCols: 'Columnas', bentoWidth: 'Ancho', bentoGap: 'Espacio', bentoRadius: 'Radio', bentoFixed: 'Cuadrícula igual', bentoOpacity: 'Opacidad', bentoBlur: 'Desenfoque', bentoIconSize: 'Tamaño icono', showLogo: 'Logo del motor', showTitle: 'Títulos de sitios', langAuto: 'Seguir navegador', resetSettings: 'Restablecer ajustes', resetConfirm: '¿Restablecer todos los ajustes a los valores predeterminados? Los datos de sitios se conservarán.', background: 'Fondo', bgNone: 'Ninguno', bgSolid: 'Sólido', bgGradient: 'Degradado', bgImage: 'Imagen', bgRandom: 'Aleatorio', bgCustomColor: 'Color personalizado', bgUpload: 'Subir', bgClearAll: 'Borrar todo', bgAddGradient: 'Degradado aleatorio', bgImageHint: 'Máx. 12 imágenes, almacenadas localmente, aleatorio en cada carga', bgRandomSolid: 'Sólido', bgRandomGradient: 'Degradado', bgRandomImage: 'Imagen', bgRandomAll: 'Todo', exportSites: 'Exportar lista de sitios', importSites: 'Importar sitios', glassCols: 'Columnas', bubbleLayout: 'Diseño', bubbleFixed: 'Fijo', bubbleRandom: 'Aleatorio', bubbleSize: 'Tamaño' },
     dataTransfer: {
       exportTitle: 'Exportar datos', exportBtn: 'Exportar', importTitle: 'Importar datos', importBtn: 'Importar',
       typeSites: 'Solo sitios', typeSettings: 'Solo configuración', typeSitesAndSettings: 'Sitios + Configuración',
@@ -588,7 +589,7 @@ const messages = {
   },
   'ru': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Терминал', default: 'Классика', minimal: 'Минимал', bento: 'Бенто' },
+    theme: { terminal: 'Терминал', default: 'Классика', minimal: 'Минимал', bento: 'Бенто', glass: 'Стекло', bubble: 'Пузыри', pixel: 'Пиксель', sketch: 'Стикер' },
     mode: { light: 'Светлая', dark: 'Тёмная', auto: 'Система' },
     cursor: { bar: 'Линия', wide: 'Широкая', block: 'Блок', underline: 'Подчёркивание' },
     color: { green: 'Зелёный', amber: 'Янтарный', blue: 'Синий', cyan: 'Бирюзовый', purple: 'Фиолетовый', pink: 'Розовый', red: 'Красный', orange: 'Оранжевый', mono: 'Моно' },
@@ -666,10 +667,11 @@ const messages = {
       reloading: 'Настройки импортированы. Перезагрузка...',
       versionMismatch: 'Несоответствие версий: файл {0}, текущая {1}',
       optionHint: 'вариантов (↑↓ переключить, → выбрать)',
+      langAuto: 'Следовать языку браузера',
       unknown: 'Неизвестная команда: {0}. Введите h.',
     },
     search: { placeholder: 'Поиск...' },
-    settings: { theme: 'Тема', mode: 'Режим', align: 'Выравнивание', language: 'Язык', search: 'Поисковик', options: 'Параметры', editMode: 'Режим редактирования', showSearch: 'Показать поиск', editModeHint: 'Режим редактирования — нажмите для изменения или удаления', editModeDone: 'Готово', bentoCols: 'Столбцы', bentoWidth: 'Ширина', bentoGap: 'Отступ', bentoRadius: 'Радиус', bentoFixed: 'Равная сетка', bentoOpacity: 'Прозрачность', bentoBlur: 'Размытие', bentoIconSize: 'Размер иконок', showLogo: 'Логотип поисковика', showTitle: 'Названия сайтов', langAuto: 'Язык браузера', resetSettings: 'Сбросить настройки', resetConfirm: 'Сбросить все настройки до значений по умолчанию? Данные сайтов будут сохранены.', background: 'Фон', bgNone: 'Нет', bgSolid: 'Цвет', bgGradient: 'Градиент', bgImage: 'Изображение', bgRandom: 'Случайный', bgCustomColor: 'Свой цвет', bgUpload: 'Загрузить', bgClearAll: 'Очистить всё', bgAddGradient: 'Случайный градиент', bgImageHint: 'Макс. 12 изображений, хранятся локально, случайное при каждой загрузке', bgRandomSolid: 'Цвет', bgRandomGradient: 'Градиент', bgRandomImage: 'Изображение', bgRandomAll: 'Все', exportSites: 'Экспорт списка сайтов', importSites: 'Импорт сайтов' },
+    settings: { theme: 'Тема', mode: 'Режим', align: 'Выравнивание', language: 'Язык', search: 'Поисковик', options: 'Параметры', editMode: 'Режим редактирования', showSearch: 'Показать поиск', editModeHint: 'Режим редактирования — нажмите для изменения или удаления', editModeDone: 'Готово', bentoCols: 'Столбцы', bentoWidth: 'Ширина', bentoGap: 'Отступ', bentoRadius: 'Радиус', bentoFixed: 'Равная сетка', bentoOpacity: 'Прозрачность', bentoBlur: 'Размытие', bentoIconSize: 'Размер иконок', showLogo: 'Логотип поисковика', showTitle: 'Названия сайтов', langAuto: 'Язык браузера', resetSettings: 'Сбросить настройки', resetConfirm: 'Сбросить все настройки до значений по умолчанию? Данные сайтов будут сохранены.', background: 'Фон', bgNone: 'Нет', bgSolid: 'Цвет', bgGradient: 'Градиент', bgImage: 'Изображение', bgRandom: 'Случайный', bgCustomColor: 'Свой цвет', bgUpload: 'Загрузить', bgClearAll: 'Очистить всё', bgAddGradient: 'Случайный градиент', bgImageHint: 'Макс. 12 изображений, хранятся локально, случайное при каждой загрузке', bgRandomSolid: 'Цвет', bgRandomGradient: 'Градиент', bgRandomImage: 'Изображение', bgRandomAll: 'Все', exportSites: 'Экспорт списка сайтов', importSites: 'Импорт сайтов', glassCols: 'Столбцы', bubbleLayout: 'Макет', bubbleFixed: 'Фиксированный', bubbleRandom: 'Случайный', bubbleSize: 'Размер' },
     dataTransfer: {
       exportTitle: 'Экспорт данных', exportBtn: 'Экспорт', importTitle: 'Импорт данных', importBtn: 'Импорт',
       typeSites: 'Только сайты', typeSettings: 'Только настройки', typeSitesAndSettings: 'Сайты + Настройки',
@@ -683,7 +685,7 @@ const messages = {
   },
   'fr': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Terminal', default: 'Classique', minimal: 'Minimal', bento: 'Bento' },
+    theme: { terminal: 'Terminal', default: 'Classique', minimal: 'Minimal', bento: 'Bento', glass: 'Verre', bubble: 'Bulle', pixel: 'Pixel', sketch: 'Post-it' },
     mode: { light: 'Clair', dark: 'Sombre', auto: 'Système' },
     cursor: { bar: 'Barre', wide: 'Large', block: 'Bloc', underline: 'Souligné' },
     color: { green: 'Vert', amber: 'Ambre', blue: 'Bleu', cyan: 'Cyan', purple: 'Violet', pink: 'Rose', red: 'Rouge', orange: 'Orange', mono: 'Mono' },
@@ -761,10 +763,11 @@ const messages = {
       reloading: 'Paramètres importés. Rechargement...',
       versionMismatch: 'Version incompatible : fichier {0}, actuelle {1}',
       optionHint: 'options (↑↓ changer, → choisir)',
+      langAuto: 'Suivre la langue du navigateur',
       unknown: 'Commande inconnue : {0}. Tapez h.',
     },
     search: { placeholder: 'Rechercher...' },
-    settings: { theme: 'Thème', mode: 'Mode', align: 'Alignement', language: 'Langue', search: 'Moteur', options: 'Options', editMode: 'Mode édition', showSearch: 'Afficher la recherche', editModeHint: 'Mode édition — cliquez pour modifier ou supprimer', editModeDone: 'Terminé', bentoCols: 'Colonnes', bentoWidth: 'Largeur', bentoGap: 'Espacement', bentoRadius: 'Rayon', bentoFixed: 'Grille égale', bentoOpacity: 'Opacité', bentoBlur: 'Flou', bentoIconSize: 'Taille icône', showLogo: 'Logo du moteur', showTitle: 'Titres des sites', langAuto: 'Suivre le navigateur', resetSettings: 'Réinitialiser les paramètres', resetConfirm: 'Réinitialiser tous les paramètres par défaut ? Les données des sites seront conservées.', background: 'Arrière-plan', bgNone: 'Aucun', bgSolid: 'Uni', bgGradient: 'Dégradé', bgImage: 'Image', bgRandom: 'Aléatoire', bgCustomColor: 'Couleur personnalisée', bgUpload: 'Télécharger', bgClearAll: 'Tout effacer', bgAddGradient: 'Dégradé aléatoire', bgImageHint: 'Max 12 images, stockées localement, aléatoire à chaque chargement', bgRandomSolid: 'Uni', bgRandomGradient: 'Dégradé', bgRandomImage: 'Image', bgRandomAll: 'Tout', exportSites: 'Exporter la liste des sites', importSites: 'Importer des sites' },
+    settings: { theme: 'Thème', mode: 'Mode', align: 'Alignement', language: 'Langue', search: 'Moteur', options: 'Options', editMode: 'Mode édition', showSearch: 'Afficher la recherche', editModeHint: 'Mode édition — cliquez pour modifier ou supprimer', editModeDone: 'Terminé', bentoCols: 'Colonnes', bentoWidth: 'Largeur', bentoGap: 'Espacement', bentoRadius: 'Rayon', bentoFixed: 'Grille égale', bentoOpacity: 'Opacité', bentoBlur: 'Flou', bentoIconSize: 'Taille icône', showLogo: 'Logo du moteur', showTitle: 'Titres des sites', langAuto: 'Suivre le navigateur', resetSettings: 'Réinitialiser les paramètres', resetConfirm: 'Réinitialiser tous les paramètres par défaut ? Les données des sites seront conservées.', background: 'Arrière-plan', bgNone: 'Aucun', bgSolid: 'Uni', bgGradient: 'Dégradé', bgImage: 'Image', bgRandom: 'Aléatoire', bgCustomColor: 'Couleur personnalisée', bgUpload: 'Télécharger', bgClearAll: 'Tout effacer', bgAddGradient: 'Dégradé aléatoire', bgImageHint: 'Max 12 images, stockées localement, aléatoire à chaque chargement', bgRandomSolid: 'Uni', bgRandomGradient: 'Dégradé', bgRandomImage: 'Image', bgRandomAll: 'Tout', exportSites: 'Exporter la liste des sites', importSites: 'Importer des sites', glassCols: 'Colonnes', bubbleLayout: 'Disposition', bubbleFixed: 'Fixe', bubbleRandom: 'Aléatoire', bubbleSize: 'Taille' },
     dataTransfer: {
       exportTitle: 'Exporter les données', exportBtn: 'Exporter', importTitle: 'Importer des données', importBtn: 'Importer',
       typeSites: 'Sites uniquement', typeSettings: 'Paramètres uniquement', typeSitesAndSettings: 'Sites + Paramètres',
@@ -778,7 +781,7 @@ const messages = {
   },
   'de': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Terminal', default: 'Klassisch', minimal: 'Minimal', bento: 'Bento' },
+    theme: { terminal: 'Terminal', default: 'Klassisch', minimal: 'Minimal', bento: 'Bento', glass: 'Glas', bubble: 'Blase', pixel: 'Pixel', sketch: 'Notiz' },
     mode: { light: 'Hell', dark: 'Dunkel', auto: 'System' },
     cursor: { bar: 'Strich', wide: 'Breit', block: 'Block', underline: 'Unterstrich' },
     color: { green: 'Grün', amber: 'Bernstein', blue: 'Blau', cyan: 'Cyan', purple: 'Lila', pink: 'Rosa', red: 'Rot', orange: 'Orange', mono: 'Mono' },
@@ -856,10 +859,11 @@ const messages = {
       reloading: 'Einstellungen importiert. Neuladen...',
       versionMismatch: 'Versionskonflikt: Datei {0}, aktuell {1}',
       optionHint: 'Optionen (↑↓ wechseln, → wählen)',
+      langAuto: 'Browsersprache verwenden',
       unknown: 'Unbekannter Befehl: {0}. Geben Sie h ein.',
     },
     search: { placeholder: 'Suchen...' },
-    settings: { theme: 'Thema', mode: 'Modus', align: 'Ausrichtung', language: 'Sprache', search: 'Suchmaschine', options: 'Optionen', editMode: 'Bearbeitungsmodus', showSearch: 'Suchleiste anzeigen', editModeHint: 'Bearbeitungsmodus — klicken zum Bearbeiten oder Löschen', editModeDone: 'Fertig', bentoCols: 'Spalten', bentoWidth: 'Breite', bentoGap: 'Abstand', bentoRadius: 'Radius', bentoFixed: 'Gleiches Raster', bentoOpacity: 'Deckkraft', bentoBlur: 'Unschärfe', bentoIconSize: 'Symbolgröße', showLogo: 'Suchmaschinen-Logo', showTitle: 'Seitentitel', langAuto: 'Browser folgen', resetSettings: 'Einstellungen zurücksetzen', resetConfirm: 'Alle Einstellungen auf Standard zurücksetzen? Websitedaten bleiben erhalten.', background: 'Hintergrund', bgNone: 'Keiner', bgSolid: 'Einfarbig', bgGradient: 'Verlauf', bgImage: 'Bild', bgRandom: 'Zufällig', bgCustomColor: 'Eigene Farbe', bgUpload: 'Hochladen', bgClearAll: 'Alle löschen', bgAddGradient: 'Zufälliger Verlauf', bgImageHint: 'Max. 12 Bilder, lokal gespeichert, zufällig bei jedem Laden', bgRandomSolid: 'Einfarbig', bgRandomGradient: 'Verlauf', bgRandomImage: 'Bild', bgRandomAll: 'Alle', exportSites: 'Seitenliste exportieren', importSites: 'Seiten importieren' },
+    settings: { theme: 'Thema', mode: 'Modus', align: 'Ausrichtung', language: 'Sprache', search: 'Suchmaschine', options: 'Optionen', editMode: 'Bearbeitungsmodus', showSearch: 'Suchleiste anzeigen', editModeHint: 'Bearbeitungsmodus — klicken zum Bearbeiten oder Löschen', editModeDone: 'Fertig', bentoCols: 'Spalten', bentoWidth: 'Breite', bentoGap: 'Abstand', bentoRadius: 'Radius', bentoFixed: 'Gleiches Raster', bentoOpacity: 'Deckkraft', bentoBlur: 'Unschärfe', bentoIconSize: 'Symbolgröße', showLogo: 'Suchmaschinen-Logo', showTitle: 'Seitentitel', langAuto: 'Browser folgen', resetSettings: 'Einstellungen zurücksetzen', resetConfirm: 'Alle Einstellungen auf Standard zurücksetzen? Websitedaten bleiben erhalten.', background: 'Hintergrund', bgNone: 'Keiner', bgSolid: 'Einfarbig', bgGradient: 'Verlauf', bgImage: 'Bild', bgRandom: 'Zufällig', bgCustomColor: 'Eigene Farbe', bgUpload: 'Hochladen', bgClearAll: 'Alle löschen', bgAddGradient: 'Zufälliger Verlauf', bgImageHint: 'Max. 12 Bilder, lokal gespeichert, zufällig bei jedem Laden', bgRandomSolid: 'Einfarbig', bgRandomGradient: 'Verlauf', bgRandomImage: 'Bild', bgRandomAll: 'Alle', exportSites: 'Seitenliste exportieren', importSites: 'Seiten importieren', glassCols: 'Spalten', bubbleLayout: 'Layout', bubbleFixed: 'Fest', bubbleRandom: 'Zufällig', bubbleSize: 'Größe' },
     dataTransfer: {
       exportTitle: 'Daten exportieren', exportBtn: 'Exportieren', importTitle: 'Daten importieren', importBtn: 'Importieren',
       typeSites: 'Nur Seiten', typeSettings: 'Nur Einstellungen', typeSitesAndSettings: 'Seiten + Einstellungen',
@@ -873,7 +877,7 @@ const messages = {
   },
   'it': {
     appName: 'Youran Tab',
-    theme: { terminal: 'Terminale', default: 'Classico', minimal: 'Minimale', bento: 'Bento' },
+    theme: { terminal: 'Terminale', default: 'Classico', minimal: 'Minimale', bento: 'Bento', glass: 'Vetro', bubble: 'Bolla', pixel: 'Pixel', sketch: 'Nota' },
     mode: { light: 'Chiaro', dark: 'Scuro', auto: 'Sistema' },
     cursor: { bar: 'Barra', wide: 'Larga', block: 'Blocco', underline: 'Sottolineato' },
     color: { green: 'Verde', amber: 'Ambra', blue: 'Blu', cyan: 'Ciano', purple: 'Viola', pink: 'Rosa', red: 'Rosso', orange: 'Arancione', mono: 'Mono' },
@@ -951,10 +955,11 @@ const messages = {
       reloading: 'Impostazioni importate. Ricaricamento...',
       versionMismatch: 'Versione incompatibile: file {0}, attuale {1}',
       optionHint: 'opzioni (↑↓ cambiare, → scegliere)',
+      langAuto: 'Segui la lingua del browser',
       unknown: 'Comando sconosciuto: {0}. Digita h.',
     },
     search: { placeholder: 'Cerca...' },
-    settings: { theme: 'Tema', mode: 'Modalità', align: 'Allineamento', language: 'Lingua', search: 'Motore', options: 'Opzioni', editMode: 'Modalità modifica', showSearch: 'Mostra ricerca', editModeHint: 'Modalità modifica — clicca per modificare o eliminare', editModeDone: 'Fatto', bentoCols: 'Colonne', bentoWidth: 'Larghezza', bentoGap: 'Spaziatura', bentoRadius: 'Raggio', bentoFixed: 'Griglia uguale', bentoOpacity: 'Opacità', bentoBlur: 'Sfocatura', bentoIconSize: 'Dimensione icona', showLogo: 'Logo del motore', showTitle: 'Titoli dei siti', langAuto: 'Segui il browser', resetSettings: 'Ripristina impostazioni', resetConfirm: 'Ripristinare tutte le impostazioni ai valori predefiniti? I dati dei siti verranno conservati.', background: 'Sfondo', bgNone: 'Nessuno', bgSolid: 'Tinta unita', bgGradient: 'Sfumatura', bgImage: 'Immagine', bgRandom: 'Casuale', bgCustomColor: 'Colore personalizzato', bgUpload: 'Carica', bgClearAll: 'Cancella tutto', bgAddGradient: 'Gradiente casuale', bgImageHint: 'Max 12 immagini, salvate localmente, casuale ad ogni caricamento', bgRandomSolid: 'Tinta unita', bgRandomGradient: 'Sfumatura', bgRandomImage: 'Immagine', bgRandomAll: 'Tutto', exportSites: 'Esporta elenco siti', importSites: 'Importa siti' },
+    settings: { theme: 'Tema', mode: 'Modalità', align: 'Allineamento', language: 'Lingua', search: 'Motore', options: 'Opzioni', editMode: 'Modalità modifica', showSearch: 'Mostra ricerca', editModeHint: 'Modalità modifica — clicca per modificare o eliminare', editModeDone: 'Fatto', bentoCols: 'Colonne', bentoWidth: 'Larghezza', bentoGap: 'Spaziatura', bentoRadius: 'Raggio', bentoFixed: 'Griglia uguale', bentoOpacity: 'Opacità', bentoBlur: 'Sfocatura', bentoIconSize: 'Dimensione icona', showLogo: 'Logo del motore', showTitle: 'Titoli dei siti', langAuto: 'Segui il browser', resetSettings: 'Ripristina impostazioni', resetConfirm: 'Ripristinare tutte le impostazioni ai valori predefiniti? I dati dei siti verranno conservati.', background: 'Sfondo', bgNone: 'Nessuno', bgSolid: 'Tinta unita', bgGradient: 'Sfumatura', bgImage: 'Immagine', bgRandom: 'Casuale', bgCustomColor: 'Colore personalizzato', bgUpload: 'Carica', bgClearAll: 'Cancella tutto', bgAddGradient: 'Gradiente casuale', bgImageHint: 'Max 12 immagini, salvate localmente, casuale ad ogni caricamento', bgRandomSolid: 'Tinta unita', bgRandomGradient: 'Sfumatura', bgRandomImage: 'Immagine', bgRandomAll: 'Tutto', exportSites: 'Esporta elenco siti', importSites: 'Importa siti', glassCols: 'Colonne', bubbleLayout: 'Disposizione', bubbleFixed: 'Fisso', bubbleRandom: 'Casuale', bubbleSize: 'Dimensione' },
     dataTransfer: {
       exportTitle: 'Esporta dati', exportBtn: 'Esporta', importTitle: 'Importa dati', importBtn: 'Importa',
       typeSites: 'Solo siti', typeSettings: 'Solo impostazioni', typeSitesAndSettings: 'Siti + Impostazioni',
