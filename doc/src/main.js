@@ -1474,3 +1474,14 @@ const changelogContainer = document.getElementById('changelog-content');
 if (changelogContainer) {
     changelogContainer.innerHTML = marked(changelogMd);
 }
+
+// Lightbox 图片预览
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightbox-img');
+document.getElementById('theme-previews')?.addEventListener('click', e => {
+    const img = e.target.closest('img');
+    if (!img) return;
+    lightboxImg.src = img.src;
+    lightbox.classList.remove('hidden');
+});
+lightbox?.addEventListener('click', () => lightbox.classList.add('hidden'));
