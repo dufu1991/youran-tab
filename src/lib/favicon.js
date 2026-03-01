@@ -73,7 +73,7 @@ export function handleIconLoad(e, site) {
   const remoteUrl = getFaviconBySource(site.url, site.iconSource || 'auto')
   if (!remoteUrl || !remoteUrl.startsWith('http') || getCachedIconUrl(remoteUrl) || _caching.has(remoteUrl)) return
   _caching.add(remoteUrl)
-  fetchAndCacheIcon(remoteUrl).finally(() => _caching.delete(remoteUrl))
+  fetchAndCacheIcon(remoteUrl).catch(() => {}).finally(() => _caching.delete(remoteUrl))
 }
 
 // 兼容旧接口

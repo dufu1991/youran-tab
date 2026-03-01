@@ -85,7 +85,13 @@ export async function loadCachedIcon(url) {
  */
 export async function fetchAndCacheIcon(url) {
   if (memCache.has(url)) return memCache.get(url)
-  const res = await fetch(url, { mode: 'cors' })
+  let res
+  try {
+    res = await fetch(url)
+  } catch {
+    // CORS 或网络错误，静默跳过缓存，图片仍可通过 <img> 正常显示
+    return null
+  }
   if (!res.ok) return null
   const blob = await res.blob()
   if (!blob.size || blob.size < 50) return null // 跳过空白占位图

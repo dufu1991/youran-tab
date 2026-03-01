@@ -6,6 +6,9 @@ cpSync('dist', 'dist-firefox', { recursive: true })
 
 // 读取 manifest 并添加 Firefox 专用字段
 const manifest = JSON.parse(readFileSync('dist-firefox/manifest.json', 'utf-8'))
+// Firefox 不支持 favicon 权限
+manifest.permissions = (manifest.permissions || []).filter(p => p !== 'favicon')
+
 manifest.browser_specific_settings = {
   gecko: {
     id: 'youran-tab@youran.dev',

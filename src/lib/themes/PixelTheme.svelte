@@ -50,6 +50,25 @@
 
   let textDark = $derived(!$bgIsLight)
   let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24')
+
+  // 根据站点数量动态计算列数，使内容不超出页面高度
+  let menuHeight = $derived.by(() => {
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+    const topOffset = $showSearchBar ? 200 : 140
+    return Math.max(200, vh - topOffset)
+  })
+
+  let pixelCols = $derived.by(() => {
+    const count = sites.length + ($editMode ? 1 : 0)
+    const itemH = 41
+    const chromeH = 60 // 标题栏 + 状态栏
+    const maxPerCol = Math.max(1, Math.floor((menuHeight - chromeH) / itemH))
+    const needed = Math.max(1, Math.ceil(count / maxPerCol))
+    return Math.min(4, needed)
+  })
+
+  let menuMaxWidth = $derived(pixelCols <= 1 ? 400 : pixelCols * 360)
+
   let pageBg = $derived(dark ? '#1a1a2e' : '#faf3e0')
   let containerBg = $derived(dark ? '#22223a' : '#fdf6e3')
   let titleBarBg = $derived(dark ? '#2e2e4a' : '#e8dcc8')
@@ -84,7 +103,7 @@
       <form onsubmit={handleSearch}
         class="pixel-search-form flex items-center w-full"
         style="
-          max-width: 400px;
+          max-width: {menuMaxWidth}px;
           width: 90%;
           background: {containerBg};
           border: 2px solid {borderColor};
@@ -129,7 +148,7 @@
 
   <div class="pixel-menu-container"
     style="
-      max-width: 400px;
+      max-width: {menuMaxWidth}px;
       width: 90%;
       background: {containerBg};
       border: 2px solid {borderColor};
@@ -153,7 +172,7 @@
     </div>
 
     <!-- 站点列表 -->
-    <div class="pixel-menu-list" style="padding: 0;">
+    <div class="pixel-menu-list" style="padding: 0; columns: {pixelCols}; column-gap: 0; max-height: {menuHeight - 60}px; column-fill: auto;">
       {#each sites as site, i}
         <a href={site.url}
           onclick={(e) => handleSiteClick(e, site)}
@@ -284,6 +303,7 @@
 <style>
   .pixel-menu-item {
     transition: background 0.08s ease, transform 0.08s ease;
+    break-inside: avoid;
   }
 
   .pixel-menu-item:hover {

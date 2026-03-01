@@ -99,11 +99,30 @@
     const paddings = [24, 36, 18, 42, 28, 50, 20, 32, 44, 26]
     return paddings[i % paddings.length]
   }
+
+  // 根据站点数量动态计算列数，使内容不超出页面高度
+  // 使用 column-fill: auto + 固定高度，浏览器会自动填满一列再换下一列
+  let boardHeight = $derived.by(() => {
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+    const alignPad = align === 'center' ? 0 : 96 // pt-24 或 pb-24
+    const searchH = $showSearchBar ? 120 : 0 // 搜索栏 + mb-10
+    return Math.max(300, vh - alignPad - searchH - 20)
+  })
+
+  let sketchCols = $derived.by(() => {
+    const count = sites.length + ($editMode ? 1 : 0)
+    const avgCardH = 160
+    const maxPerCol = Math.max(1, Math.floor(boardHeight / avgCardH))
+    const needed = Math.max(2, Math.ceil(count / maxPerCol))
+    return Math.min(6, needed)
+  })
+
+  let boardMaxWidth = $derived(sketchCols <= 3 ? 700 : sketchCols * 230)
 </script>
 
 <div class="sketch-theme w-full h-full flex flex-col items-center {alignClass}
   {$resolvedBgStyle ? '' : (dark ? 'sketch-dark' : 'sketch-light')}"
-  style={$resolvedBgStyle}>
+  style="overflow: hidden; {$resolvedBgStyle || ''}">
 
   {#if $editMode}
     <div class="sketch-edit-bar">
@@ -136,7 +155,8 @@
     {/if}
   </div>
 
-  <div class="sketch-board">
+  <div class="sketch-board"
+    style="columns: {sketchCols}; max-width: {boardMaxWidth}px; max-height: {boardHeight}px; column-fill: auto;">
     {#each sites as site, i}
       <a href={site.url}
         onclick={(e) => handleSiteClick(e, site)}
@@ -341,9 +361,7 @@
 
   /* -- 公告板：CSS columns 瀑布流 -- */
   .sketch-board {
-    columns: 3;
     column-gap: 16px;
-    max-width: 700px;
     width: 100%;
     padding: 0 24px;
     margin: 0 auto;
@@ -351,7 +369,8 @@
 
   @media (max-width: 560px) {
     .sketch-board {
-      columns: 2;
+      columns: 2 !important;
+      max-width: 100% !important;
       column-gap: 12px;
       padding: 0 12px;
     }
