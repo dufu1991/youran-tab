@@ -1,7 +1,7 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, showEngineLogo, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, searchEngine, searchEngines, doSearch } from '../stores.js'
+  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
 
@@ -14,10 +14,8 @@
   function handleSearch(e) {
     e.preventDefault()
     if (!query.trim()) return
-    doSearch(query.trim(), $searchEngine)
+    doSearch(query.trim())
   }
-
-  let engineIcon = $derived(searchEngines[$searchEngine]?.icon || '')
 
   function handleDragStart(e, i) {
     dragIndex = i
@@ -142,14 +140,15 @@
           background: {getPastelColor(0)};
           --pin-color: {getPinColor(0)};">
         <div class="sketch-search-row">
-          {#if $showEngineLogo && engineIcon}
-            <img src={engineIcon} alt="" class="sketch-search-engine-icon" />
-          {:else}
-            <span class="sketch-search-icon">🔍</span>
-          {/if}
+          <span class="sketch-search-icon">🔍</span>
           <input type="text" bind:value={query}
             placeholder={$t('search.placeholder')}
             class="sketch-search-input" />
+          <button type="submit" class="shrink-0 ml-1 p-0 border-0 bg-transparent cursor-pointer text-black/40 hover:opacity-80 transition-opacity" aria-label="搜索">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+            </svg>
+          </button>
         </div>
       </form>
     {/if}
@@ -248,13 +247,6 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-  }
-
-  .sketch-search-engine-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    transform: rotate(2deg);
   }
 
   .sketch-search-icon {

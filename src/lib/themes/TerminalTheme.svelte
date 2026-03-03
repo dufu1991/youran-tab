@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte'
-  import { sites, theme, mode, showSettings, terminalConfig, searchEngine, searchEngines, doSearch, clickCounts } from '../stores.js'
+  import { sites, theme, mode, showSettings, terminalConfig, doSearch, clickCounts } from '../stores.js'
   import { t, localeSetting, supportedLocales, localeNames } from '../i18n.js'
   import { buildExportData, downloadJson, getExportFilename, detectImportData, checkVersionMatch, getCurrentVersion, importSitesData, importSettingsData } from '../dataTransfer.js'
 
@@ -108,7 +108,6 @@
     theme: ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch'],
     mode: ['auto', 'light', 'dark'],
     color: colorNames,
-    engine: () => Object.keys(searchEngines),
     lang: ['auto', ...supportedLocales],
     prompt: promptPresets,
     cursor: cursorTypes,
@@ -119,7 +118,6 @@
     if (cmd === 'theme') return $theme
     if (cmd === 'mode') return $mode
     if (cmd === 'color') return $terminalConfig.color
-    if (cmd === 'engine') return $searchEngine
     if (cmd === 'lang') return $localeSetting === 'auto' ? 'auto' : $localeSetting
     if (cmd === 'prompt') return promptChar
     if (cmd === 'cursor') return cursorStyle
@@ -133,7 +131,6 @@
     if (cmd === 'cursor') return $t('cursor.' + val) || val
     if (cmd === 'color') return $t('color.' + val) || val
     if (cmd === 'lang') return val === 'auto' ? $t('settings.langAuto') : (localeNames[val] || val)
-    if (cmd === 'engine') return searchEngines[val]?.name || val
     return val
   }
 
@@ -142,13 +139,12 @@
     if (cmd === 'theme') { theme.set(val); push($t('terminal.themeSet', val)) }
     else if (cmd === 'mode') { mode.set(val); push($t('terminal.modeSet', val)) }
     else if (cmd === 'color') { terminalConfig.setColor(val); push($t('terminal.colorSet', val)) }
-    else if (cmd === 'engine') { searchEngine.set(val); push($t('terminal.engineSet', searchEngines[val]?.name || val)) }
     else if (cmd === 'lang') { localeSetting.set(val); initialized = false; push($t('terminal.langSet', val === 'auto' ? 'auto' : localeNames[val] || val)) }
     else if (cmd === 'prompt') { terminalConfig.setPrompt(val); push($t('terminal.promptSet', val)) }
     else if (cmd === 'cursor') { terminalConfig.setCursor(val); push($t('terminal.cursorSet', val)) }
   }
 
-  const reserved = ['h','ls','add','edit','rm','theme','mode','lang','set','clear','prompt','color','s','engine','width','cursor','export','import']
+  const reserved = ['h','ls','add','edit','rm','theme','mode','lang','set','clear','prompt','color','s','width','cursor','export','import']
 
   function handleCommand() {
     const raw = input.trim()
@@ -186,7 +182,6 @@
         ['edit <n> <url> <name>', $t('terminal.editDesc'), ''],
         ['rm <n>', $t('terminal.rmDesc'), ''],
         ['s <keyword>', $t('terminal.searchDesc'), ''],
-        ['engine', $t('terminal.engineDesc'), $searchEngine],
         ['theme', $t('terminal.themeDesc'), $theme],
         ['mode', $t('terminal.modeDesc'), $mode],
         ['lang', $t('terminal.langDesc'), curLang],
@@ -302,17 +297,7 @@
     } else if (args[0].toLowerCase() === 's') {
       const query = raw.slice(args[0].length).trim()
       if (!query) { push($t('terminal.searchUsage')); return }
-      doSearch(query, $searchEngine)
-
-    } else if (args[0].toLowerCase() === 'engine') {
-      const val = args[1]?.toLowerCase()
-      const engineNames = Object.keys(searchEngines)
-      if (val && engineNames.includes(val)) {
-        searchEngine.set(val); push($t('terminal.engineSet', searchEngines[val].name))
-      } else {
-        const cur = getCurrentValue('engine')
-        selectMode = { cmd: 'engine', options: engineNames, index: engineNames.indexOf(cur) >= 0 ? engineNames.indexOf(cur) : 0 }
-      }
+      doSearch(query)
 
     } else if (args[0].toLowerCase() === 'width') {
       const val = args[1]

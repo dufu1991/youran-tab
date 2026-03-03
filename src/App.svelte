@@ -1,5 +1,5 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, searchEngine, searchEngines, editMode, showSearchBar, showEngineLogo, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign } from './lib/stores.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import { saveImages } from './lib/bgImages.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
@@ -180,7 +180,7 @@
           </div>
         </div>
 
-        <!-- 搜索引擎 -->
+        <!-- 搜索 -->
         {#if $theme !== 'terminal'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
           <div>
@@ -201,34 +201,6 @@
                 ></span>
               </button>
             </label>
-            {#if $showSearchBar}
-              {#if $theme !== 'terminal' && $theme !== 'minimal'}
-                <label class="flex items-center justify-between cursor-pointer mb-1">
-                  <span class="text-sm">{$t('settings.showLogo')}</span>
-                  <button
-                    class="relative w-9 h-5 rounded-full transition-colors {$showEngineLogo ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                    onclick={() => showEngineLogo.set(!$showEngineLogo)}
-                    role="switch"
-                    aria-checked={$showEngineLogo}
-                    aria-label={$t('settings.showLogo')}
-                  >
-                    <span
-                      class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$showEngineLogo ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                    ></span>
-                  </button>
-                </label>
-              {/if}
-              <select
-                class="w-full px-2 py-1.5 rounded text-sm border
-                  {$isDark ? 'bg-neutral-700 border-neutral-600 text-neutral-200' : 'bg-white border-neutral-200'}"
-                value={$searchEngine}
-                onchange={(e) => searchEngine.set(e.target.value)}
-              >
-                {#each Object.entries(searchEngines) as [key, eng]}
-                  <option value={key}>{eng.name}</option>
-                {/each}
-              </select>
-            {/if}
           </div>
         {/if}
 

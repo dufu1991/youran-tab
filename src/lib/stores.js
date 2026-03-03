@@ -100,18 +100,6 @@ function createShowSearchBarStore() {
 
 export const showSearchBar = createShowSearchBarStore()
 
-// 搜索框显示引擎 logo
-const STORAGE_KEY_ENGINE_LOGO = 'newtab_engine_logo'
-
-function createShowEngineLogoStore() {
-  const initial = loadFromStorage(STORAGE_KEY_ENGINE_LOGO, true)
-  const { subscribe, set } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_ENGINE_LOGO, JSON.stringify(v)))
-  return { subscribe, set }
-}
-
-export const showEngineLogo = createShowEngineLogoStore()
-
 // 显示站点标题
 const STORAGE_KEY_SITE_TITLE = 'newtab_show_title'
 
@@ -207,32 +195,20 @@ function createTerminalConfigStore() {
 
 export const terminalConfig = createTerminalConfigStore()
 
-// 搜索引擎
-const STORAGE_KEY_ENGINE = 'newtab_engine'
-
-export const searchEngines = {
-  google:     { name: 'Google',      url: 'https://www.google.com/search?q=',                    icon: 'engines/google-color.svg' },
-  bing:       { name: 'Bing',        url: 'https://www.bing.com/search?q=',                      icon: 'engines/bing-color-icon.svg' },
-  baidu:      { name: 'Baidu',       url: 'https://www.baidu.com/s?wd=',                         icon: 'engines/baidu-color.svg' },
-  duckduckgo: { name: 'DuckDuckGo',  url: 'https://duckduckgo.com/?q=',                          icon: 'engines/duckduckgo-icon.svg' },
-  yahoo:      { name: 'Yahoo',       url: 'https://search.yahoo.com/search?p=',                  icon: 'engines/yahoo-icon.svg' },
-  yandex:     { name: 'Yandex',      url: 'https://yandex.com/search/?text=',                    icon: 'engines/yandex.svg' },
-  brave:      { name: 'Brave',       url: 'https://search.brave.com/search?q=',                  icon: 'engines/icons8-brave-web-browser.svg' },
-  perplexity: { name: 'Perplexity',  url: 'https://www.perplexity.ai/search?q=',                 icon: 'engines/perplexity-ai-icon.svg' },
-}
-
-function createEngineStore() {
-  const initial = loadFromStorage(STORAGE_KEY_ENGINE, 'google')
-  const { subscribe, set } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_ENGINE, JSON.stringify(v)))
-  return { subscribe, set }
-}
-
-export const searchEngine = createEngineStore()
-
-export function doSearch(query, engine) {
-  const e = searchEngines[engine] || searchEngines.google
-  window.open(e.url + encodeURIComponent(query), '_self')
+// 搜索
+export function doSearch(query) {
+  // Chrome / Edge
+  if (typeof chrome !== 'undefined' && chrome.search && chrome.search.query) {
+    chrome.search.query({ text: query, disposition: 'CURRENT_TAB' })
+    return
+  }
+  // Firefox
+  if (typeof browser !== 'undefined' && browser.search && browser.search.search) {
+    browser.search.search({ query, disposition: 'CURRENT_TAB' })
+    return
+  }
+  // 兜底
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_self')
 }
 
 // 点击计数

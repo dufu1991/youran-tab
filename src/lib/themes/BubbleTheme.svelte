@@ -1,7 +1,7 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showEngineLogo, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, searchEngine, searchEngines, doSearch, sites as sitesStore } from '../stores.js'
+  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, sites as sitesStore } from '../stores.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
 
@@ -51,7 +51,7 @@
   function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim()) return
-    doSearch(searchQuery.trim(), $searchEngine)
+    doSearch(searchQuery.trim())
   }
 
   function handleSearchBlur() {
@@ -59,8 +59,6 @@
       searchExpanded = false
     }
   }
-
-  let engineIcon = $derived(searchEngines[$searchEngine]?.icon || '')
 
   let textDark = $derived(!$bgIsLight)
   let isRandom = $derived($bubbleConfig.layout === 'random')
@@ -162,21 +160,23 @@
           onkeydown={(e) => { if (!searchExpanded && e.key === 'Enter') handleSearchClick() }}>
           {#if searchExpanded}
             <form onsubmit={handleSearch} class="search-bubble-form">
-              {#if $showEngineLogo && engineIcon}
-                <img src={engineIcon} alt="" class="w-5 h-5 shrink-0" />
-              {:else}
-                <svg class="w-4 h-4 shrink-0 {textDark ? 'text-white/50' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              {/if}
+              <svg class="w-4 h-4 shrink-0 {dark ? 'text-white/40' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
+              </svg>
               <input type="text" bind:value={searchQuery} bind:this={searchInputEl}
                 onblur={handleSearchBlur}
                 placeholder={$t('search.placeholder')}
                 class="flex-1 bg-transparent outline-none text-sm min-w-0
-                  {textDark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
+                  {dark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
+              <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
+                {dark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label="搜索">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+                </svg>
+              </button>
             </form>
           {:else}
-            <svg class="w-6 h-6 {textDark ? 'text-white/40' : 'text-black/30'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 {dark ? 'text-white/40' : 'text-black/30'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
             </svg>
           {/if}

@@ -15,8 +15,8 @@
 ## 安装
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/TODO?style=for-the-badge&logo=googlechrome&logoColor=white&label=Chrome)](https://chromewebstore.google.com/detail/TODO)
-[![Edge Add-ons](https://img.shields.io/badge/dynamic/json?style=for-the-badge&logo=microsoftedge&logoColor=white&label=Edge&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2FTODO)](https://microsoftedge.microsoft.com/addons/detail/TODO)
-[![Firefox Add-ons](https://img.shields.io/amo/v/TODO?style=for-the-badge&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/firefox/addon/TODO/)
+[![Edge Add-ons](https://custom-icon-badges.demolab.com/badge/dynamic/json?style=for-the-badge&logo=edge-white&logoColor=white&label=Edge&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fbijgffabnhpieoedkhlfbijmgollbpbf&color=0078D7)](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf)
+[![Firefox Add-ons](https://img.shields.io/amo/v/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5?style=for-the-badge&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/)
 
 ## 主题
 
@@ -33,7 +33,7 @@
 
 ## 功能
 
-- 8 个搜索引擎，一键切换
+- 搜索框使用浏览器默认搜索引擎，尊重用户设置
 - 多种背景模式：纯色、渐变、图片、随机，亮色与暗色独立配置
 - 暗色模式，自动跟随系统或手动切换
 - 3 种在线图标源，支持自定义上传，暗色模式独立图标
@@ -76,9 +76,9 @@ bun run release
 | 浏览器 | 安装方式 |
 |--------|----------|
 | Chrome | [Chrome 应用商店](https://chromewebstore.google.com/detail/TODO) |
-| Edge | [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/TODO) |
-| Firefox | [Firefox 附加组件](https://addons.mozilla.org/firefox/addon/TODO/) |
-| 360、QQ、搜狗、猎豹等 | 通过 [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/TODO) 安装，完全兼容 |
+| Edge | [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf) |
+| Firefox | [Firefox 附加组件](https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/) |
+| 360、QQ、搜狗、猎豹等 | 通过 [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf) 安装，完全兼容 |
 
 ## License
 

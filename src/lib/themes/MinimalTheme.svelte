@@ -1,6 +1,6 @@
 <script>
   import { t, currentLocale } from '../i18n.js'
-  import { searchEngine, searchEngines, doSearch, editMode, showSearchBar, sites as sitesStore } from '../stores.js'
+  import { doSearch, editMode, showSearchBar, sites as sitesStore } from '../stores.js'
 
   let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete } = $props()
 
@@ -35,7 +35,7 @@
   function handleSearch(e) {
     e.preventDefault()
     if (!query.trim()) return
-    doSearch(query.trim(), $searchEngine)
+    doSearch(query.trim())
   }
 
   function handleSiteClick(e) {

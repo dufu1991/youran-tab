@@ -1,7 +1,7 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, searchEngine, searchEngines, doSearch, showEngineLogo } from '../stores.js'
+  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
 
@@ -13,10 +13,8 @@
   function handleSearch(e) {
     e.preventDefault()
     if (!query.trim()) return
-    doSearch(query.trim(), $searchEngine)
+    doSearch(query.trim())
   }
-
-  let engineIcon = $derived(searchEngines[$searchEngine]?.icon || '')
 
   function handleDragStart(e, i) {
     dragIndex = i
@@ -111,24 +109,13 @@
           font-family: 'Courier New', Courier, monospace;
           padding: 8px 12px;
         ">
-        {#if $showEngineLogo && engineIcon}
-          <img src={engineIcon} alt=""
-            style="
-              width: 24px;
-              height: 24px;
-              image-rendering: pixelated;
-              flex-shrink: 0;
-              margin-right: 8px;
-            " />
-        {:else}
-          <span style="
+        <span style="
             color: {textMuted};
             font-size: 14px;
             flex-shrink: 0;
             margin-right: 6px;
             user-select: none;
           ">&gt;</span>
-        {/if}
         <input type="text" bind:value={query}
           placeholder={$t('search.placeholder')}
           style="
@@ -142,6 +129,17 @@
             caret-color: {textColor};
             min-width: 0;
           " />
+        <button type="submit" style="
+          flex-shrink: 0;
+          margin-left: 6px;
+          padding: 0;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          color: {textMuted};
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 14px;
+        ">↵</button>
       </form>
     {/if}
   </div>

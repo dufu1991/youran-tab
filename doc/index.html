@@ -11,7 +11,7 @@
 <body class="bg-neutral-950 text-neutral-100 font-sans">
 
   <!-- Nav -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-neutral-950/80 backdrop-blur border-b border-neutral-800">
+  <nav id="main-nav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-between">
       <a href="#home" data-page="home" class="shrink-0">
         <img src="/logo.png" alt="悠然标签页" class="w-7 h-7 rounded" />
@@ -69,12 +69,12 @@
           <img class="w-5 h-5" src="/chrome.svg" alt="Chrome" />
           Chrome
         </a>
-        <a href="https://microsoftedge.microsoft.com/addons" target="_blank"
+        <a href="https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf" target="_blank"
           class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
           <img class="w-5 h-5" src="/edge.svg" alt="Edge" />
           Edge
         </a>
-        <a href="https://addons.mozilla.org" target="_blank"
+        <a href="https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/" target="_blank"
           class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
           <img class="w-5 h-5" src="/firefox.svg" alt="Firefox" />
           Firefox
@@ -200,8 +200,8 @@
       <div class="grid sm:grid-cols-3 gap-6">
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
           <div class="text-2xl mb-3">🔍</div>
-          <h3 class="font-semibold mb-1" data-i18n="features.search.title">12 个搜索引擎</h3>
-          <p class="text-sm text-neutral-400" data-i18n="features.search.desc">Google、Bing、百度、DuckDuckGo、Perplexity 等，一键切换。</p>
+          <h3 class="font-semibold mb-1" data-i18n="features.search.title">快速搜索</h3>
+          <p class="text-sm text-neutral-400" data-i18n="features.search.desc">内置搜索框，使用浏览器默认搜索引擎，尊重用户设置。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
           <div class="text-2xl mb-3">🎨</div>
@@ -405,7 +405,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.terminalDetail.title">终端主题</h2>
-          <div data-i18n="guide.terminalDetail.desc" data-i18n-mode="html">完整的命令行交互界面，支持全键盘操作。可用命令如下：<br /><br /><dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5"><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">h</code></dt><dd>显示帮助信息</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">ls</code></dt><dd>列出所有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">数字</code></dt><dd>输入编号跳转到对应站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">add</code></dt><dd>添加新站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">edit</code></dt><dd>编辑已有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">rm</code></dt><dd>删除站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code></dt><dd>搜索</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code></dt><dd>切换主题</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code></dt><dd>切换暗色模式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code></dt><dd>切换语言</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">engine</code></dt><dd>切换搜索引擎</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code></dt><dd>切换配色方案</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code></dt><dd>切换光标样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code></dt><dd>切换提示符样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">width</code></dt><dd>设置终端宽度</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">set</code></dt><dd>打开设置面板</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">clear</code></dt><dd>清屏</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code></dt><dd>导出配置</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code></dt><dd>导入配置</dd></dl><br />提供 9 种配色方案（green、amber、blue、cyan、purple、pink、red、orange、mono）和 4 种光标样式（细线、粗线、块状、下划线）。输入命令不带参数后，可用方向键选择选项，Enter 确认，Esc 取消。</div>
+          <div data-i18n="guide.terminalDetail.desc" data-i18n-mode="html">完整的命令行交互界面，支持全键盘操作。可用命令如下：<br /><br /><dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5"><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">h</code></dt><dd>显示帮助信息</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">ls</code></dt><dd>列出所有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">数字</code></dt><dd>输入编号跳转到对应站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">add</code></dt><dd>添加新站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">edit</code></dt><dd>编辑已有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">rm</code></dt><dd>删除站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code></dt><dd>搜索</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code></dt><dd>切换主题</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code></dt><dd>切换暗色模式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code></dt><dd>切换语言</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code></dt><dd>切换配色方案</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code></dt><dd>切换光标样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code></dt><dd>切换提示符样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">width</code></dt><dd>设置终端宽度</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">set</code></dt><dd>打开设置面板</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">clear</code></dt><dd>清屏</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code></dt><dd>导出配置</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code></dt><dd>导入配置</dd></dl><br />提供 9 种配色方案（green、amber、blue、cyan、purple、pink、red、orange、mono）和 4 种光标样式（细线、粗线、块状、下划线）。输入命令不带参数后，可用方向键选择选项，Enter 确认，Esc 取消。</div>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.minimal.title">极简主题</h2>
@@ -421,7 +421,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.pixel.title">像素主题</h2>
-          <p data-i18n="guide.pixel.desc" data-i18n-mode="html">像素复古风格，菜单列表交互。站点以列表形式展示，始终显示站点标题。搜索栏采用命令行提示符样式，可显示搜索引擎图标。鼠标悬停时有扫描线动画效果。该主题无专属配置项。</p>
+          <p data-i18n="guide.pixel.desc" data-i18n-mode="html">像素复古风格，菜单列表交互。站点以列表形式展示，始终显示站点标题。搜索栏采用命令行提示符样式。鼠标悬停时有扫描线动画效果。该主题无专属配置项。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.sticky.title">便签主题</h2>
@@ -429,7 +429,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.search.title">搜索功能</h2>
-          <p data-i18n="guide.search.desc" data-i18n-mode="html">内置 12 个搜索引擎：Google、Bing、百度、DuckDuckGo、Yahoo、Yandex、搜狗、Ecosia、Brave、Startpage、Naver、Perplexity。点击搜索栏左侧的图标即可切换引擎。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可搜索。经典和便当主题可选择是否显示搜索引擎 Logo。</p>
+          <p data-i18n="guide.search.desc" data-i18n-mode="html">搜索框使用浏览器默认搜索引擎进行搜索，尊重用户设置。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可搜索。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.background.title">背景设置</h2>
@@ -484,5 +484,17 @@
   </div>
 
   <script type="module" src="/src/main.js"></script>
+  <script>
+    ;(function () {
+      const nav = document.getElementById('main-nav')
+      const cls = ['bg-neutral-950/80', 'backdrop-blur', 'border-neutral-800']
+      function onScroll() {
+        if (window.scrollY > 20) cls.forEach(c => nav.classList.add(c))
+        else cls.forEach(c => nav.classList.remove(c))
+      }
+      window.addEventListener('scroll', onScroll, { passive: true })
+      onScroll()
+    })()
+  </script>
 </body>
 </html>

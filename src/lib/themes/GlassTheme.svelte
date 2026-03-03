@@ -1,7 +1,7 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, showEngineLogo, isDark, resolvedBgStyle, bgIsLight, glassConfig, searchEngine, searchEngines, doSearch, sites as sitesStore } from '../stores.js'
+  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, glassConfig, doSearch, sites as sitesStore } from '../stores.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
 
@@ -39,11 +39,10 @@
   }
 
   let searchQuery = $state('')
-  let engineIcon = $derived(searchEngines[$searchEngine]?.icon || '')
   function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim()) return
-    doSearch(searchQuery.trim(), $searchEngine)
+    doSearch(searchQuery.trim())
   }
 
   let textDark = $derived(!$bgIsLight)
@@ -76,16 +75,18 @@
       <form onsubmit={handleSearch}
         class="glass-pill flex items-center gap-3 w-full max-w-lg
           {dark ? 'glass-pill--dark' : 'glass-pill--light'}">
-        {#if $showEngineLogo && engineIcon}
-          <img src={engineIcon} alt="" class="w-5 h-5 shrink-0" />
-        {:else}
-          <svg class="w-4 h-4 shrink-0 {textDark ? 'text-white/50' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        {/if}
+        <svg class="w-4 h-4 shrink-0 {textDark ? 'text-white/40' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
+        </svg>
         <input type="text" bind:value={searchQuery}
           placeholder={$t('search.placeholder')}
           class="flex-1 bg-transparent outline-none text-sm {textDark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
+        <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
+          {textDark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label="搜索">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+          </svg>
+        </button>
       </form>
     {/if}
   </div>
