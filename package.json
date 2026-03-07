@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:firefox": "vite build && node scripts/build-firefox.js",
-    "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip .",
-    "pack:edge": "mkdir -p release && cd dist && zip -r ../release/youran-tab-edge.zip .",
-    "pack:firefox": "mkdir -p release && cd dist-firefox && zip -r ../release/youran-tab-firefox.zip .",
+    "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:edge": "mkdir -p release && cd dist && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:firefox": "mkdir -p release && cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store'",
     "release": "bun run build && bun run pack && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
     "preview": "vite preview"
   },

@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "description": "__MSG_extDescription__",
   "default_locale": "zh_CN",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "permissions": ["favicon", "search"],
   "chrome_url_overrides": {
     "newtab": "index.html"

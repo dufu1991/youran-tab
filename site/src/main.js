@@ -83,9 +83,21 @@ const messages = {
         'footer.name': 'Youran Tab',
         'nav.name': 'Youran Tab',
         'nav.home': 'Home',
+        'nav.support': 'Support',
         'nav.privacy': 'Privacy Policy',
         'nav.guide': 'User Guide',
         'nav.changelog': 'Changelog',
+        'support.title': 'Support Youran Tab',
+        'support.subtitle': 'If this project helps you, you are welcome to support it in any of the following ways. Your support goes toward continued development, maintenance, and polishing the experience.',
+        'support.note': 'You are welcome to include your GitHub profile or other social link in the donation message. I will acknowledge your support on the project repository and the official website.',
+        'support.buymeacoffee.title': 'Buy Me a Coffee',
+        'support.buymeacoffee.desc': 'Support the project through Buy Me a Coffee and help keep it improving.',
+        'support.paypal.desc': 'Support quickly with PayPal, ideal for overseas and cross-region payments.',
+        'support.wechat.title': 'WeChat Appreciation',
+        'support.wechat.desc': 'Open WeChat and scan the code. Thank you for your support and encouragement.',
+        'support.alipay.title': 'Alipay',
+        'support.alipay.desc': 'Use Alipay to scan and support the project as it continues to evolve.',
+        'support.openLink': 'Support now',
         'privacy.title': 'Privacy Policy',
         'privacy.updated': 'Last updated: February 27, 2026',
         'privacy.intro.title': 'Overview',
@@ -205,9 +217,21 @@ const messages = {
         'footer.name': '悠然标签页',
         'nav.name': '悠然标签页',
         'nav.home': '首页',
+        'nav.support': '支持',
         'nav.privacy': '隐私政策',
         'nav.guide': '使用手册',
         'nav.changelog': '版本说明',
+        'support.title': '支持悠然标签页',
+        'support.subtitle': '如果这个项目对你有帮助，欢迎通过下面的方式支持我。你的支持会用于持续开发、维护和完善体验。',
+        'support.note': '欢迎在捐赠留言中附上你的 GitHub 或其他社交账号链接，我会在项目仓库和官网的致谢名单中展示对你的感谢。',
+        'support.buymeacoffee.title': 'Buy Me a Coffee',
+        'support.buymeacoffee.desc': '通过 Buy Me a Coffee 进行赞助，支持我持续打磨这个项目。',
+        'support.paypal.desc': '使用 PayPal 快速支持，适合海外和跨地区支付。',
+        'support.wechat.title': '微信赞赏',
+        'support.wechat.desc': '打开微信扫一扫，感谢你的支持与鼓励。',
+        'support.alipay.title': '支付宝收款',
+        'support.alipay.desc': '使用支付宝扫一扫，支持项目继续迭代更新。',
+        'support.openLink': '前往支持',
         'privacy.title': '隐私政策',
         'privacy.updated': '最后更新：2026 年 2 月 27 日',
         'privacy.intro.title': '概述',
@@ -1430,6 +1454,29 @@ const pages = ['home', 'privacy', 'guide', 'changelog'];
 const navLinks = document.querySelectorAll('nav a[data-page]');
 const navMenuBtn = document.getElementById('nav-menu-btn');
 const navMobileMenu = document.getElementById('nav-mobile-menu');
+const supportModal = document.getElementById('support-modal');
+const supportModalPanel = document.getElementById('support-modal-panel');
+const supportModalClose = document.getElementById('support-modal-close');
+const supportOpenButtons = document.querySelectorAll('[data-support-open]');
+const supportParamValue = new URLSearchParams(location.search).get('support');
+
+const setSupportVisible = visible => {
+    if (!supportModal) return;
+    supportModal.classList.toggle('hidden', !visible);
+    document.body.classList.toggle('overflow-hidden', visible);
+};
+
+const shouldOpenSupportOnLoad =
+    supportParamValue !== null &&
+    supportParamValue !== '0' &&
+    supportParamValue.toLowerCase() !== 'false';
+
+const clearSupportParam = () => {
+    const url = new URL(location.href);
+    url.searchParams.delete('support');
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    history.replaceState(null, '', nextUrl);
+};
 
 const showPage = pageId => {
     pages.forEach(id => {
@@ -1466,6 +1513,28 @@ if (navMenuBtn && navMobileMenu) {
     });
 }
 
+supportOpenButtons.forEach(button => {
+    button.addEventListener('click', event => {
+        event.preventDefault();
+        setSupportVisible(true);
+        if (navMobileMenu) navMobileMenu.classList.add('hidden');
+    });
+});
+
+supportModalClose?.addEventListener('click', () => {
+    setSupportVisible(false);
+});
+
+supportModal?.addEventListener('click', event => {
+    if (supportModalPanel?.contains(event.target)) return;
+    setSupportVisible(false);
+});
+
+if (shouldOpenSupportOnLoad) {
+    setSupportVisible(true);
+    clearSupportParam();
+}
+
 window.addEventListener('hashchange', handleHash);
 handleHash();
 
@@ -1485,3 +1554,9 @@ document.getElementById('theme-previews')?.addEventListener('click', e => {
     lightbox.classList.remove('hidden');
 });
 lightbox?.addEventListener('click', () => lightbox.classList.add('hidden'));
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        setSupportVisible(false);
+    }
+});

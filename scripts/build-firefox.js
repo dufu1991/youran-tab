@@ -12,11 +12,7 @@ manifest.permissions = (manifest.permissions || []).filter(p => p !== 'favicon')
 manifest.browser_specific_settings = {
   gecko: {
     id: 'youran-tab@youran.dev',
-    strict_min_version: '109.0',
-    data_collection_permissions: {
-      required: ['none'],
-      optional: []
-    }
+    strict_min_version: '140.0'
   }
 }
 writeFileSync('dist-firefox/manifest.json', JSON.stringify(manifest, null, 2))
