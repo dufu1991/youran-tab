@@ -3,6 +3,7 @@
     import { get } from 'svelte/store';
     import { getCachedIconUrl, fetchAndCacheIcon } from '../iconCache.js';
     import { resolveSiteIcon, handleIconLoad, getFaviconFallback } from '../favicon.js';
+    import FolderGlyph from '../FolderGlyph.svelte';
     import {
         editMode,
         showSearchBar,
@@ -15,8 +16,9 @@
         bgIsLight,
         sites as sitesStore,
     } from '../stores.js';
+    import { countSites, isFolderItem, sumFolderClicks } from '../folders.js';
 
-    let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete } = $props();
+    let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete, onopenfolder } = $props();
 
     let dragIndex = $state(-1);
     let dragOverIndex = $state(-1);
@@ -56,6 +58,11 @@
     }
 
     function handleSiteClick(e, site) {
+        if (isFolderItem(site)) {
+            e.preventDefault();
+            onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() });
+            return;
+        }
         if ($editMode) {
             e.preventDefault();
         } else {
@@ -134,7 +141,14 @@
 
     function computeLayout(siteList, counts, cw, ch) {
         const items = siteList
-            .map(s => ({ id: s.id, name: s.name, url: s.url, value: (counts[s.id] || 0) + 1 }))
+            .map(s => ({
+                id: s.id,
+                name: s.name,
+                url: isFolderItem(s) ? '#' : s.url,
+                value: isFolderItem(s)
+                    ? Math.max(1, sumFolderClicks(s, counts) + countSites(s.items || []))
+                    : (counts[s.id] || 0) + 1,
+            }))
             .sort((a, b) => b.value - a.value);
         // 限制最大最小比例，避免最小区域太小看不清图标和文字
         if (items.length > 1) {
@@ -230,7 +244,9 @@
             >
                 {#each sites as site, i}
                     <a
-                        href={site.url}
+                        href={isFolderItem(site) ? '#' : site.url}
+                        data-context-item={isFolderItem(site) ? 'folder' : 'site'}
+                        data-item-id={site.id}
                         onclick={e => handleSiteClick(e, site)}
                         draggable={$editMode}
                         ondragstart={e => handleDragStart(e, i)}
@@ -242,16 +258,20 @@
               {$editMode && dragOverIndex === i && dragIndex !== i ? 'ring-2 ' + (dark ? 'ring-white' : 'ring-neutral-800') : ''}"
                         style="border-radius: {cfg.radius}px; {cardStyle}; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
                     >
-                        <img
-                            src={resolveSiteIcon(site, $isDark)}
-                            alt=""
-                            onload={e => handleIconLoad(e, site)}
-                            onerror={e => {
-                                if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url);
-                            }}
-                            class="mb-1 group-hover:scale-110 transition-transform"
-                            style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%"
-                        />
+                        {#if isFolderItem(site)}
+                            <FolderGlyph folder={site} size={cfg.iconSize} className="mb-1 group-hover:scale-110 transition-transform" />
+                        {:else}
+                            <img
+                                src={resolveSiteIcon(site, $isDark)}
+                                alt=""
+                                onload={e => handleIconLoad(e, site)}
+                                onerror={e => {
+                                    if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url);
+                                }}
+                                class="mb-1 group-hover:scale-110 transition-transform"
+                                style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%"
+                            />
+                        {/if}
                         {#if $showSiteTitle}
                             <span class="text-xs truncate max-w-[90%] text-black">{site.name}</span>
                         {/if}
@@ -300,6 +320,8 @@
                     {@const tileSite = sites.find(s => s.id === tile.id) || tile}
                     <a
                         href={tile.url}
+                        data-context-item={isFolderItem(tileSite) ? 'folder' : 'site'}
+                        data-item-id={tileSite.id}
                         onclick={e => handleSiteClick(e, tileSite)}
                         class="group absolute flex flex-col items-center justify-center overflow-hidden transition-all
               {$editMode ? 'ring-1 ' + (dark ? 'ring-neutral-600' : 'ring-neutral-300') : ''}"
@@ -307,16 +329,20 @@
               width: {tile.w - cfg.gap}px; height: {tile.h - cfg.gap}px;
               border-radius: {cfg.radius}px; {cardStyle}"
                     >
-                        <img
-                            src={resolveSiteIcon(tileSite, $isDark)}
-                            alt=""
-                            onload={e => handleIconLoad(e, tileSite)}
-                            onerror={e => {
-                                if (tileSite.iconSource !== 'custom') e.target.src = getFaviconFallback(tile.url);
-                            }}
-                            class="mb-1 group-hover:scale-110 transition-transform"
-                            style="width: {iconSize}px; height: {iconSize}px; border-radius: {tileSite.iconRadius ?? 4}%"
-                        />
+                        {#if isFolderItem(tileSite)}
+                            <FolderGlyph folder={tileSite} size={iconSize} className="mb-1 group-hover:scale-110 transition-transform" />
+                        {:else}
+                            <img
+                                src={resolveSiteIcon(tileSite, $isDark)}
+                                alt=""
+                                onload={e => handleIconLoad(e, tileSite)}
+                                onerror={e => {
+                                    if (tileSite.iconSource !== 'custom') e.target.src = getFaviconFallback(tile.url);
+                                }}
+                                class="mb-1 group-hover:scale-110 transition-transform"
+                                style="width: {iconSize}px; height: {iconSize}px; border-radius: {tileSite.iconRadius ?? 4}%"
+                            />
+                        {/if}
                         {#if $showSiteTitle && tile.h - cfg.gap > 60}
                             <span class="text-xs truncate max-w-[90%] text-black">{tile.name}</span>
                         {/if}

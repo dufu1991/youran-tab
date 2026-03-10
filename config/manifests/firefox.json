@@ -1,0 +1,15 @@
+{
+  "permissions": ["search", "tabs"],
+  "host_permissions": [
+    "https://www.google.com/s2/favicons*",
+    "https://*.gstatic.com/*",
+    "https://www.faviconextractor.com/*",
+    "https://icon.horse/*"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "youran-tab@youran.dev",
+      "strict_min_version": "140.0"
+    }
+  }
+}

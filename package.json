@@ -1,16 +1,17 @@
 {
   "name": "youran-tab",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:firefox": "vite build && node scripts/build-firefox.js",
+    "build": "vite build && node scripts/apply-browser-manifest.js chrome dist",
+    "build:edge": "vite build --outDir dist-edge && node scripts/apply-browser-manifest.js edge dist-edge",
+    "build:firefox": "vite build --outDir dist-firefox && node scripts/apply-browser-manifest.js firefox dist-firefox",
     "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip . -x '.DS_Store' '*/.DS_Store'",
-    "pack:edge": "mkdir -p release && cd dist && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:edge": "mkdir -p release && cd dist-edge && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
     "pack:firefox": "mkdir -p release && cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store'",
-    "release": "bun run build && bun run pack && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
+    "release": "bun run build && bun run pack && bun run build:edge && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
     "preview": "vite preview"
   },
   "devDependencies": {

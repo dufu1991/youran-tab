@@ -1,8 +1,10 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign, refreshRandomBackground } from './lib/stores.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import { saveImages } from './lib/bgImages.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
+  import ContextMenu from './lib/ContextMenu.svelte'
+  import FolderModal from './lib/FolderModal.svelte'
   import ExportModal from './lib/ExportModal.svelte'
   import ImportModal from './lib/ImportModal.svelte'
   import TerminalTheme from './lib/themes/TerminalTheme.svelte'
@@ -13,6 +15,7 @@
   import BubbleTheme from './lib/themes/BubbleTheme.svelte'
   import PixelTheme from './lib/themes/PixelTheme.svelte'
   import SketchTheme from './lib/themes/SketchTheme.svelte'
+  import { collectFolderCandidates, createFolderEntry, findFolderByChildId, findItemById, getFolderSites, isFolderItem } from './lib/folders.js'
 
   const themeKeys = ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch']
   const themeComponents = { terminal: TerminalTheme, default: DefaultTheme, minimal: MinimalTheme, bento: BentoTheme, glass: GlassTheme, bubble: BubbleTheme, pixel: PixelTheme, sketch: SketchTheme }
@@ -22,10 +25,36 @@
 
   let showModal = $state(false)
   let editingSite = $state(null)
+  let activeFolderId = $state('')
+  let activeFolderAnchor = $state(null)
+  let suppressFolderOpen = $state(false)
+  let lastClosedFolderId = $state('')
   let showExportModal = $state(false)
   let showImportModal = $state(false)
+  let contextMenu = $state({
+    open: false,
+    x: 0,
+    y: 0,
+    scope: 'page',
+    itemId: '',
+  })
 
   let ThemeComponent = $derived(themeComponents[$theme] || DefaultTheme)
+  let activeFolder = $derived(activeFolderId ? findItemById($sites, activeFolderId) : null)
+  let folderMenuRadius = $derived.by(() => {
+    if ($theme === 'bento') return $bentoConfig.radius
+    if ($theme === 'default') return $defaultConfig.radius
+    if ($theme === 'glass') return 16
+    if ($theme === 'pixel') return 0
+    if ($theme === 'bubble') return 24
+    if ($theme === 'sketch') return 18
+    if ($theme === 'minimal') return 14
+    return 18
+  })
+  let folderCandidates = $derived(
+    showModal ? collectFolderCandidates($sites, isFolderItem(editingSite) ? editingSite.id : null) : []
+  )
+  let allowFolder = $derived(!editingSite || isFolderItem(editingSite) || !findFolderByChildId($sites, editingSite.id))
 
   function resizeBgBlob(file) {
     return new Promise((resolve) => {
@@ -71,18 +100,237 @@
     document.documentElement.classList.toggle('dark', $isDark)
   })
 
-  function handleAdd() { editingSite = null; showModal = true }
-  function handleEdit(site) { editingSite = site; showModal = true }
-  function handleSave(data) {
-    if (editingSite) sites.edit(editingSite.id, data)
-    else sites.add(data)
-    showModal = false; editingSite = null
+  function closeEditor() {
+    closeContextMenu()
+    showModal = false
+    editingSite = null
   }
-  function handleDelete(id) { sites.remove(id) }
+
+  function handleAdd() {
+    closeContextMenu()
+    editingSite = null
+    showModal = true
+  }
+
+  function handleEdit(site) {
+    closeContextMenu()
+    editingSite = site
+    showModal = true
+  }
+
+  function upsertFolder(data) {
+    const selectedItems = (data.items || []).map((item) => ({ ...item }))
+    if (editingSite && isFolderItem(editingSite)) {
+      const selectedIds = new Set(selectedItems.map((item) => item.id))
+      const updatedFolder = createFolderEntry(data, editingSite.id)
+      const nextItems = []
+
+      for (const item of $sites) {
+        if (item.id === editingSite.id) {
+          nextItems.push(updatedFolder)
+          const releasedSites = getFolderSites(editingSite).filter((site) => !selectedIds.has(site.id))
+          nextItems.push(...releasedSites)
+          continue
+        }
+        if (!isFolderItem(item) && selectedIds.has(item.id)) continue
+        nextItems.push(item)
+      }
+
+      sites.setAll(nextItems)
+      activeFolderId = editingSite.id
+      return
+    }
+
+    const selectedIds = new Set(selectedItems.map((item) => item.id))
+    const nextItems = $sites.filter((item) => isFolderItem(item) || !selectedIds.has(item.id))
+    nextItems.push(createFolderEntry(data))
+    sites.setAll(nextItems)
+  }
+
+  function handleSave(data) {
+    if (data.type === 'folder') {
+      upsertFolder(data)
+      closeEditor()
+      return
+    }
+
+    if (Array.isArray(data)) {
+      data.forEach((item) => sites.add(item))
+      closeEditor()
+      return
+    }
+
+    if (editingSite) {
+      sites.edit(editingSite.id, data)
+    } else {
+      sites.add(data)
+    }
+    closeEditor()
+  }
+
+  function handleOpenFolder(payload) {
+    closeContextMenu()
+    const folder = payload?.folder || payload
+    const rect = payload?.rect || null
+    if (lastClosedFolderId && lastClosedFolderId === folder?.id) return
+    if (suppressFolderOpen) return
+    activeFolderId = folder?.id || ''
+    activeFolderAnchor = rect
+  }
+
+  function closeActiveFolder() {
+    closeContextMenu()
+    lastClosedFolderId = activeFolderId
+    suppressFolderOpen = true
+    activeFolderId = ''
+    activeFolderAnchor = null
+    setTimeout(() => {
+      lastClosedFolderId = ''
+      suppressFolderOpen = false
+    }, 400)
+  }
+
+  function handleDelete(id) {
+    closeContextMenu()
+    const target = findItemById($sites, id)
+    if (!target) return
+
+    if (isFolderItem(target)) {
+      const nextItems = []
+      for (const item of $sites) {
+        if (item.id === id) {
+          nextItems.push(...getFolderSites(item))
+          continue
+        }
+        nextItems.push(item)
+      }
+      sites.setAll(nextItems)
+      if (activeFolderId === id) activeFolderId = ''
+      return
+    }
+
+    sites.remove(id)
+  }
+
+  function shuffleBackground() {
+    if ($bgConfig.type === 'random') {
+      refreshRandomBackground()
+      return
+    }
+
+    const candidates = []
+    const solidList = $isDark ? $solidPresets.dark : $solidPresets.light
+    const gradientList = $isDark ? $gradientPresets.dark : $gradientPresets.light
+
+    solidList.forEach((_, index) => {
+      candidates.push({ type: 'solid', id: index })
+    })
+    gradientList.forEach((_, index) => {
+      candidates.push({ type: 'gradient', id: index })
+    })
+    $bgImageUrls.forEach((_, index) => {
+      candidates.push({ type: 'image', id: index })
+    })
+
+    if (candidates.length === 0) return
+
+    let currentKey = ''
+    if ($bgConfig.type === 'solid') {
+      currentKey = `solid:${$isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId}`
+    } else if ($bgConfig.type === 'gradient') {
+      currentKey = `gradient:${$isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId}`
+    } else if ($bgConfig.type === 'image') {
+      currentKey = `image:${$bgConfig.imageId}`
+    }
+
+    const pool = candidates.length > 1
+      ? candidates.filter((candidate) => `${candidate.type}:${candidate.id}` !== currentKey)
+      : candidates
+    const next = pool[Math.floor(Math.random() * pool.length)] || candidates[0]
+
+    bgConfig.set('type', next.type)
+    if (next.type === 'solid') {
+      bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', next.id)
+      return
+    }
+    if (next.type === 'gradient') {
+      bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', next.id)
+      return
+    }
+    bgConfig.set('imageId', next.id)
+  }
+
+  function closeContextMenu() {
+    contextMenu = {
+      open: false,
+      x: 0,
+      y: 0,
+      scope: 'page',
+      itemId: '',
+    }
+  }
+
+  function isContextMenuSuppressed() {
+    return $theme === 'terminal'
+      || $editMode
+      || showModal
+      || showExportModal
+      || showImportModal
+      || $showSettings
+      || !!activeFolderId
+  }
+
+  function handlePageContextMenu(event) {
+    if (isContextMenuSuppressed()) return
+    if (event.target.closest('[data-no-context-menu]')) return
+    if (event.target.closest('input, textarea, select, button, form, [contenteditable="true"]')) return
+
+    const itemEl = event.target.closest('[data-context-item]')
+    event.preventDefault()
+
+    if (itemEl) {
+      contextMenu = {
+        open: true,
+        x: event.clientX,
+        y: event.clientY,
+        scope: 'item',
+        itemId: itemEl.dataset.itemId || '',
+      }
+      return
+    }
+
+    contextMenu = {
+      open: true,
+      x: event.clientX,
+      y: event.clientY,
+      scope: 'page',
+      itemId: '',
+    }
+  }
+
+  function handleContextMenuSelect(actionId) {
+    const itemId = contextMenu.itemId
+    closeContextMenu()
+
+    if (actionId === 'page-add') {
+      handleAdd()
+      return
+    }
+
+    if (actionId === 'page-refresh-bg') {
+      shuffleBackground()
+      return
+    }
+
+    if (actionId === 'item-edit') {
+      const target = findItemById($sites, itemId)
+      if (target) handleEdit(target)
+    }
+  }
 
 </script>
 
-<div class="w-full h-full relative">
+<div class="w-full h-full relative" oncontextmenu={handlePageContextMenu} role="presentation">
   {#if $theme === 'terminal'}
     <TerminalTheme dark={$isDark} align={$themeAlign.terminal} />
   {:else}
@@ -93,6 +341,23 @@
       onadd={handleAdd}
       onedit={handleEdit}
       ondelete={handleDelete}
+      onopenfolder={handleOpenFolder}
+    />
+  {/if}
+
+  {#if contextMenu.open}
+    <ContextMenu
+      x={contextMenu.x}
+      y={contextMenu.y}
+      dark={$isDark}
+      items={contextMenu.scope === 'item'
+        ? [{ id: 'item-edit', label: $t('site.editBtn') }]
+        : [
+            { id: 'page-add', label: $t('site.add') },
+            { id: 'page-refresh-bg', label: $t('settings.bgRefresh') },
+          ]}
+      onselect={handleContextMenuSelect}
+      onclose={closeContextMenu}
     />
   {/if}
 
@@ -101,7 +366,10 @@
     <button
       class="fixed bottom-4 right-4 z-50 w-9 h-9 rounded-full flex items-center justify-center text-lg
         shadow-lg transition-all {$isDark ? 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600' : 'bg-white text-neutral-500 hover:bg-neutral-100'}"
-      onclick={() => $showSettings = !$showSettings}
+      onclick={() => {
+        closeContextMenu()
+        $showSettings = !$showSettings
+      }}
       aria-label="Settings"
     >⚙</button>
   {/if}
@@ -110,7 +378,7 @@
   {#if $showSettings}
     <div class="fixed inset-0 z-90" onclick={(e) => { if (e.target === e.currentTarget) $showSettings = false }} role="presentation">
       <div class="fixed bottom-14 right-4 z-91 max-w-xs rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto whitespace-nowrap
-        {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}">
+        {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}" data-no-context-menu>
 
         <!-- 主题 + 模式 + 对齐 + 语言 -->
         <div class="space-y-2">
@@ -556,9 +824,25 @@
   {#if showModal}
     <AddSiteModal
       site={editingSite}
+      availableSites={folderCandidates}
+      allowFolder={allowFolder}
       dark={$isDark}
       onsave={handleSave}
-      onclose={() => { showModal = false; editingSite = null }}
+      onclose={closeEditor}
+    />
+  {/if}
+
+  {#if activeFolder}
+    <FolderModal
+      folder={activeFolder}
+      anchorRect={activeFolderAnchor}
+      panelRadius={folderMenuRadius}
+      dark={$isDark}
+      editMode={$editMode}
+      onclose={closeActiveFolder}
+      oneditfolder={(folder) => { closeActiveFolder(); handleEdit(folder) }}
+      oneditsite={handleEdit}
+      ondeletesite={handleDelete}
     />
   {/if}
 

@@ -1,3 +1,5 @@
+import { cloneEntry, createFolderEntry, getFolderSites, isFolderItem } from './folders.js'
+
 function getAppVersion() {
   try { return chrome.runtime.getManifest().version } catch { return '0.0.0' }
 }
@@ -29,11 +31,28 @@ export function collectSettings() {
 }
 
 export function collectSites(sitesArray, clickCountsObj) {
-  return sitesArray.map(s => {
-    const o = { name: s.name, url: s.url, iconSource: s.iconSource || 'auto' }
-    if (s.iconRadius != null) o.iconRadius = s.iconRadius
-    if (clickCountsObj[s.id]) o.clickCount = clickCountsObj[s.id]
-    return o
+  return sitesArray.map((site) => {
+    if (isFolderItem(site)) {
+      return {
+        type: 'folder',
+        name: site.name,
+        folderBgColor: site.folderBgColor,
+        folderRadius: site.folderRadius,
+        folderIconType: site.folderIconType || 'briefcase',
+        folderCustomIcon: site.folderCustomIcon || '',
+        items: collectSites(getFolderSites(site), clickCountsObj),
+      }
+    }
+    const item = {
+      name: site.name,
+      url: site.url,
+      iconSource: site.iconSource || 'auto',
+    }
+    if (site.iconRadius != null) item.iconRadius = site.iconRadius
+    if (site.customIcon) item.customIcon = site.customIcon
+    if (site.customIconDark) item.customIconDark = site.customIconDark
+    if (clickCountsObj[site.id]) item.clickCount = clickCountsObj[site.id]
+    return item
   })
 }
 
@@ -89,26 +108,56 @@ function normalizeUrl(url) {
 }
 
 export function importSitesData(siteItems, sitesStore, existingSites, clickCountsStore) {
+  const nextTree = existingSites.map(cloneEntry)
   let count = 0
-  for (const item of siteItems) {
-    if (!item.name || !item.url) continue
+
+  function importItem(item, targetTree) {
+    if (isFolderItem(item) || item.type === 'folder') {
+      if (!item.name) return 0
+      const folder = createFolderEntry({
+        name: item.name,
+        folderBgColor: item.folderBgColor,
+        folderRadius: item.folderRadius,
+        folderIconType: item.folderIconType,
+        folderCustomIcon: item.folderCustomIcon,
+        items: [],
+      })
+      let importedChildren = 0
+      for (const child of item.items || []) {
+        importedChildren += importItem(child, folder.items)
+      }
+      targetTree.push(folder)
+      return importedChildren
+    }
+
+    if (!item.name || !item.url) return 0
     let url = item.url
     if (!/^https?:\/\//.test(url)) url = 'https://' + url
     const site = { name: item.name, url }
     if (item.iconSource) site.iconSource = item.iconSource
     if (item.iconRadius != null) site.iconRadius = item.iconRadius
+    if (item.customIcon) site.customIcon = item.customIcon
+    if (item.customIconDark) site.customIconDark = item.customIconDark
+
     const normalizedUrl = normalizeUrl(site.url)
-    const existing = existingSites.find(s => s.name === site.name && normalizeUrl(s.url) === normalizedUrl)
+    const existing = targetTree.find((entry) => !isFolderItem(entry) && entry.name === site.name && normalizeUrl(entry.url) === normalizedUrl)
     if (existing) {
-      // 重复站点：更新属性
-      sitesStore.edit(existing.id, site)
+      Object.assign(existing, site)
       if (item.clickCount > 0) clickCountsStore.set(existing.id, item.clickCount)
-    } else {
-      const newId = sitesStore.add(site)
-      if (item.clickCount > 0) clickCountsStore.set(newId, item.clickCount)
+      return 1
     }
-    count++
+
+    const newId = crypto.randomUUID()
+    targetTree.push({ ...site, id: newId })
+    if (item.clickCount > 0) clickCountsStore.set(newId, item.clickCount)
+    return 1
   }
+
+  for (const item of siteItems) {
+    count += importItem(item, nextTree)
+  }
+
+  sitesStore.setAll(nextTree)
   return count
 }
 

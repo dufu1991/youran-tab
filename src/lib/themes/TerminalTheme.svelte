@@ -3,6 +3,7 @@
   import { sites, theme, mode, showSettings, terminalConfig, doSearch, clickCounts } from '../stores.js'
   import { t, localeSetting, supportedLocales, localeNames } from '../i18n.js'
   import { buildExportData, downloadJson, getExportFilename, detectImportData, checkVersionMatch, getCurrentVersion, importSitesData, importSettingsData } from '../dataTransfer.js'
+  import { flattenSites } from '../folders.js'
 
   let { dark = false, align = 'top' } = $props()
 
@@ -94,6 +95,7 @@
   }
 
   let cursorVisualLeft = $derived(getVisualOffset(input, input.length))
+  let flatSites = $derived(flattenSites($sites))
 
   // 选择模式：输入命令回车后，显示可选列表
   let selectMode = $state(null) // { cmd, options, index, current }
@@ -157,13 +159,13 @@
 
     if (/^\d+$/.test(cmd)) {
       const idx = parseInt(cmd)
-      const s = $sites
+      const s = flatSites
       if (s[idx]) window.open(s[idx].url, '_self')
       else push($t('terminal.notFound', idx))
       return
     }
 
-    const matchedSite = $sites.find(s =>
+    const matchedSite = flatSites.find(s =>
       s.name.toLowerCase() === cmd || s.url.toLowerCase().includes(cmd)
     )
     if (matchedSite && !reserved.includes(args[0].toLowerCase())) {
@@ -207,13 +209,13 @@
       push('')
       push('  ' + nLabel)
     } else if (cmd === 'ls') {
-      const s = $sites
+      const s = flatSites
       if (s.length === 0) { push($t('terminal.empty')); return }
-      s.forEach((s, i) => push(`  [${i}] ${s.name} — ${s.url}`))
+      s.forEach((site, i) => push(`  [${i}] ${site.displayName} — ${site.url}`))
 
     } else if (cmd.startsWith('open ')) {
       const idx = parseInt(args[1])
-      const s = $sites
+      const s = flatSites
       if (s[idx]) window.open(s[idx].url, '_self')
       else push($t('terminal.notFound', idx))
 
@@ -227,7 +229,7 @@
 
     } else if (args[0].toLowerCase() === 'edit') {
       const idx = parseInt(args[1])
-      const s = $sites
+      const s = flatSites
       if (!s[idx]) { push($t('terminal.notFound', idx)); return }
       if (args.length < 4) { push($t('terminal.editUsage')); return }
       let url = args[2]
@@ -238,7 +240,7 @@
 
     } else if (cmd.startsWith('rm ')) {
       const idx = parseInt(args[1])
-      const s = $sites
+      const s = flatSites
       if (s[idx]) {
         const name = s[idx].name
         sites.remove(s[idx].id)
@@ -424,8 +426,8 @@
   style="{termWidth > 0 ? `max-width: ${termWidth}px;` : ''}" bind:this={historyEl}>
 
   <div class="flex flex-wrap gap-x-8 gap-y-2 mb-6 text-sm">
-    {#each $sites as site, i}
-      <a href={site.url} class="{fg} {linkHover} hover:underline">[{i}] {site.name}</a>
+    {#each flatSites as site, i}
+      <a href={site.url} class="{fg} {linkHover} hover:underline">[{i}] {site.displayName}</a>
     {/each}
   </div>
 

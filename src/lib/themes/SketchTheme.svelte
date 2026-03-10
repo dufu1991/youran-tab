@@ -2,8 +2,10 @@
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
   import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
+  import FolderGlyph from '../FolderGlyph.svelte'
+  import { isFolderItem } from '../folders.js'
 
-  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
+  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
   let dragIndex = $state(-1)
   let dragOverIndex = $state(-1)
@@ -42,6 +44,11 @@
   }
 
   function handleSiteClick(e, site) {
+    if (isFolderItem(site)) {
+      e.preventDefault()
+      onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() })
+      return
+    }
     if ($editMode) {
       e.preventDefault()
     }
@@ -158,6 +165,8 @@
     style="columns: {sketchCols}; max-width: {boardMaxWidth}px; max-height: {boardHeight}px; column-fill: auto;">
     {#each sites as site, i}
       <a href={site.url}
+        data-context-item={isFolderItem(site) ? 'folder' : 'site'}
+        data-item-id={site.id}
         onclick={(e) => handleSiteClick(e, site)}
         draggable={$editMode}
         ondragstart={(e) => handleDragStart(e, i)}
@@ -174,11 +183,15 @@
           --pin-color: {getPinColor(i)};
           {$editMode && dragIndex === i ? 'opacity: 0.4;' : ''}">
         <div class="sketch-icon-wrap">
-          <img src={resolveSiteIcon(site, $isDark)} alt=""
-            onload={(e) => handleIconLoad(e, site)}
-            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-            class="sketch-icon"
-            style="border-radius: {site.iconRadius ?? 4}%" />
+          {#if isFolderItem(site)}
+            <FolderGlyph folder={site} size={48} className="sketch-icon" />
+          {:else}
+            <img src={resolveSiteIcon(site, $isDark)} alt=""
+              onload={(e) => handleIconLoad(e, site)}
+              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
+              class="sketch-icon"
+              style="border-radius: {site.iconRadius ?? 4}%" />
+          {/if}
         </div>
         {#if $showSiteTitle}
           <span class="sketch-title">{site.name}</span>

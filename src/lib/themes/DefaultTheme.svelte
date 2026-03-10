@@ -3,8 +3,10 @@
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
   import { editMode, showSearchBar, defaultConfig, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore } from '../stores.js'
   import SearchBar from '../SearchBar.svelte'
+  import FolderGlyph from '../FolderGlyph.svelte'
+  import { isFolderItem } from '../folders.js'
 
-  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
+  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
   let dragIndex = $state(-1)
   let dragOverIndex = $state(-1)
@@ -37,6 +39,11 @@
     if ($editMode) {
       e.preventDefault()
     }
+  }
+
+  function handleFolderClick(e, folder) {
+    e.preventDefault()
+    onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
 
   let cfg = $derived($defaultConfig)
@@ -75,36 +82,71 @@
   <div class="grid gap-4 px-8 mx-auto"
     style="max-width: {gridMaxWidth}; grid-template-columns: repeat({actualCols}, 1fr);">
     {#each sites as site, i}
-      <a href={site.url}
-        onclick={(e) => handleSiteClick(e, site)}
-        draggable={$editMode}
-        ondragstart={(e) => handleDragStart(e, i)}
-        ondragover={(e) => handleDragOver(e, i)}
-        ondrop={(e) => handleDrop(e, i)}
-        ondragend={handleDragEnd}
-        class="default-card group flex flex-col items-center gap-2 p-4 transition-all
-          {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-700' : 'ring-neutral-200') : ''}
-          {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white' : 'ring-2 ring-neutral-800') : ''}"
-        style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}">
-        <img src={resolveSiteIcon(site, $isDark)} alt=""
-          onload={(e) => handleIconLoad(e, site)}
-          onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-          class="group-hover:scale-110 transition-transform"
-          style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%" />
-        {#if $showSiteTitle}
-          <span class="text-xs truncate max-w-25
-            {textDark ? 'text-white' : 'text-black'}"
-            style="text-shadow: {textStroke}">{site.name}</span>
-        {/if}
-        {#if $editMode}
-          <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-            <button class="text-xs {dark ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
-              onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-            <button class="text-xs {dark ? 'text-neutral-500 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
-              onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
-          </div>
-        {/if}
-      </a>
+      {#if isFolderItem(site)}
+        <div
+          data-context-item="folder"
+          data-item-id={site.id}
+          onclick={(e) => handleFolderClick(e, site)}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFolderClick(e, site) }}
+          draggable={$editMode}
+          ondragstart={(e) => handleDragStart(e, i)}
+          ondragover={(e) => handleDragOver(e, i)}
+          ondrop={(e) => handleDrop(e, i)}
+          ondragend={handleDragEnd}
+          role="button"
+          tabindex="0"
+          class="default-card group flex flex-col items-center gap-2 p-4 transition-all
+            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-700' : 'ring-neutral-200') : ''}
+            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white' : 'ring-2 ring-neutral-800') : ''}"
+          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
+        >
+          <FolderGlyph folder={site} size={cfg.iconSize} className="group-hover:scale-110 transition-transform" />
+          {#if $showSiteTitle}
+            <span class="text-xs truncate max-w-25 {textDark ? 'text-white' : 'text-black'}" style="text-shadow: {textStroke}">{site.name}</span>
+          {/if}
+          {#if $editMode}
+            <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+              <button class="text-xs {dark ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
+              <button class="text-xs {dark ? 'text-neutral-500 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <a href={site.url}
+          data-context-item="site"
+          data-item-id={site.id}
+          onclick={(e) => handleSiteClick(e, site)}
+          draggable={$editMode}
+          ondragstart={(e) => handleDragStart(e, i)}
+          ondragover={(e) => handleDragOver(e, i)}
+          ondrop={(e) => handleDrop(e, i)}
+          ondragend={handleDragEnd}
+          class="default-card group flex flex-col items-center gap-2 p-4 transition-all
+            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-700' : 'ring-neutral-200') : ''}
+            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white' : 'ring-2 ring-neutral-800') : ''}"
+          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}">
+          <img src={resolveSiteIcon(site, $isDark)} alt=""
+            onload={(e) => handleIconLoad(e, site)}
+            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
+            class="group-hover:scale-110 transition-transform"
+            style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%" />
+          {#if $showSiteTitle}
+            <span class="text-xs truncate max-w-25
+              {textDark ? 'text-white' : 'text-black'}"
+              style="text-shadow: {textStroke}">{site.name}</span>
+          {/if}
+          {#if $editMode}
+            <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+              <button class="text-xs {dark ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
+              <button class="text-xs {dark ? 'text-neutral-500 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
+            </div>
+          {/if}
+        </a>
+      {/if}
     {/each}
 
     {#if $editMode}

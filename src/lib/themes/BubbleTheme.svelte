@@ -2,8 +2,10 @@
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
   import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, sites as sitesStore } from '../stores.js'
+  import FolderGlyph from '../FolderGlyph.svelte'
+  import { getFolderBackground, isFolderItem } from '../folders.js'
 
-  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
+  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
   let dragIndex = $state(-1)
   let dragOverIndex = $state(-1)
@@ -32,10 +34,19 @@
     dragOverIndex = -1
   }
 
-  function handleSiteClick(e) {
+  function handleSiteClick(e, site) {
+    if (isFolderItem(site)) {
+      handleFolderClick(e, site)
+      return
+    }
     if ($editMode) {
       e.preventDefault()
     }
+  }
+
+  function handleFolderClick(e, folder) {
+    e.preventDefault()
+    onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
 
   // 搜索气泡
@@ -148,17 +159,13 @@
   {#if $showSearchBar}
     <div class="mb-10 flex justify-center">
       <div class="search-bubble" class:search-bubble--expanded={searchExpanded}>
-        <div class="search-bubble-circle"
-          style="width: {bubbleSize}px; height: {bubbleSize}px;
-            background: {dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)'};
-            box-shadow: {dark
-              ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
-              : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};"
-          onclick={() => !searchExpanded && handleSearchClick()}
-          role={searchExpanded ? undefined : 'button'}
-          tabindex={searchExpanded ? undefined : 0}
-          onkeydown={(e) => { if (!searchExpanded && e.key === 'Enter') handleSearchClick() }}>
-          {#if searchExpanded}
+        {#if searchExpanded}
+          <div class="search-bubble-circle"
+            style="width: {bubbleSize}px; height: {bubbleSize}px;
+              background: {dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)'};
+              box-shadow: {dark
+                ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
+                : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};">
             <form onsubmit={handleSearch} class="search-bubble-form">
               <svg class="w-4 h-4 shrink-0 {dark ? 'text-white/40' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
@@ -175,12 +182,24 @@
                 </svg>
               </button>
             </form>
-          {:else}
+          </div>
+        {:else}
+          <button
+            type="button"
+            class="search-bubble-circle"
+            aria-label={$t('search.placeholder')}
+            style="width: {bubbleSize}px; height: {bubbleSize}px;
+              background: {dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)'};
+              box-shadow: {dark
+                ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
+                : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};"
+            onclick={handleSearchClick}
+          >
             <svg class="w-6 h-6 {dark ? 'text-white/40' : 'text-black/30'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
             </svg>
-          {/if}
-        </div>
+          </button>
+        {/if}
       </div>
     </div>
   {/if}
@@ -188,8 +207,10 @@
   <div class="bubble-container {isRandom ? 'relative w-full' : 'flex flex-wrap justify-center items-center gap-6 px-8 mx-auto'}"
     style="{isRandom ? 'max-width: 800px; height: 500px;' : 'max-width: 600px;'}">
     {#each sites as site, i}
-      <a href={site.url}
-        onclick={handleSiteClick}
+      <a href={isFolderItem(site) ? '#' : site.url}
+        data-context-item={isFolderItem(site) ? 'folder' : 'site'}
+        data-item-id={site.id}
+        onclick={(e) => handleSiteClick(e, site)}
         draggable={$editMode}
         ondragstart={(e) => handleDragStart(e, i)}
         ondragover={(e) => handleDragOver(e, i)}
@@ -205,15 +226,19 @@
           transition-all duration-300 ease-out
           {$editMode ? 'ring-2 ' + (dark ? 'ring-white/20' : 'ring-black/10') : ''}"
           style="width: {bubbleSize}px; height: {bubbleSize}px;
-            background: {dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)'};
+            background: {isFolderItem(site) ? getFolderBackground(site) : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)')};
             box-shadow: {dark
               ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
               : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};">
-          <img src={resolveSiteIcon(site, $isDark)} alt=""
-            onload={(e) => handleIconLoad(e, site)}
-            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-            class="transition-transform duration-300"
-            style="width: {Math.round(bubbleSize * 0.5)}px; height: {Math.round(bubbleSize * 0.5)}px; border-radius: {site.iconRadius ?? 4}%" />
+          {#if isFolderItem(site)}
+            <FolderGlyph folder={site} size={Math.round(bubbleSize * 0.5)} className="transition-transform duration-300" />
+          {:else}
+            <img src={resolveSiteIcon(site, $isDark)} alt=""
+              onload={(e) => handleIconLoad(e, site)}
+              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
+              class="transition-transform duration-300"
+              style="width: {Math.round(bubbleSize * 0.5)}px; height: {Math.round(bubbleSize * 0.5)}px; border-radius: {site.iconRadius ?? 4}%" />
+          {/if}
         </div>
 
         {#if $editMode}

@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store'
+import { normalizeSiteTree, removeItemFromTree, updateItemTree } from './folders.js'
 
 const STORAGE_KEY_SITES = 'newtab_sites'
 const STORAGE_KEY_THEME = 'newtab_theme'
@@ -18,7 +19,7 @@ function loadFromStorage(key, fallback) {
 }
 
 function createSitesStore() {
-  const initial = loadFromStorage(STORAGE_KEY_SITES, defaultSites)
+  const initial = normalizeSiteTree(loadFromStorage(STORAGE_KEY_SITES, defaultSites))
   const { subscribe, set, update } = writable(initial)
 
   subscribe((value) => {
@@ -33,15 +34,18 @@ function createSitesStore() {
       return id
     },
     remove(id) {
-      update((sites) => sites.filter((s) => s.id !== id))
+      update((siteTree) => removeItemFromTree(siteTree, id))
     },
     edit(id, data) {
-      update((sites) =>
-        sites.map((s) => (s.id === id ? { ...s, ...data } : s))
+      update((siteTree) =>
+        updateItemTree(siteTree, id, (item) => ({ ...item, ...data }))
       )
     },
     reset() {
-      set(defaultSites)
+      set(normalizeSiteTree(defaultSites))
+    },
+    setAll(items) {
+      set(normalizeSiteTree(items))
     },
     reorder(fromIndex, toIndex) {
       update((sites) => {
@@ -393,7 +397,12 @@ getImages().then((raw) => {
   bgImageUrls.set(blobs.map((b) => URL.createObjectURL(b)))
 })
 
-const sessionSeed = Math.random()
+const randomBgTrigger = writable(0)
+let lastRandomBgStyle = ''
+
+export function refreshRandomBackground() {
+  randomBgTrigger.update((value) => value + 1)
+}
 
 // 检测浏览器，获取默认新标签页背景色
 function detectBrowserBg() {
@@ -417,7 +426,7 @@ function isLightHex(hex) {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 128
 }
 
-const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets], ([$bg, $dark, $urls, $solids, $grads]) => {
+const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets, randomBgTrigger], ([$bg, $dark, $urls, $solids, $grads]) => {
   if ($bg.type === 'none') {
     const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
     return { style: `background:${color}`, light: !$dark }
@@ -461,7 +470,12 @@ const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradien
       const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
       return { style: `background:${color}`, light: !$dark }
     }
-    return candidates[Math.floor(sessionSeed * candidates.length)]
+    const pool = candidates.length > 1
+      ? candidates.filter((candidate) => candidate.style !== lastRandomBgStyle)
+      : candidates
+    const next = pool[Math.floor(Math.random() * pool.length)] || candidates[0]
+    lastRandomBgStyle = next.style
+    return next
   }
 
   const fallbackColor = $dark ? browserDefaultBg.dark : browserDefaultBg.light

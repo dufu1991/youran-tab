@@ -1,8 +1,9 @@
 <script>
   import { t, currentLocale } from '../i18n.js'
   import { doSearch, editMode, showSearchBar, sites as sitesStore } from '../stores.js'
+  import { isFolderItem } from '../folders.js'
 
-  let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete } = $props()
+  let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete, onopenfolder } = $props()
 
   let dragIndex = $state(-1)
   let dragOverIndex = $state(-1)
@@ -40,6 +41,11 @@
 
   function handleSiteClick(e) {
     if ($editMode) e.preventDefault()
+  }
+
+  function handleFolderClick(e, folder) {
+    e.preventDefault()
+    onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
 
   let dateFmt = $derived(new Date().toLocaleDateString($currentLocale || 'zh-CN', {
@@ -80,11 +86,23 @@
           ondragend={handleDragEnd}
           style="{$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
           class:cursor-grab={$editMode}>
-          <a href={site.url}
-            onclick={handleSiteClick}
-            class="text-lg no-underline hover:underline underline-offset-4
-              {dark ? 'text-neutral-200 hover:text-white' : 'text-neutral-800 hover:text-black'}"
-          >{site.name}</a>
+          {#if isFolderItem(site)}
+            <button
+              data-context-item="folder"
+              data-item-id={site.id}
+              onclick={(e) => handleFolderClick(e, site)}
+              class="text-left text-lg hover:underline underline-offset-4
+                {dark ? 'text-neutral-200 hover:text-white' : 'text-neutral-800 hover:text-black'}"
+            >{site.name}</button>
+          {:else}
+            <a href={site.url}
+              data-context-item="site"
+              data-item-id={site.id}
+              onclick={handleSiteClick}
+              class="text-lg no-underline hover:underline underline-offset-4
+                {dark ? 'text-neutral-200 hover:text-white' : 'text-neutral-800 hover:text-black'}"
+            >{site.name}</a>
+          {/if}
           {#if $editMode}
             <div class="opacity-0 group-hover:opacity-100 flex gap-3 transition-opacity text-xs
               {dark ? 'text-neutral-600' : 'text-neutral-300'}">

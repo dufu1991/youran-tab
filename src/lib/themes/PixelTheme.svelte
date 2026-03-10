@@ -2,8 +2,10 @@
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
   import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
+  import FolderGlyph from '../FolderGlyph.svelte'
+  import { isFolderItem } from '../folders.js'
 
-  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete } = $props()
+  let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
   let dragIndex = $state(-1)
   let dragOverIndex = $state(-1)
@@ -41,6 +43,11 @@
   }
 
   function handleSiteClick(e, site) {
+    if (isFolderItem(site)) {
+      e.preventDefault()
+      onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() })
+      return
+    }
     if ($editMode) {
       e.preventDefault()
     }
@@ -172,7 +179,9 @@
     <!-- 站点列表 -->
     <div class="pixel-menu-list" style="padding: 0; columns: {pixelCols}; column-gap: 0; max-height: {menuHeight - 60}px; column-fill: auto;">
       {#each sites as site, i}
-        <a href={site.url}
+        <a href={isFolderItem(site) ? '#' : site.url}
+          data-context-item={isFolderItem(site) ? 'folder' : 'site'}
+          data-item-id={site.id}
           onclick={(e) => handleSiteClick(e, site)}
           draggable={$editMode}
           ondragstart={(e) => handleDragStart(e, i)}
@@ -197,17 +206,25 @@
             {$editMode ? 'cursor: grab;' : 'cursor: pointer;'}
           ">
 
-          <img src={resolveSiteIcon(site, $isDark)} alt=""
-            onload={(e) => handleIconLoad(e, site)}
-            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-            class="pixel-icon"
-            style="
-              width: 24px;
-              height: 24px;
-              image-rendering: pixelated;
-              border-radius: {site.iconRadius ?? 0}%;
-              flex-shrink: 0;
-            " />
+          {#if isFolderItem(site)}
+            <FolderGlyph
+              folder={site}
+              size={24}
+              className="pixel-icon"
+            />
+          {:else}
+            <img src={resolveSiteIcon(site, $isDark)} alt=""
+              onload={(e) => handleIconLoad(e, site)}
+              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
+              class="pixel-icon"
+              style="
+                width: 24px;
+                height: 24px;
+                image-rendering: pixelated;
+                border-radius: {site.iconRadius ?? 0}%;
+                flex-shrink: 0;
+              " />
+          {/if}
 
           <span class="pixel-item-name" style="
               margin-left: 10px;
