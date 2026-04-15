@@ -366,11 +366,11 @@
             <svg class="w-6 h-6"><use href="#icon-folder"></use></svg>
           </div>
           <h2 class="mt-4 text-3xl font-bold" data-i18n="foldersSpotlight.title">新增文件夹，收纳更从容</h2>
-          <p class="mt-3 max-w-2xl leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.desc">现在可以直接创建文件夹，把已有网站归类进去。适合整理那些不需要常开、但希望长期保留的网站，让首页更清爽。</p>
+          <p class="mt-3 max-w-2xl leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.desc" data-i18n-mode="html">从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，除了手动整理已有网站，也支持直接选择当前打开的标签页组创建文件夹。做完一类临时工作后，可以放心关闭原来的标签页组，需要时再一键打开，让浏览器重新干净下来。</p>
         </div>
         <div class="rounded-2xl border border-white/8 bg-black/20 p-5 backdrop-blur-sm">
           <p class="text-sm font-medium tracking-[0.2em] text-neutral-400 uppercase" data-i18n="foldersSpotlight.sceneTitle">适合这些场景</p>
-          <p class="mt-3 leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.sceneDesc">比如项目后台、活动页面、文档索引、临时专题资料等。某种程度上，它既可以替代浏览器标签页组，也适合收纳那些不必常驻、又不想专门加入书签的网站。</p>
+          <p class="mt-3 leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.sceneDesc">很多网页只会在某个阶段集中使用几天，不值得加入收藏夹，却又需要暂时保留。像项目后台、活动页面、文档索引、临时专题资料这类任务，都可以先用标签页组整理，再保存成文件夹，释放标签栏空间，也减少浏览器被一堆分组占满的压迫感。</p>
         </div>
       </div>
     </div>
@@ -485,7 +485,7 @@
   <div id="page-privacy" class="hidden">
     <div class="max-w-3xl mx-auto px-6 pt-24 pb-20">
       <h1 class="text-3xl font-bold mb-8" data-i18n="privacy.title">隐私政策</h1>
-      <p class="text-sm text-neutral-500 mb-8" data-i18n="privacy.updated">最后更新：2026 年 3 月 10 日</p>
+      <p class="text-sm text-neutral-500 mb-8" data-i18n="privacy.updated">最后更新：2026 年 4 月 15 日</p>
       <div class="space-y-6 text-neutral-300 leading-relaxed">
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.intro.title">概述</h2>
@@ -493,7 +493,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.collect.title">数据收集</h2>
-          <p data-i18n="privacy.collect.desc">本扩展不收集任何个人信息或使用数据。所有配置数据（包括站点列表、主题设置、背景设置等）均保存在浏览器本地存储中，不会发送到任何外部服务器。启用“从当前标签页快速添加”时，本扩展只会在本地读取当前浏览器窗口中已打开标签页的标题和地址，用于展示选择列表和快速创建站点。</p>
+          <p data-i18n="privacy.collect.desc">本扩展不收集任何个人信息或使用数据。所有配置数据（包括站点列表、主题设置、背景设置等）均保存在浏览器本地存储中，不会发送到任何外部服务器。启用“从当前标签页快速添加”时，本扩展只会在本地读取当前浏览器窗口中已打开标签页和标签页组的标题、地址与分组名称，用于展示选择列表和快速创建站点或文件夹。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.storage.title">本地存储</h2>
@@ -509,7 +509,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.permissions.title">权限说明</h2>
-          <p data-i18n="privacy.permissions.desc">本扩展仅申请运行所需的最小权限。新增的 tabs 权限仅用于读取当前浏览器窗口中已打开标签页的标题和地址，不会读取也无法读取页面正文、表单内容、个人身份信息、账户信息、密码或支付数据，也不会访问您的浏览历史或书签。</p>
+          <p data-i18n="privacy.permissions.desc" data-i18n-mode="html">本扩展仅申请运行所需的最小权限。新增的 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code> 权限，仅用于读取当前浏览器窗口中已打开标签页和标签页组的标题、地址与分组名称，不会读取也无法读取页面正文、表单内容、个人身份信息、账户信息、密码或支付数据，也不会访问您的浏览历史或书签。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.changes.title">政策变更</h2>
@@ -549,11 +549,11 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.folders.title">文件夹</h2>
-          <p data-i18n="guide.folders.desc" data-i18n-mode="html">当前版本支持在新增弹窗中直接创建文件夹，并把已有网站归类进去。它适合收纳那些不需要常开、但又希望长期保留的网站。某种程度上，它既可以替代浏览器标签页组，也适合收纳那些不必常驻、又不想专门加入书签的网站。文件夹样式只作用于图标区域，不会覆盖整块卡片，可单独设置背景色与圆角。默认图标会根据背景明暗自动切换黑色或白色描边，也支持替换为自定义图片。点击文件夹后，会在原位置附近展开一个轻量浮层，只展示内部站点的图标与名称，便于快速访问。</p>
+          <p data-i18n="guide.folders.desc" data-i18n-mode="html">从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，除了可在新增弹窗中直接创建文件夹、把已有网站归类进去，也支持直接选择当前打开的标签页组创建文件夹保存下来。很多时候，我们会围绕一类工作打开一组网页，例如项目后台、活动页面、文档索引、临时专题资料，或某段时间集中查阅的内容。这些网页可能只会连续使用几天，不值得长期加入收藏夹，但又需要暂时保留。标签页组本身很好用，不过当组越来越多时，会持续占用浏览器内存，也会让标签栏被一大堆分组挤满，看起来并不轻松。现在可以先用标签页组整理任务，再把它保存为文件夹，随后关闭原来的标签页组；等下次需要继续这项工作时，再从文件夹里一键打开全部标签页，让浏览器保持干净。文件夹样式只作用于图标区域，不会覆盖整块卡片，可单独设置背景色、圆角和图标样式。默认图标会根据背景明暗自动切换黑色或白色描边，也支持替换为自定义图片或 SVG。点击文件夹后，会在原位置附近展开一个轻量浮层，只展示内部站点的图标与名称，便于快速访问。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.tabs.title">从当前标签页快速添加</h2>
-          <p data-i18n="guide.tabs.desc" data-i18n-mode="html">新增网站时，弹窗可以读取当前浏览器窗口已打开的标签页。这里既支持单选，也支持多选后批量新增。选择 1 个标签页时，会自动填入网站标题和网址；选择多个标签页时，会按所选内容批量创建站点。当当前窗口标签页超过 12 个时，会自动显示搜索框，支持按网页标题或网址过滤。为了保持列表紧凑，标签页选择器只展示网站图标和标题。</p>
+          <p data-i18n="guide.tabs.desc" data-i18n-mode="html">新增网站或创建文件夹时，弹窗都可以读取当前浏览器窗口已打开的标签页和标签页组。这里既支持单选单个标签页，也支持多选后批量新增，还支持直接按标签页组整组保存。选择 1 个标签页时，会自动填入网站标题和网址；创建文件夹时，则可以把当前工作相关的一整组标签页直接保存下来，后续再一键重新打开。当当前窗口标签页超过 12 个时，会自动显示搜索框，支持按网页标题、网址或分组名称过滤。为了保持列表紧凑，标签页选择器会优先展示图标、标题和分组信息。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.contextmenu.title">右键菜单</h2>
@@ -601,7 +601,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.browser.title">浏览器权限与构建</h2>
-          <p data-i18n="guide.browser.desc" data-i18n-mode="html">读取当前浏览器标签页需要 tabs 权限。项目会在构建阶段按浏览器生成不同的 manifest：Chrome 和 Edge 包含 favicon、search、tabs；Firefox 使用 search、tabs，并附带 browser_specific_settings。扩展版本号也统一从根目录 package.json 注入。</p>
+          <p data-i18n="guide.browser.desc" data-i18n-mode="html">读取当前浏览器标签页和标签页组需要 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code> 权限。从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，项目会在构建阶段按浏览器生成不同的 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">manifest</code>：Chrome 和 Edge 包含 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">favicon</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code>；Firefox 使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code>，并附带 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">browser_specific_settings</code>。扩展版本号也统一从根目录 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">package.json</code> 注入。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.align.title">对齐方式</h2>

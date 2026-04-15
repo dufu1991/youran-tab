@@ -1,5 +1,5 @@
 {
-  "permissions": ["favicon", "search", "tabs"],
+  "permissions": ["favicon", "search", "tabs", "tabGroups"],
   "host_permissions": [
     "https://www.google.com/s2/favicons*",
     "https://*.gstatic.com/*",

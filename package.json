@@ -1,7 +1,7 @@
 {
   "name": "youran-tab",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,10 @@
     "build:edge": "vite build --outDir dist-edge && node scripts/apply-browser-manifest.js edge dist-edge",
     "build:firefox": "vite build --outDir dist-firefox && node scripts/apply-browser-manifest.js firefox dist-firefox",
     "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:chrome-crx": "bun run build && node scripts/pack-chrome-crx.js",
     "pack:edge": "mkdir -p release && cd dist-edge && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
-    "pack:firefox": "mkdir -p release && cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:firefox": "mkdir -p release && (cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store') && bun run pack:source",
+    "pack:source": "bun scripts/pack-source-zip.js",
     "release": "bun run build && bun run pack && bun run build:edge && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
     "preview": "vite preview"
   },

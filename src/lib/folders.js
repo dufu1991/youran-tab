@@ -1,5 +1,7 @@
 export const DEFAULT_FOLDER_BG = '#d7b55a'
 export const DEFAULT_FOLDER_RADIUS = 24
+export const DEFAULT_FOLDER_ICON_SCALE = 78
+export const DEFAULT_FOLDER_SHOW_BACKGROUND = true
 
 export function isFolderItem(item) {
   return item?.type === 'folder'
@@ -25,12 +27,15 @@ export function normalizeSiteTree(items) {
   if (!Array.isArray(items)) return []
   return items.map((item) => {
     if (isFolderItem(item)) {
+      const hasCustomIcon = !!item.folderCustomIcon
       return {
         ...item,
         type: 'folder',
         folderBgColor: item.folderBgColor || DEFAULT_FOLDER_BG,
+        folderShowBackground: item.folderShowBackground ?? DEFAULT_FOLDER_SHOW_BACKGROUND,
         folderRadius: Number(item.folderRadius ?? DEFAULT_FOLDER_RADIUS),
-        folderIconType: item.folderIconType || (item.folderCustomIcon ? 'custom' : 'briefcase'),
+        folderIconScale: Number(item.folderIconScale ?? DEFAULT_FOLDER_ICON_SCALE),
+        folderIconType: item.folderIconType || (hasCustomIcon ? 'custom' : 'briefcase'),
         folderCustomIcon: item.folderCustomIcon || '',
         items: normalizeSiteTree(getFolderSites(item)).filter((entry) => !isFolderItem(entry)),
       }
@@ -43,12 +48,21 @@ export function getFolderBackground(folder) {
   return folder?.folderBgColor || DEFAULT_FOLDER_BG
 }
 
+export function getFolderShowBackground(folder) {
+  return folder?.folderShowBackground ?? DEFAULT_FOLDER_SHOW_BACKGROUND
+}
+
 export function getFolderRadius(folder) {
   return Number(folder?.folderRadius ?? DEFAULT_FOLDER_RADIUS)
 }
 
 export function getFolderIconType(folder) {
   return folder?.folderIconType || (folder?.folderCustomIcon ? 'custom' : 'briefcase')
+}
+
+export function getFolderIconScale(folder) {
+  const scale = Number(folder?.folderIconScale ?? DEFAULT_FOLDER_ICON_SCALE)
+  return Math.max(50, Math.min(100, scale))
 }
 
 function expandHex(color) {
@@ -73,14 +87,17 @@ export function getFolderForeground(folder) {
 }
 
 export function createFolderEntry(data, existingId = crypto.randomUUID()) {
+  const hasCustomIcon = data.folderIconType === 'custom' || data.folderIconType === 'svg'
   return {
     id: existingId,
     type: 'folder',
     name: data.name.trim(),
     folderBgColor: data.folderBgColor || DEFAULT_FOLDER_BG,
+    folderShowBackground: data.folderShowBackground ?? DEFAULT_FOLDER_SHOW_BACKGROUND,
     folderRadius: Number(data.folderRadius ?? DEFAULT_FOLDER_RADIUS),
+    folderIconScale: Number(data.folderIconScale ?? DEFAULT_FOLDER_ICON_SCALE),
     folderIconType: data.folderIconType || (data.folderCustomIcon ? 'custom' : 'briefcase'),
-    folderCustomIcon: data.folderIconType === 'custom' ? (data.folderCustomIcon || '') : '',
+    folderCustomIcon: hasCustomIcon ? (data.folderCustomIcon || '') : '',
     items: normalizeSiteTree((data.items || []).map(cloneEntry)).filter((item) => !isFolderItem(item)),
   }
 }

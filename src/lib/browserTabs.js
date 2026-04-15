@@ -1,35 +1,112 @@
-function getTabsApi() {
-  if (typeof chrome !== 'undefined' && chrome.tabs?.query) return chrome.tabs
-  if (typeof browser !== 'undefined' && browser.tabs?.query) return browser.tabs
+const TAB_GROUP_ID_NONE = -1
+
+function getBrowserNamespace() {
+  if (typeof browser !== 'undefined') return browser
+  if (typeof chrome !== 'undefined') return chrome
   return null
 }
 
-function normalizeTab(tab) {
-  return {
-    id: String(tab.id ?? crypto.randomUUID()),
-    title: tab.title || tab.url || '',
-    url: tab.url || '',
-    favIconUrl: tab.favIconUrl || '',
-  }
+function getTabsApi() {
+  const extensionApi = getBrowserNamespace()
+  return extensionApi?.tabs?.query ? extensionApi.tabs : null
 }
 
-export async function queryCurrentWindowTabs() {
-  const tabsApi = getTabsApi()
-  if (!tabsApi) return []
+function getTabGroupsApi() {
+  const extensionApi = getBrowserNamespace()
+  return extensionApi?.tabGroups?.query ? extensionApi.tabGroups : null
+}
 
-  if (typeof browser !== 'undefined' && browser.tabs?.query) {
-    const tabs = await browser.tabs.query({ currentWindow: true })
-    return tabs
-      .filter((tab) => /^https?:\/\//.test(tab.url || ''))
-      .map(normalizeTab)
+function queryTabs(tabsApi) {
+  if (!tabsApi) return Promise.resolve([])
+
+  if (typeof browser !== 'undefined' && browser.tabs?.query === tabsApi.query) {
+    return browser.tabs.query({ currentWindow: true })
   }
 
   return new Promise((resolve) => {
     tabsApi.query({ currentWindow: true }, (tabs) => {
-      const nextTabs = (tabs || [])
-        .filter((tab) => /^https?:\/\//.test(tab.url || ''))
-        .map(normalizeTab)
-      resolve(nextTabs)
+      resolve(tabs || [])
     })
   })
+}
+
+function queryTabGroups(tabGroupsApi, windowId) {
+  if (!tabGroupsApi || typeof windowId !== 'number') return Promise.resolve([])
+
+  if (typeof browser !== 'undefined' && browser.tabGroups?.query === tabGroupsApi.query) {
+    return browser.tabGroups.query({ windowId })
+  }
+
+  return new Promise((resolve) => {
+    tabGroupsApi.query({ windowId }, (groups) => {
+      resolve(groups || [])
+    })
+  })
+}
+
+function normalizeTab(tab) {
+  return {
+    type: 'tab',
+    id: String(tab.id ?? crypto.randomUUID()),
+    title: tab.title || tab.url || '',
+    url: tab.url || '',
+    favIconUrl: tab.favIconUrl || '',
+    windowId: tab.windowId,
+    groupId: typeof tab.groupId === 'number' ? tab.groupId : TAB_GROUP_ID_NONE,
+  }
+}
+
+function normalizeGroup(groupId, group) {
+  return {
+    type: 'group',
+    id: `group:${groupId}`,
+    groupId,
+    title: group?.title || '',
+    color: group?.color || 'grey',
+    collapsed: !!group?.collapsed,
+    tabs: [],
+  }
+}
+
+function buildTabTree(tabs, groups) {
+  const groupMap = new Map(groups.map((group) => [group.id, group]))
+  const groupedEntries = new Map()
+  const entries = []
+
+  for (const tab of tabs) {
+    if (tab.groupId !== TAB_GROUP_ID_NONE) {
+      if (!groupedEntries.has(tab.groupId)) {
+        const nextGroup = normalizeGroup(tab.groupId, groupMap.get(tab.groupId))
+        groupedEntries.set(tab.groupId, nextGroup)
+        entries.push(nextGroup)
+      }
+
+      groupedEntries.get(tab.groupId).tabs.push(tab)
+      continue
+    }
+
+    entries.push(tab)
+  }
+
+  return entries
+}
+
+export async function queryCurrentWindowTabs() {
+  const tabsApi = getTabsApi()
+  const tabGroupsApi = getTabGroupsApi()
+  if (!tabsApi) return []
+
+  const tabs = (await queryTabs(tabsApi))
+    .filter((tab) => /^https?:\/\//.test(tab.url || ''))
+    .map(normalizeTab)
+
+  const windowId = tabs.find((tab) => typeof tab.windowId === 'number')?.windowId
+  const groupIds = new Set(
+    tabs
+      .map((tab) => tab.groupId)
+      .filter((groupId) => groupId !== TAB_GROUP_ID_NONE)
+  )
+
+  const groups = groupIds.size > 0 ? await queryTabGroups(tabGroupsApi, windowId) : []
+  return buildTabTree(tabs, groups)
 }

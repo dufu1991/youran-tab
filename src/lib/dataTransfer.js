@@ -30,6 +30,28 @@ export function collectSettings() {
   return settings
 }
 
+export function buildExportData(type, sitesArray, clickCountsObj) {
+  const data = { version: getAppVersion(), type }
+  if (type === 'sites' || type === 'all') {
+    data.sites = collectSites(sitesArray, clickCountsObj)
+  }
+  if (type === 'settings' || type === 'all') {
+    data.settings = collectSettings()
+  }
+  return data
+}
+
+export function downloadJson(data, filename) {
+  const json = JSON.stringify(data)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export function collectSites(sitesArray, clickCountsObj) {
   return sitesArray.map((site) => {
     if (isFolderItem(site)) {
@@ -54,28 +76,6 @@ export function collectSites(sitesArray, clickCountsObj) {
     if (clickCountsObj[site.id]) item.clickCount = clickCountsObj[site.id]
     return item
   })
-}
-
-export function buildExportData(type, sitesArray, clickCountsObj) {
-  const data = { version: getAppVersion(), type }
-  if (type === 'sites' || type === 'all') {
-    data.sites = collectSites(sitesArray, clickCountsObj)
-  }
-  if (type === 'settings' || type === 'all') {
-    data.settings = collectSettings()
-  }
-  return data
-}
-
-export function downloadJson(data, filename) {
-  const json = JSON.stringify(data, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 export function detectImportData(parsed) {

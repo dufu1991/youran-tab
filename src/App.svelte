@@ -31,12 +31,14 @@
   let lastClosedFolderId = $state('')
   let showExportModal = $state(false)
   let showImportModal = $state(false)
+  let pendingFolderDelete = $state(null)
   let contextMenu = $state({
     open: false,
     x: 0,
     y: 0,
     scope: 'page',
     itemId: '',
+    itemType: '',
   })
 
   let ThemeComponent = $derived(themeComponents[$theme] || DefaultTheme)
@@ -104,6 +106,10 @@
     closeContextMenu()
     showModal = false
     editingSite = null
+  }
+
+  function closeFolderDeleteDialog() {
+    pendingFolderDelete = null
   }
 
   function handleAdd() {
@@ -190,22 +196,53 @@
     }, 400)
   }
 
+  function releaseFolderSites(folderId) {
+    const nextItems = []
+    for (const item of $sites) {
+      if (item.id === folderId) {
+        nextItems.push(...getFolderSites(item))
+        continue
+      }
+      nextItems.push(item)
+    }
+    sites.setAll(nextItems)
+    if (activeFolderId === folderId) {
+      activeFolderId = ''
+      activeFolderAnchor = null
+    }
+  }
+
+  function deleteFolderWithSites(folderId) {
+    sites.remove(folderId)
+    if (activeFolderId === folderId) {
+      activeFolderId = ''
+      activeFolderAnchor = null
+    }
+  }
+
+  function confirmFolderDelete(mode) {
+    if (!pendingFolderDelete) return
+
+    if (mode === 'release') {
+      releaseFolderSites(pendingFolderDelete.id)
+    } else if (mode === 'all') {
+      deleteFolderWithSites(pendingFolderDelete.id)
+    }
+
+    closeFolderDeleteDialog()
+  }
+
   function handleDelete(id) {
     closeContextMenu()
     const target = findItemById($sites, id)
     if (!target) return
 
     if (isFolderItem(target)) {
-      const nextItems = []
-      for (const item of $sites) {
-        if (item.id === id) {
-          nextItems.push(...getFolderSites(item))
-          continue
-        }
-        nextItems.push(item)
+      pendingFolderDelete = target
+      if (activeFolderId === id) {
+        activeFolderId = ''
+        activeFolderAnchor = null
       }
-      sites.setAll(nextItems)
-      if (activeFolderId === id) activeFolderId = ''
       return
     }
 
@@ -267,7 +304,44 @@
       y: 0,
       scope: 'page',
       itemId: '',
+      itemType: '',
     }
+  }
+
+  function getTabsApi() {
+    if (typeof browser !== 'undefined' && browser.tabs?.create) return browser.tabs
+    if (typeof chrome !== 'undefined' && chrome.tabs?.create) return chrome.tabs
+    return null
+  }
+
+  async function openUrlsInNewTabs(urls) {
+    const validUrls = urls.filter((url) => typeof url === 'string' && /^https?:\/\//.test(url))
+    if (validUrls.length === 0) return
+
+    const tabsApi = getTabsApi()
+    if (tabsApi) {
+      if (typeof browser !== 'undefined' && browser.tabs?.create === tabsApi.create) {
+        for (const url of validUrls) {
+          await browser.tabs.create({ url })
+        }
+        return
+      }
+
+      await new Promise((resolve) => {
+        let remaining = validUrls.length
+        for (const url of validUrls) {
+          tabsApi.create({ url }, () => {
+            remaining -= 1
+            if (remaining === 0) resolve()
+          })
+        }
+      })
+      return
+    }
+
+    validUrls.forEach((url) => {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    })
   }
 
   function isContextMenuSuppressed() {
@@ -276,6 +350,7 @@
       || showModal
       || showExportModal
       || showImportModal
+      || !!pendingFolderDelete
       || $showSettings
       || !!activeFolderId
   }
@@ -295,6 +370,7 @@
         y: event.clientY,
         scope: 'item',
         itemId: itemEl.dataset.itemId || '',
+        itemType: itemEl.dataset.contextItem || '',
       }
       return
     }
@@ -310,6 +386,7 @@
 
   function handleContextMenuSelect(actionId) {
     const itemId = contextMenu.itemId
+    const itemType = contextMenu.itemType
     closeContextMenu()
 
     if (actionId === 'page-add') {
@@ -325,6 +402,13 @@
     if (actionId === 'item-edit') {
       const target = findItemById($sites, itemId)
       if (target) handleEdit(target)
+      return
+    }
+
+    if (actionId === 'item-open-all' && itemType === 'folder') {
+      const target = findItemById($sites, itemId)
+      if (!isFolderItem(target)) return
+      openUrlsInNewTabs(getFolderSites(target).map((site) => site.url))
     }
   }
 
@@ -351,7 +435,16 @@
       y={contextMenu.y}
       dark={$isDark}
       items={contextMenu.scope === 'item'
-        ? [{ id: 'item-edit', label: $t('site.editBtn') }]
+        ? [
+            ...(contextMenu.itemType === 'folder'
+              ? [{
+                  id: 'item-open-all',
+                  label: $t('folder.openAll'),
+                  disabled: !isFolderItem(findItemById($sites, contextMenu.itemId)) || getFolderSites(findItemById($sites, contextMenu.itemId)).length === 0,
+                }]
+              : []),
+            { id: 'item-edit', label: $t('site.editBtn') },
+          ]
         : [
             { id: 'page-add', label: $t('site.add') },
             { id: 'page-refresh-bg', label: $t('settings.bgRefresh') },
@@ -830,6 +923,55 @@
       onsave={handleSave}
       onclose={closeEditor}
     />
+  {/if}
+
+  {#if pendingFolderDelete}
+    <div
+      class="fixed inset-0 z-120 bg-black/55 flex items-center justify-center p-4"
+      onclick={(event) => { if (event.target === event.currentTarget) closeFolderDeleteDialog() }}
+      onkeydown={(event) => { if (event.key === 'Escape') closeFolderDeleteDialog() }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="folder-delete-title"
+      tabindex="-1"
+    >
+      <div class="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4 {$isDark ? 'bg-neutral-900 border-white/10 text-neutral-100' : 'bg-white border-black/8 text-neutral-900'}">
+        <div class="space-y-2">
+          <h3 id="folder-delete-title" class="text-lg font-semibold">{$t('folder.deleteConfirmTitle', pendingFolderDelete.name)}</h3>
+          <p class="text-sm leading-6 {$isDark ? 'text-neutral-300' : 'text-neutral-600'}">
+            {$t('folder.deleteConfirmBody', getFolderSites(pendingFolderDelete).length)}
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <button
+            type="button"
+            class="w-full rounded-xl px-4 py-3 text-left transition-colors {$isDark ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}"
+            onclick={() => confirmFolderDelete('release')}
+          >
+            <span class="block font-medium">{$t('folder.deleteReleaseAction')}</span>
+            <span class="block mt-1 text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('folder.deleteReleaseHint')}</span>
+          </button>
+
+          <button
+            type="button"
+            class="w-full rounded-xl px-4 py-3 text-left transition-colors {$isDark ? 'bg-red-500/16 text-red-100 hover:bg-red-500/24' : 'bg-red-50 text-red-700 hover:bg-red-100'}"
+            onclick={() => confirmFolderDelete('all')}
+          >
+            <span class="block font-medium">{$t('folder.deleteAllAction')}</span>
+            <span class="block mt-1 text-xs {$isDark ? 'text-red-200/75' : 'text-red-500'}">{$t('folder.deleteAllHint')}</span>
+          </button>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            class="px-4 py-2 rounded-lg {$isDark ? 'text-neutral-200 hover:bg-neutral-800' : 'text-neutral-600 hover:bg-neutral-100'}"
+            onclick={closeFolderDeleteDialog}
+          >{$t('site.cancel')}</button>
+        </div>
+      </div>
+    </div>
   {/if}
 
   {#if activeFolder}
