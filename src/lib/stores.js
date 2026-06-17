@@ -4,6 +4,8 @@ import { normalizeSiteTree, removeItemFromTree, updateItemTree } from './folders
 const STORAGE_KEY_SITES = 'newtab_sites'
 const STORAGE_KEY_THEME = 'newtab_theme'
 const STORAGE_KEY_MODE = 'newtab_mode'
+export const BACKGROUND_PRESET_LIMIT = 18
+const BACKGROUND_PRESET_STORAGE_VERSION = 5
 
 const defaultSites = [
   { id: '1', name: 'Google', url: 'https://google.com' },
@@ -251,21 +253,98 @@ function createBentoConfigStore() {
 
 export const bentoConfig = createBentoConfigStore()
 
-// 纯色预设（暗色和亮色分开存储，各 12 个）
-const STORAGE_KEY_SOLIDS = 'newtab_solids'
-const defaultSolids = {
-  dark: [
-    '#1e1e2e', '#2d1b69', '#0d3b66', '#1b4332', '#5c2018', '#1b1b1b',
-    '#2e1a47', '#1a3a2a', '#3b1f1f', '#1a2a3e', '#2a2a2a', '#1e2d3d',
-  ],
-  light: [
-    '#f0f0f0', '#e8e0f0', '#d4e6f1', '#d5f5e3', '#fdebd0', '#fadbd8',
-    '#f5e6ff', '#e0f0e8', '#fff0e0', '#e8f4fa', '#f5f5dc', '#fce4ec',
-  ],
+function getPresetKey(item) {
+  return typeof item === 'string' ? item : JSON.stringify(item)
 }
 
-function randomSolidColor(isDark) {
-  const h = Math.floor(Math.random() * 360)
+function appendGeneratedItem(list, keys, generator, index, getKey = getPresetKey) {
+  let lastItem
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const item = generator(index, attempt)
+    lastItem = item
+    const key = getKey(item)
+    if (!keys.has(key)) {
+      keys.add(key)
+      list.push(item)
+      return
+    }
+  }
+
+  list.push(lastItem)
+}
+
+function completeGeneratedGroup(list, generator, getKey = getPresetKey) {
+  const keys = new Set(list.map(getKey))
+
+  while (list.length < BACKGROUND_PRESET_LIMIT) {
+    appendGeneratedItem(list, keys, generator, list.length, getKey)
+  }
+
+  return list
+}
+
+function addGeneratedItem(list, generator, getKey = getPresetKey) {
+  const next = [...list]
+  const keys = new Set(next.map(getKey))
+  appendGeneratedItem(next, keys, generator, next.length, getKey)
+  return next
+}
+
+function createGeneratedGroup(generator, getKey = getPresetKey) {
+  return completeGeneratedGroup([], generator, getKey)
+}
+
+function normalizeGeneratedGroup(source, generator, fillToLimit, normalizeItem = (item) => item) {
+  const list = Array.isArray(source)
+    ? source.slice(0, BACKGROUND_PRESET_LIMIT).map(normalizeItem)
+    : []
+
+  if (fillToLimit && list.length > 0 && list.length < BACKGROUND_PRESET_LIMIT) {
+    return completeGeneratedGroup([...list], generator)
+  }
+
+  return list
+}
+
+// 纯色预设（暗色和亮色分开存储，各 18 个）
+const STORAGE_KEY_SOLIDS = 'newtab_solids'
+function createDefaultSolids() {
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: createGeneratedGroup((index, attempt) => randomSolidColor(true, index, attempt)),
+    light: createGeneratedGroup((index, attempt) => randomSolidColor(false, index, attempt)),
+  }
+}
+
+function randomUnit() {
+  if (globalThis.crypto?.getRandomValues) {
+    const values = new Uint32Array(1)
+    globalThis.crypto.getRandomValues(values)
+    return values[0] / 4294967296
+  }
+
+  return Math.random()
+}
+
+function rand(min, max) { return randomUnit() * (max - min) + min }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)) }
+
+function spreadHue(index = randInt(0, BACKGROUND_PRESET_LIMIT - 1), attempt = 0) {
+  return (index * 137.508 + attempt * 23 + rand(0, 48)) % 360
+}
+
+function normalizeHue(hue) {
+  return (hue % 360 + 360) % 360
+}
+
+function randomSeed(index = 0, attempt = 0) {
+  const prefix = globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${randInt(1000000, 999999999)}`
+  return `${prefix}-${index}-${attempt}-${randInt(1000000, 999999999)}`
+}
+
+function randomSolidColor(isDark, index = 0, attempt = 0) {
+  const h = Math.round(spreadHue(index, attempt))
   if (isDark) {
     const l = randInt(12, 25), c = randInt(5, 15)
     return `oklch(0.${l} 0.${String(c).padStart(2, '0')} ${h})`
@@ -274,97 +353,453 @@ function randomSolidColor(isDark) {
   return `oklch(0.${l} 0.0${c} ${h})`
 }
 
+function normalizeSolids(value) {
+  if (Array.isArray(value) || !Array.isArray(value?.dark) || !Array.isArray(value?.light)) return createDefaultSolids()
+  if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultSolids()
+  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: normalizeGeneratedGroup(value.dark, (index, attempt) => randomSolidColor(true, index, attempt), fillToLimit),
+    light: normalizeGeneratedGroup(value.light, (index, attempt) => randomSolidColor(false, index, attempt), fillToLimit),
+  }
+}
+
 function createSolidsStore() {
-  let initial = loadFromStorage(STORAGE_KEY_SOLIDS, defaultSolids)
-  // 旧格式迁移：数组格式或缺少 dark/light 属性时重置
-  if (Array.isArray(initial) || !initial.dark || !initial.light) initial = defaultSolids
+  const initial = normalizeSolids(loadFromStorage(STORAGE_KEY_SOLIDS, null))
   const { subscribe, set, update } = writable(initial)
   subscribe((v) => localStorage.setItem(STORAGE_KEY_SOLIDS, JSON.stringify(v)))
   return {
     subscribe,
-    addDark() { update((s) => ({ ...s, dark: [...s.dark, randomSolidColor(true)] })) },
-    addLight() { update((s) => ({ ...s, light: [...s.light, randomSolidColor(false)] })) },
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => randomSolidColor(true, index, attempt)) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => randomSolidColor(false, index, attempt)) }) },
     removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
     removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
-    reset() { set(defaultSolids) },
+    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt) => randomSolidColor(true, index, attempt)) })) },
+    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt) => randomSolidColor(false, index, attempt)) })) },
+    reset() { set(createDefaultSolids()) },
   }
 }
 
 export const solidPresets = createSolidsStore()
 
-// 渐变预设（暗色和亮色分开存储，各 12 个）
+// 渐变预设（暗色和亮色分开存储，各 18 个）
 const STORAGE_KEY_GRADIENTS = 'newtab_gradients'
-const defaultGradients = {
-  dark: [
-    'linear-gradient(135deg, oklch(0.28 0.16 280) 0%, oklch(0.18 0.20 340) 100%)',
-    'linear-gradient(150deg, oklch(0.22 0.18 10) 0%, oklch(0.32 0.14 60) 100%)',
-    'linear-gradient(160deg, oklch(0.18 0.14 190) 0%, oklch(0.28 0.20 250) 100%)',
-    'linear-gradient(140deg, oklch(0.26 0.16 120) 0%, oklch(0.18 0.12 180) 100%)',
-    'linear-gradient(135deg, oklch(0.30 0.22 30) 0%, oklch(0.20 0.16 80) 100%)',
-    'linear-gradient(145deg, oklch(0.16 0.10 230) 0%, oklch(0.26 0.18 290) 100%)',
-    'linear-gradient(130deg, oklch(0.32 0.20 310) 0%, oklch(0.20 0.14 240) 100%)',
-    'linear-gradient(155deg, oklch(0.24 0.18 350) 0%, oklch(0.18 0.22 40) 100%)',
-    'linear-gradient(165deg, oklch(0.22 0.16 100) 0%, oklch(0.30 0.20 160) 100%)',
-    'linear-gradient(140deg, oklch(0.20 0.12 210) 0%, oklch(0.30 0.08 270) 100%)',
-    'linear-gradient(125deg, oklch(0.28 0.20 50) 0%, oklch(0.18 0.16 110) 100%)',
-    'linear-gradient(150deg, oklch(0.22 0.16 260) 0%, oklch(0.32 0.22 330) 100%)',
-  ],
-  light: [
-    'linear-gradient(135deg, oklch(0.95 0.10 350) 0%, oklch(0.85 0.16 40) 100%)',
-    'linear-gradient(150deg, oklch(0.90 0.14 90) 0%, oklch(0.82 0.12 160) 100%)',
-    'linear-gradient(160deg, oklch(0.94 0.08 200) 0%, oklch(0.84 0.16 270) 100%)',
-    'linear-gradient(140deg, oklch(0.92 0.12 20) 0%, oklch(0.84 0.18 80) 100%)',
-    'linear-gradient(135deg, oklch(0.90 0.14 280) 0%, oklch(0.84 0.12 340) 100%)',
-    'linear-gradient(145deg, oklch(0.94 0.08 170) 0%, oklch(0.84 0.16 230) 100%)',
-    'linear-gradient(130deg, oklch(0.86 0.14 190) 0%, oklch(0.94 0.08 260) 100%)',
-    'linear-gradient(155deg, oklch(0.90 0.12 120) 0%, oklch(0.82 0.16 180) 100%)',
-    'linear-gradient(165deg, oklch(0.86 0.14 250) 0%, oklch(0.94 0.10 320) 100%)',
-    'linear-gradient(140deg, oklch(0.92 0.14 40) 0%, oklch(0.84 0.12 100) 100%)',
-    'linear-gradient(125deg, oklch(0.90 0.12 320) 0%, oklch(0.84 0.18 20) 100%)',
-    'linear-gradient(150deg, oklch(0.94 0.10 140) 0%, oklch(0.84 0.16 210) 100%)',
-  ],
+function createDefaultGradients() {
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: createGeneratedGroup((index, attempt) => generateRandomGradient(true, index, attempt)),
+    light: createGeneratedGroup((index, attempt) => generateRandomGradient(false, index, attempt)),
+  }
 }
 
 // 随机生成渐变（OKLCH）
-function rand(min, max) { return Math.random() * (max - min) + min }
-function randInt(min, max) { return Math.floor(rand(min, max + 1)) }
-
-export function generateRandomGradient(isDark) {
-  const h1 = rand(0, 360), h2 = (h1 + rand(30, 80)) % 360
-  const angle = randInt(120, 160)
+export function generateRandomGradient(isDark, index = 0, attempt = 0) {
+  const h1 = spreadHue(index, attempt)
+  const h2 = (h1 + rand(56, 148) + attempt * 11) % 360
+  const angle = Math.round((115 + index * 17 + attempt * 7 + rand(0, 34)) % 180)
   if (isDark) {
     return `linear-gradient(${angle}deg, oklch(${rand(0.20, 0.32).toFixed(2)} ${rand(0.10, 0.20).toFixed(2)} ${h1.toFixed(0)}) 0%, oklch(${rand(0.20, 0.35).toFixed(2)} ${rand(0.10, 0.18).toFixed(2)} ${h2.toFixed(0)}) 100%)`
   }
   return `linear-gradient(${angle}deg, oklch(${rand(0.90, 0.96).toFixed(2)} ${rand(0.08, 0.15).toFixed(2)} ${h1.toFixed(0)}) 0%, oklch(${rand(0.82, 0.88).toFixed(2)} ${rand(0.10, 0.18).toFixed(2)} ${h2.toFixed(0)}) 100%)`
 }
 
+function normalizeGradients(value) {
+  if (Array.isArray(value) || !Array.isArray(value?.dark) || !Array.isArray(value?.light)) return createDefaultGradients()
+  if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultGradients()
+  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: normalizeGeneratedGroup(value.dark, (index, attempt) => generateRandomGradient(true, index, attempt), fillToLimit),
+    light: normalizeGeneratedGroup(value.light, (index, attempt) => generateRandomGradient(false, index, attempt), fillToLimit),
+  }
+}
+
 function createGradientsStore() {
-  let initial = loadFromStorage(STORAGE_KEY_GRADIENTS, defaultGradients)
-  // 旧格式迁移：数组格式或缺少 dark/light 属性时重置
-  if (Array.isArray(initial) || !initial.dark || !initial.light) initial = defaultGradients
+  const initial = normalizeGradients(loadFromStorage(STORAGE_KEY_GRADIENTS, null))
   const { subscribe, set, update } = writable(initial)
   subscribe((v) => localStorage.setItem(STORAGE_KEY_GRADIENTS, JSON.stringify(v)))
   return {
     subscribe,
-    addDark() { update((s) => ({ ...s, dark: [...s.dark, generateRandomGradient(true)] })) },
-    addLight() { update((s) => ({ ...s, light: [...s.light, generateRandomGradient(false)] })) },
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => generateRandomGradient(true, index, attempt)) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => generateRandomGradient(false, index, attempt)) }) },
     removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
     removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
-    reset() { set(defaultGradients) },
+    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt) => generateRandomGradient(true, index, attempt)) })) },
+    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt) => generateRandomGradient(false, index, attempt)) })) },
+    reset() { set(createDefaultGradients()) },
   }
 }
 
 export const gradientPresets = createGradientsStore()
 
+// 动态背景预设（暗色和亮色分开存储，各 18 个）
+const STORAGE_KEY_DYNAMICS = 'newtab_dynamics'
+export const dynamicStyleKeys = [
+  'aesthetic-fluid',
+  'ambient-light',
+  'big-blob',
+  'blur-dot',
+  'blur-gradient',
+  'chaos-waves',
+  'curve-gradient',
+  'grid-array',
+  'random-cubes',
+  'step-gradient',
+  'swirling-curves',
+  'triangles-mosaic',
+  'wavy-waves',
+  'abstract-shape',
+]
+
+const fallbackDynamicColors = ['#f8fafc', '#dbeafe', '#c7d2fe', '#fbcfe8', '#fed7aa', '#dcfce7']
+
+function getDynamicPresetKey(preset) {
+  return [preset.style, preset.colors.join(','), preset.seed, preset.loop ? 1 : 0, JSON.stringify(preset.variant || {})].join('|')
+}
+
+function normalizeDynamicPreset(preset, isDark) {
+  const fallback = generateRandomDynamic(isDark)
+  if (!preset || typeof preset !== 'object') return fallback
+  const style = dynamicStyleKeys.includes(preset.style) ? preset.style : fallback.style
+  const colors = normalizeDynamicColors(preset.colors, isDark, fallback.colors)
+  const seed = typeof preset.seed === 'string' && preset.seed
+    ? preset.seed
+    : Number.isFinite(Number(preset.seed))
+      ? Number(preset.seed)
+      : fallback.seed
+  const loop = typeof preset.loop === 'boolean' ? preset.loop : true
+  const variant = normalizeDynamicVariant(preset.variant || fallback.variant, style)
+  return { style, colors, seed, loop, variant }
+}
+
+function normalizeDynamics(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return createDefaultDynamics()
+  if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultDynamics()
+  const darkSource = Array.isArray(value.dark) ? value.dark : []
+  const lightSource = Array.isArray(value.light) ? value.light : []
+  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: normalizeGeneratedGroup(darkSource, (index, attempt) => generateRandomDynamic(true, index, attempt), fillToLimit, (preset) => normalizeDynamicPreset(preset, true)),
+    light: normalizeGeneratedGroup(lightSource, (index, attempt) => generateRandomDynamic(false, index, attempt), fillToLimit, (preset) => normalizeDynamicPreset(preset, false)),
+  }
+}
+
+function hslToHex(h, s, l) {
+  const hue = normalizeHue(h)
+  const a = s * Math.min(l, 1 - l)
+  const toHex = (n) => {
+    const k = (n + hue / 30) % 12
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1)
+    return Math.round(255 * color).toString(16).padStart(2, '0')
+  }
+  return `#${toHex(0)}${toHex(8)}${toHex(4)}`
+}
+
+function getHexBrightness(hex) {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!match) return null
+
+  const r = parseInt(match[1], 16)
+  const g = parseInt(match[2], 16)
+  const b = parseInt(match[3], 16)
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
+function normalizeDynamicColors(colors, isDark, fallback) {
+  const list = Array.isArray(colors) && colors.length > 0 ? colors.slice(0, 6) : fallback
+  const brightness = list.map(getHexBrightness).filter((value) => value !== null)
+  if (brightness.length === 0) return list
+
+  const min = Math.min(...brightness)
+  const max = Math.max(...brightness)
+  const avg = brightness.reduce((sum, value) => sum + value, 0) / brightness.length
+  if (!isDark && min > 236 && avg > 242) return fallback
+  if (isDark && max < 18 && avg < 14) return fallback
+
+  return list
+}
+
+function generateDynamicColors(isDark, index = 0, attempt = 0) {
+  const hue = spreadHue(index, attempt)
+  const hueStep = rand(24, 172)
+  const lightnessShift = isDark ? rand(-0.12, 0.12) : rand(-0.08, 0.06)
+
+  return Array.from({ length: 6 }, (_, colorIndex) => {
+    const nextHue = hue + colorIndex * hueStep + rand(-45, 45) + attempt * 17
+    const saturation = isDark ? rand(0.34, 1) : rand(0.46, 0.98)
+    const lightRange = isDark
+      ? [0.10, 0.68]
+      : colorIndex % 3 === 0
+        ? [0.48, 0.72]
+        : [0.58, 0.86]
+    const lightness = isDark
+      ? Math.min(0.76, Math.max(0.08, rand(lightRange[0], lightRange[1]) + lightnessShift))
+      : Math.min(0.88, Math.max(0.44, rand(lightRange[0], lightRange[1]) + lightnessShift))
+    return hslToHex(nextHue, saturation, lightness)
+  })
+}
+
+function roundNumber(value, precision = 3) {
+  return Number(value.toFixed(precision))
+}
+
+function dynamicUpdate(option, min, max, precision = 3) {
+  return [option, roundNumber(rand(min, max), precision)]
+}
+
+const dynamicUpdateOptionsByStyle = {
+  'aesthetic-fluid': new Set(['scale']),
+  'ambient-light': new Set(['speed', 'pattern scale', 'edge blur']),
+  'chaos-waves': new Set(['speed']),
+  'curve-gradient': new Set(['speed', 'density', 'scale']),
+  'grid-array': new Set(['scale', 'radius', 'borderwidth', 'rotateCanvas', 'rotateUnit', 'speed']),
+  'step-gradient': new Set(['spacing']),
+  'swirling-curves': new Set(['speed', 'density', 'scale']),
+  'triangles-mosaic': new Set(['speed']),
+  'abstract-shape': new Set(['wavy']),
+}
+
+function normalizeDynamicUpdates(updates, style) {
+  const allowedOptions = dynamicUpdateOptionsByStyle[style]
+  if (!allowedOptions || !Array.isArray(updates)) return []
+
+  return updates
+    .filter((item) => Array.isArray(item) && item.length >= 2)
+    .map(([option, value]) => [String(option), value])
+    .filter(([option]) => allowedOptions.has(option))
+}
+
+function createDynamicViewVariant() {
+  return {
+    frame: randInt(0, 420),
+    rotate: 0,
+    scale: roundNumber(rand(1, 1.04), 3),
+    x: 0,
+    y: 0,
+    hue: roundNumber(rand(-36, 36), 2),
+    saturate: roundNumber(rand(0.72, 1.48), 3),
+    brightness: roundNumber(rand(0.78, 1.22), 3),
+    contrast: roundNumber(rand(0.82, 1.28), 3),
+  }
+}
+
+function createDynamicVariant(style) {
+  const variant = {
+    view: createDynamicViewVariant(),
+    params: {},
+    updates: [],
+  }
+
+  if (style === 'aesthetic-fluid') {
+    variant.params = {
+      radius_inner: roundNumber(rand(0.04, 0.28), 3),
+      radius_outer: roundNumber(rand(0.14, 0.68), 3),
+    }
+    variant.updates.push(dynamicUpdate('scale', 0.04, 0.36))
+    return variant
+  }
+
+  if (style === 'abstract-shape') {
+    variant.params = { options: { noise: roundNumber(rand(0, 0.18), 3) } }
+    variant.updates.push(dynamicUpdate('wavy', 1, 28))
+    return variant
+  }
+
+  if (style === 'ambient-light') {
+    variant.updates.push(
+      ['speed', randInt(1, 10)],
+      dynamicUpdate('pattern scale', 0.15, 1),
+      dynamicUpdate('edge blur', 0.12, 1),
+    )
+    return variant
+  }
+
+  if (style === 'chaos-waves') {
+    variant.updates.push(['speed', randInt(1, 20)])
+    return variant
+  }
+
+  if (style === 'curve-gradient' || style === 'swirling-curves') {
+    variant.updates.push(
+      dynamicUpdate('speed', 0.35, 2.6),
+      dynamicUpdate('scale', 0.55, 4.4),
+      dynamicUpdate('density', 320, 2600, 0),
+    )
+    return variant
+  }
+
+  if (style === 'grid-array') {
+    variant.updates.push(
+      dynamicUpdate('scale', 38, 210, 0),
+      dynamicUpdate('radius', 0, 0.32),
+      dynamicUpdate('borderwidth', 0.002, 0.035),
+      dynamicUpdate('rotateCanvas', -1.2, 1.2),
+      dynamicUpdate('rotateUnit', -2.4, 2.4),
+      ['speed', randInt(1, 10)],
+    )
+    return variant
+  }
+
+  if (style === 'step-gradient') {
+    variant.updates.push(dynamicUpdate('spacing', 12, 120, 0))
+    return variant
+  }
+
+  if (style === 'triangles-mosaic') {
+    variant.updates.push(['speed', randInt(1, 10)])
+    return variant
+  }
+
+  return variant
+}
+
+function normalizeDynamicViewVariant(view) {
+  if (!view || typeof view !== 'object') return createDynamicViewVariant()
+  return {
+    frame: Number.isFinite(Number(view.frame)) ? Number(view.frame) : randInt(0, 420),
+    rotate: Number.isFinite(Number(view.rotate)) ? Number(view.rotate) : 0,
+    scale: Number.isFinite(Number(view.scale)) ? Number(view.scale) : 1.08,
+    x: Number.isFinite(Number(view.x)) ? Number(view.x) : 0,
+    y: Number.isFinite(Number(view.y)) ? Number(view.y) : 0,
+    hue: Number.isFinite(Number(view.hue)) ? Number(view.hue) : 0,
+    saturate: Number.isFinite(Number(view.saturate)) ? Number(view.saturate) : 1,
+    brightness: Number.isFinite(Number(view.brightness)) ? Number(view.brightness) : 1,
+    contrast: Number.isFinite(Number(view.contrast)) ? Number(view.contrast) : 1,
+  }
+}
+
+function normalizeDynamicVariant(variant, style) {
+  const fallback = createDynamicVariant(style)
+  if (!variant || typeof variant !== 'object') return fallback
+
+  const params = variant.params && typeof variant.params === 'object' ? variant.params : fallback.params
+  const updates = Array.isArray(variant.updates)
+    ? normalizeDynamicUpdates(variant.updates, style)
+    : fallback.updates
+
+  return {
+    view: normalizeDynamicViewVariant(variant.view),
+    params,
+    updates,
+  }
+}
+
+function shuffleItems(items) {
+  const list = [...items]
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const nextIndex = randInt(0, i)
+    const current = list[i]
+    list[i] = list[nextIndex]
+    list[nextIndex] = current
+  }
+  return list
+}
+
+function createDynamicStyleSequence() {
+  const styles = []
+  while (styles.length < BACKGROUND_PRESET_LIMIT) {
+    styles.push(...shuffleItems(dynamicStyleKeys))
+  }
+  return styles.slice(0, BACKGROUND_PRESET_LIMIT)
+}
+
+function createDynamicGroup(isDark) {
+  const styles = createDynamicStyleSequence()
+  return createGeneratedGroup(
+    (index, attempt) => generateRandomDynamic(isDark, index, attempt, styles[index]),
+    getDynamicPresetKey,
+  )
+}
+
+function pickLeastUsedDynamicStyle(list) {
+  const counts = new Map(dynamicStyleKeys.map((style) => [style, 0]))
+  list.forEach((item) => {
+    if (counts.has(item.style)) counts.set(item.style, counts.get(item.style) + 1)
+  })
+  const minCount = Math.min(...counts.values())
+  const options = dynamicStyleKeys.filter((style) => counts.get(style) === minCount)
+  return options[randInt(0, options.length - 1)]
+}
+
+export function generateRandomDynamic(isDark, index = 0, attempt = 0, style = '') {
+  const nextStyle = style || dynamicStyleKeys[randInt(0, dynamicStyleKeys.length - 1)]
+  return {
+    style: nextStyle,
+    colors: generateDynamicColors(isDark, index, attempt),
+    seed: randomSeed(index, attempt),
+    loop: true,
+    variant: createDynamicVariant(nextStyle),
+  }
+}
+
+function createDefaultDynamics() {
+  return {
+    version: BACKGROUND_PRESET_STORAGE_VERSION,
+    dark: createDynamicGroup(true),
+    light: createDynamicGroup(false),
+  }
+}
+
+export function getDynamicPreviewStyle(preset) {
+  const colors = preset?.colors?.length ? preset.colors : fallbackDynamicColors
+  const angle = preset?.style?.length ? 120 + (preset.style.length % 7) * 10 : 135
+  return `background:linear-gradient(${angle}deg, ${colors.join(', ')})`
+}
+
+function createDynamicsStore() {
+  const initial = normalizeDynamics(loadFromStorage(STORAGE_KEY_DYNAMICS, null))
+  const { subscribe, set, update } = writable(initial)
+  subscribe((v) => localStorage.setItem(STORAGE_KEY_DYNAMICS, JSON.stringify(v)))
+  return {
+    subscribe,
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => generateRandomDynamic(true, index, attempt, pickLeastUsedDynamicStyle(s.dark)), getDynamicPresetKey) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => generateRandomDynamic(false, index, attempt, pickLeastUsedDynamicStyle(s.light)), getDynamicPresetKey) }) },
+    removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
+    removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
+    resetDark() { update((s) => ({ ...s, dark: createDynamicGroup(true) })) },
+    resetLight() { update((s) => ({ ...s, light: createDynamicGroup(false) })) },
+    reset() { set(createDefaultDynamics()) },
+  }
+}
+
+export const dynamicPresets = createDynamicsStore()
+
 // 背景配置
 const STORAGE_KEY_BG = 'newtab_bg'
+const BG_CONFIG_STORAGE_VERSION = 2
+const randomScopeKeys = ['solid', 'gradient', 'image', 'dynamic']
+const defaultRandomScopeKeys = ['solid', 'gradient', 'dynamic']
+
+function normalizeRandomScopes(value) {
+  if (Array.isArray(value)) {
+    const scopes = value.filter((scope) => randomScopeKeys.includes(scope))
+    return scopes.length > 0 ? scopes : defaultRandomScopeKeys
+  }
+  if (value === 'all') return defaultRandomScopeKeys
+  if (randomScopeKeys.includes(value)) return [value]
+  return defaultRandomScopeKeys
+}
+
+function isAllRandomScopes(value) {
+  return Array.isArray(value)
+    && value.length === randomScopeKeys.length
+    && randomScopeKeys.every((scope) => value.includes(scope))
+}
 
 function createBgConfigStore() {
-  const defaults = { type: 'none', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, randomScope: 'all' }
+  const defaults = { version: BG_CONFIG_STORAGE_VERSION, type: 'none', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, dynamicDarkId: 0, dynamicLightId: 0, randomScopes: defaultRandomScopeKeys }
   const initial = loadFromStorage(STORAGE_KEY_BG, defaults)
   // 旧字段迁移
-  const { images, solid, solidId, gradientId, ...rest } = { ...defaults, ...initial }
+  const { images, solid, solidId, gradientId, randomScope, ...rest } = { ...defaults, ...initial }
   const clean = { ...rest }
+  const isLegacyConfig = initial?.version !== BG_CONFIG_STORAGE_VERSION
+  const randomScopeValue = initial?.randomScopes !== undefined ? clean.randomScopes : randomScope
+  clean.randomScopes = normalizeRandomScopes(randomScopeValue)
+  if (isLegacyConfig && (randomScopeValue === 'all' || isAllRandomScopes(randomScopeValue))) {
+    clean.randomScopes = defaultRandomScopeKeys
+  }
+  clean.version = BG_CONFIG_STORAGE_VERSION
   if (solidId !== undefined && clean.solidDarkId === 0 && clean.solidLightId === 0) {
     clean.solidDarkId = solidId
     clean.solidLightId = solidId
@@ -389,16 +824,28 @@ import { getImages, saveImages } from './bgImages.js'
 export const bgImages = writable([])
 export const bgImageUrls = writable([])
 
-getImages().then((raw) => {
+export async function saveBgImages(blobs) {
+  const nextBlobs = blobs.slice(0, BACKGROUND_PRESET_LIMIT)
+  bgImages.set(nextBlobs)
+  bgImageUrls.set(nextBlobs.map((b) => URL.createObjectURL(b)))
+  await saveImages(nextBlobs)
+}
+
+getImages().then(async (raw) => {
   // 过滤掉旧的非 Blob 数据（如之前存的 base64 字符串）
-  const blobs = (raw || []).filter((b) => b instanceof Blob)
-  if (blobs.length !== raw.length) saveImages(blobs)
+  let blobs = (raw || []).filter((b) => b instanceof Blob)
+  if (blobs.length > BACKGROUND_PRESET_LIMIT) {
+    blobs = blobs.slice(0, BACKGROUND_PRESET_LIMIT)
+    await saveImages(blobs)
+  } else if (blobs.length !== raw.length) {
+    await saveImages(blobs)
+  }
   bgImages.set(blobs)
   bgImageUrls.set(blobs.map((b) => URL.createObjectURL(b)))
 })
 
 const randomBgTrigger = writable(0)
-let lastRandomBgStyle = ''
+let lastRandomBgKey = ''
 
 export function refreshRandomBackground() {
   randomBgTrigger.update((value) => value + 1)
@@ -426,64 +873,78 @@ function isLightHex(hex) {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 128
 }
 
-const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets, randomBgTrigger], ([$bg, $dark, $urls, $solids, $grads]) => {
+const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets, dynamicPresets, randomBgTrigger], ([$bg, $dark, $urls, $solids, $grads, $dynamics]) => {
   if ($bg.type === 'none') {
     const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
-    return { style: `background:${color}`, light: !$dark }
+    return { key: 'none', style: `background:${color}`, light: !$dark, dynamic: null }
   }
 
   if ($bg.type === 'solid') {
     const list = $dark ? $solids.dark : $solids.light
     const id = $dark ? $bg.solidDarkId : $bg.solidLightId
     const color = list[id] || list[0]
-    if (!color) return { style: '', light: !$dark }
-    return { style: `background:${color}`, light: !$dark }
+    if (!color) return { key: 'solid:none', style: '', light: !$dark, dynamic: null }
+    return { key: `solid:${id}`, style: `background:${color}`, light: !$dark, dynamic: null }
   }
 
   if ($bg.type === 'gradient') {
     const list = $dark ? $grads.dark : $grads.light
     const id = $dark ? $bg.gradientDarkId : $bg.gradientLightId
     const css = list[id] || list[0]
-    if (!css) return { style: '', light: !$dark }
-    return { style: `background:${css}`, light: !$dark }
+    if (!css) return { key: 'gradient:none', style: '', light: !$dark, dynamic: null }
+    return { key: `gradient:${id}`, style: `background:${css}`, light: !$dark, dynamic: null }
   }
 
   if ($bg.type === 'image' && $urls.length > 0) {
     const idx = Math.min($bg.imageId || 0, $urls.length - 1)
-    return { style: `background-image:url(${$urls[idx]});background-size:cover;background-position:center`, light: false }
+    return { key: `image:${idx}`, style: `background-image:url(${$urls[idx]});background-size:cover;background-position:center`, light: false, dynamic: null }
+  }
+
+  if ($bg.type === 'dynamic') {
+    const list = $dark ? $dynamics.dark : $dynamics.light
+    const id = $dark ? $bg.dynamicDarkId : $bg.dynamicLightId
+    const dynamic = list[id] || list[0]
+    if (!dynamic) return { key: 'dynamic:none', style: '', light: !$dark, dynamic: null }
+    return { key: `dynamic:${id}`, style: 'background:transparent', light: !$dark, dynamic }
   }
 
   if ($bg.type === 'random') {
     const candidates = []
-    if ($bg.randomScope === 'solid' || $bg.randomScope === 'all') {
+    const randomScopes = normalizeRandomScopes($bg.randomScopes || $bg.randomScope)
+    if (randomScopes.includes('solid')) {
       const list = $dark ? $solids.dark : $solids.light
-      list.forEach((c) => candidates.push({ style: `background:${c}`, light: !$dark }))
+      list.forEach((c, index) => candidates.push({ key: `solid:${index}`, style: `background:${c}`, light: !$dark, dynamic: null }))
     }
-    if ($bg.randomScope === 'gradient' || $bg.randomScope === 'all') {
+    if (randomScopes.includes('gradient')) {
       const list = $dark ? $grads.dark : $grads.light
-      list.forEach((css) => candidates.push({ style: `background:${css}`, light: !$dark }))
+      list.forEach((css, index) => candidates.push({ key: `gradient:${index}`, style: `background:${css}`, light: !$dark, dynamic: null }))
     }
-    if (($bg.randomScope === 'image' || $bg.randomScope === 'all') && $urls.length > 0) {
-      $urls.forEach((url) => candidates.push({ style: `background-image:url(${url});background-size:cover;background-position:center`, light: false }))
+    if (randomScopes.includes('image') && $urls.length > 0) {
+      $urls.forEach((url, index) => candidates.push({ key: `image:${index}`, style: `background-image:url(${url});background-size:cover;background-position:center`, light: false, dynamic: null }))
+    }
+    if (randomScopes.includes('dynamic')) {
+      const list = $dark ? $dynamics.dark : $dynamics.light
+      list.forEach((dynamic, index) => candidates.push({ key: `dynamic:${index}`, style: 'background:transparent', light: !$dark, dynamic }))
     }
     if (candidates.length === 0) {
       const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
-      return { style: `background:${color}`, light: !$dark }
+      return { key: 'random:none', style: `background:${color}`, light: !$dark, dynamic: null }
     }
     const pool = candidates.length > 1
-      ? candidates.filter((candidate) => candidate.style !== lastRandomBgStyle)
+      ? candidates.filter((candidate) => candidate.key !== lastRandomBgKey)
       : candidates
-    const next = pool[Math.floor(Math.random() * pool.length)] || candidates[0]
-    lastRandomBgStyle = next.style
+    const next = pool[randInt(0, pool.length - 1)] || candidates[0]
+    lastRandomBgKey = next.key
     return next
   }
 
   const fallbackColor = $dark ? browserDefaultBg.dark : browserDefaultBg.light
-  return { style: `background:${fallbackColor}`, light: !$dark }
+  return { key: 'fallback', style: `background:${fallbackColor}`, light: !$dark, dynamic: null }
 })
 
 export const resolvedBgStyle = derived(resolvedBg, ($bg) => $bg.style)
 export const bgIsLight = derived(resolvedBg, ($bg) => $bg.light)
+export const activeDynamicBg = derived(resolvedBg, ($bg) => $bg.dynamic)
 
 // 重置所有设置（保留站点数据、点击计数和背景图片）
 export function resetAllSettings() {

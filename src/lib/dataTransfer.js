@@ -15,6 +15,7 @@ const SETTINGS_KEYS = {
   newtab_bento: 'bentoConfig',
   newtab_solids: 'solidPresets',
   newtab_gradients: 'gradientPresets',
+  newtab_dynamics: 'dynamicPresets',
   newtab_bg: 'bgConfig',
   newtab_locale: 'locale',
 }

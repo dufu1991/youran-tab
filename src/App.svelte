@@ -1,12 +1,13 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, bgImages, bgImageUrls, themeAlign, refreshRandomBackground } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
-  import { saveImages } from './lib/bgImages.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
   import ContextMenu from './lib/ContextMenu.svelte'
   import FolderModal from './lib/FolderModal.svelte'
   import ExportModal from './lib/ExportModal.svelte'
   import ImportModal from './lib/ImportModal.svelte'
+  import DynamicBackground from './lib/DynamicBackground.svelte'
+  import { getCachedDynamicThumbnail, getDynamicThumbnailKey, requestDynamicThumbnail } from './lib/dynamicBackgroundRuntime.js'
   import TerminalTheme from './lib/themes/TerminalTheme.svelte'
   import DefaultTheme from './lib/themes/DefaultTheme.svelte'
   import MinimalTheme from './lib/themes/MinimalTheme.svelte'
@@ -20,8 +21,9 @@
   const themeKeys = ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch']
   const themeComponents = { terminal: TerminalTheme, default: DefaultTheme, minimal: MinimalTheme, bento: BentoTheme, glass: GlassTheme, bubble: BubbleTheme, pixel: PixelTheme, sketch: SketchTheme }
   const modes = ['auto', 'light', 'dark']
-  const bgTypes = ['none', 'solid', 'gradient', 'image', 'random']
-  const randomScopes = ['solid', 'gradient', 'image', 'all']
+  const bgTypes = ['none', 'solid', 'gradient', 'image', 'dynamic', 'random']
+  const randomScopes = ['solid', 'gradient', 'image', 'dynamic']
+  const defaultRandomScopes = ['solid', 'gradient', 'dynamic']
 
   let showModal = $state(false)
   let editingSite = $state(null)
@@ -57,6 +59,10 @@
     showModal ? collectFolderCandidates($sites, isFolderItem(editingSite) ? editingSite.id : null) : []
   )
   let allowFolder = $derived(!editingSite || isFolderItem(editingSite) || !findFolderByChildId($sites, editingSite.id))
+  let currentDynamicPresets = $derived($isDark ? $dynamicPresets.dark : $dynamicPresets.light)
+  let currentDynamicId = $derived($isDark ? $bgConfig.dynamicDarkId : $bgConfig.dynamicLightId)
+  let showDynamicBackground = $derived($theme !== 'terminal' && $theme !== 'minimal' && !!$activeDynamicBg)
+  let dynamicThumbnailUrls = $state({})
 
   function resizeBgBlob(file) {
     return new Promise((resolve) => {
@@ -80,26 +86,106 @@
   async function handleBgUpload(e) {
     const files = Array.from(e.target.files || [])
     const current = $bgImages
-    const remaining = 12 - current.length
+    const remaining = BACKGROUND_PRESET_LIMIT - current.length
     if (remaining <= 0) return
     const newBlobs = await Promise.all(files.slice(0, remaining).map(resizeBgBlob))
     const allBlobs = [...current, ...newBlobs]
-    bgImages.set(allBlobs)
-    bgImageUrls.set(allBlobs.map((b) => URL.createObjectURL(b)))
-    await saveImages(allBlobs)
+    await saveBgImages(allBlobs)
     if ($bgConfig.type !== 'image') bgConfig.set('type', 'image')
     e.target.value = ''
   }
 
   async function removeBgImage(idx) {
     const allBlobs = $bgImages.filter((_, i) => i !== idx)
-    bgImages.set(allBlobs)
-    bgImageUrls.set(allBlobs.map((b) => URL.createObjectURL(b)))
-    await saveImages(allBlobs)
+    await saveBgImages(allBlobs)
+  }
+
+  function regenerateSolidPresets() {
+    if ($isDark) {
+      solidPresets.resetDark()
+      bgConfig.set('solidDarkId', 0)
+    } else {
+      solidPresets.resetLight()
+      bgConfig.set('solidLightId', 0)
+    }
+  }
+
+  function regenerateGradientPresets() {
+    if ($isDark) {
+      gradientPresets.resetDark()
+      bgConfig.set('gradientDarkId', 0)
+    } else {
+      gradientPresets.resetLight()
+      bgConfig.set('gradientLightId', 0)
+    }
+  }
+
+  function regenerateDynamicPresets() {
+    if ($isDark) {
+      dynamicPresets.resetDark()
+      bgConfig.set('dynamicDarkId', 0)
+    } else {
+      dynamicPresets.resetLight()
+      bgConfig.set('dynamicLightId', 0)
+    }
+  }
+
+  function getDynamicThumbnailStyle(preset) {
+    const thumbnail = dynamicThumbnailUrls[getDynamicThumbnailKey(preset)] || getCachedDynamicThumbnail(preset)
+    const fallback = getDynamicPreviewStyle(preset)
+    if (!thumbnail) return `${fallback};background-size:cover;background-position:center`
+    return `${fallback};background-image:url("${thumbnail}");background-size:cover;background-position:center`
+  }
+
+  function isRandomScopeSelected(scope) {
+    return ($bgConfig.randomScopes || []).includes(scope)
+  }
+
+  function toggleRandomScope(scope) {
+    const current = Array.isArray($bgConfig.randomScopes) && $bgConfig.randomScopes.length > 0
+      ? $bgConfig.randomScopes
+      : defaultRandomScopes
+    const next = current.includes(scope)
+      ? current.filter((item) => item !== scope)
+      : [...current, scope]
+    bgConfig.set('randomScopes', next.length > 0 ? next : current)
   }
 
   $effect(() => {
     document.documentElement.classList.toggle('dark', $isDark)
+  })
+
+  $effect(() => {
+    if (!$showSettings || $bgConfig.type !== 'dynamic') {
+      dynamicThumbnailUrls = {}
+      return
+    }
+
+    const presets = currentDynamicPresets
+    const cachedUrls = {}
+    let active = true
+
+    presets.forEach((preset) => {
+      const key = getDynamicThumbnailKey(preset)
+      const cached = getCachedDynamicThumbnail(preset)
+      if (cached) cachedUrls[key] = cached
+    })
+
+    dynamicThumbnailUrls = cachedUrls
+
+    presets.forEach((preset) => {
+      const key = getDynamicThumbnailKey(preset)
+      if (cachedUrls[key]) return
+
+      requestDynamicThumbnail(preset).then((url) => {
+        if (!active || !url) return
+        dynamicThumbnailUrls = { ...dynamicThumbnailUrls, [key]: url }
+      })
+    })
+
+    return () => {
+      active = false
+    }
   })
 
   function closeEditor() {
@@ -258,6 +344,7 @@
     const candidates = []
     const solidList = $isDark ? $solidPresets.dark : $solidPresets.light
     const gradientList = $isDark ? $gradientPresets.dark : $gradientPresets.light
+    const dynamicList = $isDark ? $dynamicPresets.dark : $dynamicPresets.light
 
     solidList.forEach((_, index) => {
       candidates.push({ type: 'solid', id: index })
@@ -267,6 +354,9 @@
     })
     $bgImageUrls.forEach((_, index) => {
       candidates.push({ type: 'image', id: index })
+    })
+    dynamicList.forEach((_, index) => {
+      candidates.push({ type: 'dynamic', id: index })
     })
 
     if (candidates.length === 0) return
@@ -278,6 +368,8 @@
       currentKey = `gradient:${$isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId}`
     } else if ($bgConfig.type === 'image') {
       currentKey = `image:${$bgConfig.imageId}`
+    } else if ($bgConfig.type === 'dynamic') {
+      currentKey = `dynamic:${$isDark ? $bgConfig.dynamicDarkId : $bgConfig.dynamicLightId}`
     }
 
     const pool = candidates.length > 1
@@ -292,6 +384,10 @@
     }
     if (next.type === 'gradient') {
       bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', next.id)
+      return
+    }
+    if (next.type === 'dynamic') {
+      bgConfig.set($isDark ? 'dynamicDarkId' : 'dynamicLightId', next.id)
       return
     }
     bgConfig.set('imageId', next.id)
@@ -414,20 +510,26 @@
 
 </script>
 
-<div class="w-full h-full relative" oncontextmenu={handlePageContextMenu} role="presentation">
-  {#if $theme === 'terminal'}
-    <TerminalTheme dark={$isDark} align={$themeAlign.terminal} />
-  {:else}
-    <ThemeComponent
-      sites={$sites}
-      dark={$isDark}
-      align={$themeAlign[$theme]}
-      onadd={handleAdd}
-      onedit={handleEdit}
-      ondelete={handleDelete}
-      onopenfolder={handleOpenFolder}
-    />
+<div class="w-full h-full relative overflow-hidden" oncontextmenu={handlePageContextMenu} role="presentation">
+  {#if showDynamicBackground}
+    <DynamicBackground preset={$activeDynamicBg} />
   {/if}
+
+  <div class="relative z-10 w-full h-full">
+    {#if $theme === 'terminal'}
+      <TerminalTheme dark={$isDark} align={$themeAlign.terminal} />
+    {:else}
+      <ThemeComponent
+        sites={$sites}
+        dark={$isDark}
+        align={$themeAlign[$theme]}
+        onadd={handleAdd}
+        onedit={handleEdit}
+        ondelete={handleDelete}
+        onopenfolder={handleOpenFolder}
+      />
+    {/if}
+  </div>
 
   {#if contextMenu.open}
     <ContextMenu
@@ -585,86 +687,146 @@
             </div>
 
             {#if $bgConfig.type === 'solid'}
-              <div class="grid grid-cols-6 gap-1.5">
-                {#each ($isDark ? $solidPresets.dark : $solidPresets.light) as color, i}
-                  <div class="relative group">
-                    <button
-                      class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                      style="background:{color}"
-                      onclick={() => bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', i)}
-                      aria-label="{$t('settings.bgSolid')} {i + 1}"
-                    ></button>
-                    <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onclick={() => $isDark ? solidPresets.removeDark(i) : solidPresets.removeLight(i)}>×</button>
-                  </div>
-                {/each}
-                {#if ($isDark ? $solidPresets.dark : $solidPresets.light).length < 12}
-                  <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                    {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                    onclick={() => $isDark ? solidPresets.addDark() : solidPresets.addLight()}>+</button>
-                {/if}
+              <div class="space-y-2">
+                <div class="grid grid-cols-6 gap-1.5">
+                  {#each ($isDark ? $solidPresets.dark : $solidPresets.light) as color, i}
+                    <div class="relative group">
+                      <button
+                        class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                        style="background:{color}"
+                        onclick={() => bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', i)}
+                        aria-label="{$t('settings.bgSolid')} {i + 1}"
+                      ></button>
+                      <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onclick={() => $isDark ? solidPresets.removeDark(i) : solidPresets.removeLight(i)}>×</button>
+                    </div>
+                  {/each}
+                  {#if ($isDark ? $solidPresets.dark : $solidPresets.light).length < BACKGROUND_PRESET_LIMIT}
+                    <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
+                      onclick={() => $isDark ? solidPresets.addDark() : solidPresets.addLight()}>+</button>
+                  {/if}
+                </div>
+                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.bgGeneratedHint')}
+                </p>
+                <button
+                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                  onclick={regenerateSolidPresets}
+                >{$t('settings.bgRegenerate')}</button>
               </div>
             {/if}
 
             {#if $bgConfig.type === 'gradient'}
-              <div class="grid grid-cols-6 gap-1.5">
-                {#each ($isDark ? $gradientPresets.dark : $gradientPresets.light) as g, i}
-                  <div class="relative group">
-                    <button
-                      class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                      style="background:{g}"
-                      onclick={() => bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', i)}
-                      aria-label="{$t('settings.bgGradient')} {i + 1}"
-                    ></button>
-                    <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onclick={() => $isDark ? gradientPresets.removeDark(i) : gradientPresets.removeLight(i)}>×</button>
-                  </div>
-                {/each}
-                {#if ($isDark ? $gradientPresets.dark : $gradientPresets.light).length < 12}
-                  <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                    {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                    onclick={() => $isDark ? gradientPresets.addDark() : gradientPresets.addLight()}>+</button>
-                {/if}
+              <div class="space-y-2">
+                <div class="grid grid-cols-6 gap-1.5">
+                  {#each ($isDark ? $gradientPresets.dark : $gradientPresets.light) as g, i}
+                    <div class="relative group">
+                      <button
+                        class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                        style="background:{g}"
+                        onclick={() => bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', i)}
+                        aria-label="{$t('settings.bgGradient')} {i + 1}"
+                      ></button>
+                      <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onclick={() => $isDark ? gradientPresets.removeDark(i) : gradientPresets.removeLight(i)}>×</button>
+                    </div>
+                  {/each}
+                  {#if ($isDark ? $gradientPresets.dark : $gradientPresets.light).length < BACKGROUND_PRESET_LIMIT}
+                    <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
+                      onclick={() => $isDark ? gradientPresets.addDark() : gradientPresets.addLight()}>+</button>
+                  {/if}
+                </div>
+                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.bgGeneratedHint')}
+                </p>
+                <button
+                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                  onclick={regenerateGradientPresets}
+                >{$t('settings.bgRegenerate')}</button>
               </div>
             {/if}
 
             {#if $bgConfig.type === 'image'}
-              <div class="grid grid-cols-6 gap-1.5">
-                {#each $bgImageUrls as url, i}
-                  <div class="relative group">
-                    <button class="w-full aspect-video rounded overflow-hidden transition-all
-                      {$bgConfig.imageId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                      onclick={() => bgConfig.set('imageId', i)}>
-                      <img src={url} alt="" class="w-full h-full object-cover" />
-                    </button>
+              <div class="space-y-2">
+                <div class="grid grid-cols-6 gap-1.5">
+                  {#each $bgImageUrls as url, i}
+                    <div class="relative group">
+                      <button class="w-full aspect-video rounded overflow-hidden transition-all
+                        {$bgConfig.imageId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                        onclick={() => bgConfig.set('imageId', i)}>
+                        <img src={url} alt="" class="w-full h-full object-cover" />
+                      </button>
+                      <button
+                        class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onclick={() => removeBgImage(i)}>×</button>
+                    </div>
+                  {/each}
+                  {#if $bgImageUrls.length < BACKGROUND_PRESET_LIMIT}
+                    <label class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm cursor-pointer
+                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}">
+                      +
+                      <input type="file" accept="image/*" multiple class="hidden" onchange={handleBgUpload} />
+                    </label>
+                  {/if}
+                </div>
+                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.bgImageHint')}
+                </p>
+              </div>
+            {/if}
+
+            {#if $bgConfig.type === 'dynamic'}
+              <div class="space-y-2">
+                <div class="grid grid-cols-6 gap-1.5">
+                  {#each currentDynamicPresets as dynamicBg, i}
+                    <div class="relative group">
+                      <button
+                        class="w-full aspect-video rounded transition-all {currentDynamicId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                        style={getDynamicThumbnailStyle(dynamicBg)}
+                        onclick={() => bgConfig.set($isDark ? 'dynamicDarkId' : 'dynamicLightId', i)}
+                        aria-label="{$t('settings.bgDynamic')} {i + 1}"
+                      ></button>
+                      <button
+                        class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onclick={() => $isDark ? dynamicPresets.removeDark(i) : dynamicPresets.removeLight(i)}>×</button>
+                    </div>
+                  {/each}
+                  {#if currentDynamicPresets.length < BACKGROUND_PRESET_LIMIT}
                     <button
-                      class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      onclick={() => removeBgImage(i)}>×</button>
-                  </div>
-                {/each}
-                {#if $bgImageUrls.length < 12}
-                  <label class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm cursor-pointer
-                    {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}">
-                    +
-                    <input type="file" accept="image/*" multiple class="hidden" onchange={handleBgUpload} />
-                  </label>
-                {/if}
+                      class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
+                      onclick={() => $isDark ? dynamicPresets.addDark() : dynamicPresets.addLight()}>+</button>
+                  {/if}
+                </div>
+                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.bgGeneratedHint')}
+                </p>
+                <button
+                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                  onclick={regenerateDynamicPresets}
+                >{$t('settings.bgRegenerate')}</button>
               </div>
             {/if}
 
             {#if $bgConfig.type === 'random'}
-              <div>
+              <div class="space-y-1.5">
                 <div class="inline-flex rounded overflow-hidden">
-                {#each randomScopes as rs}
-                  <button
-                    class="px-2.5 py-1 text-xs transition-all
-                      {$bgConfig.randomScope === rs
-                        ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                        : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
-                    onclick={() => bgConfig.set('randomScope', rs)}
-                  >{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</button>
-                {/each}
+                  {#each randomScopes as rs}
+                    <button
+                      class="px-2.5 py-1 text-xs transition-all
+                        {isRandomScopeSelected(rs)
+                          ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
+                          : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                      onclick={() => toggleRandomScope(rs)}
+                      aria-pressed={isRandomScopeSelected(rs)}
+                    >{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</button>
+                  {/each}
                 </div>
+                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.bgRandomHint')}
+                </p>
               </div>
             {/if}
           </div>
