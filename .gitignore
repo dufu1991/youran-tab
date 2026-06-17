@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-firefox/
+dist-edge/
+.claude/
+.DS_Store
+AGENTS.md
+agent.md
+release/
+release/youran-tab-source.zip
+bun.lock
+store/
+.keys/
+scripts/pack-source-zip.js
