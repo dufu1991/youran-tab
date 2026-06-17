@@ -1,0 +1,317 @@
+name: Release Extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-extension-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect version change
+        id: version
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          current_version="$(node -e "const fs = require('node:fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); process.stdout.write(pkg.version);")"
+          previous_version=""
+          changed="false"
+
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            changed="true"
+          elif [[ -n "${BEFORE_SHA}" && "${BEFORE_SHA}" != "0000000000000000000000000000000000000000" ]] && git cat-file -e "${BEFORE_SHA}:package.json" 2>/dev/null; then
+            previous_version="$(git show "${BEFORE_SHA}:package.json" | node -e "const fs = require('node:fs'); const pkg = JSON.parse(fs.readFileSync(0, 'utf8')); process.stdout.write(pkg.version);")"
+
+            if [[ "${current_version}" != "${previous_version}" ]]; then
+              changed="true"
+            fi
+          else
+            changed="true"
+          fi
+
+          printf 'version=%s\n' "${current_version}" >> "${GITHUB_OUTPUT}"
+          printf 'tag=v%s\n' "${current_version}" >> "${GITHUB_OUTPUT}"
+          printf 'changed=%s\n' "${changed}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${changed}" == "true" ]]; then
+            printf 'Detected package version change: %s -> %s\n' "${previous_version:-none}" "${current_version}"
+          else
+            printf 'package.json changed, but version stayed at %s. Skipping release.\n' "${current_version}"
+          fi
+
+      - name: Setup Bun
+        if: steps.version.outputs.changed == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.version.outputs.changed == 'true'
+        run: bun install
+
+      - name: Setup Chrome
+        if: steps.version.outputs.changed == 'true'
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Build release assets
+        if: steps.version.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHROME_CRX_PRIVATE_KEY: ${{ secrets.CHROME_CRX_PRIVATE_KEY }}
+          EDGE_CRX_PRIVATE_KEY: ${{ secrets.EDGE_CRX_PRIVATE_KEY }}
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          detect_chrome_bin() {
+            if [[ -n "${CHROME_BIN:-}" && -x "${CHROME_BIN}" ]]; then
+              printf '%s\n' "${CHROME_BIN}"
+              return 0
+            fi
+
+            local candidates=(
+              google-chrome
+              google-chrome-stable
+              chromium
+              chromium-browser
+              chrome
+            )
+
+            local candidate
+            for candidate in "${candidates[@]}"; do
+              if command -v "${candidate}" >/dev/null 2>&1; then
+                command -v "${candidate}"
+                return 0
+              fi
+            done
+
+            echo "Chrome binary not found. Set CHROME_BIN first." >&2
+            exit 1
+          }
+
+          write_key_file() {
+            local key_content="$1"
+            local key_path="$2"
+
+            if [[ -z "${key_content}" ]]; then
+              echo "Missing private key for CRX packaging." >&2
+              exit 1
+            fi
+
+            printf '%s' "${key_content}" > "${key_path}"
+          }
+
+          pack_crx() {
+            local chrome_bin="$1"
+            local source_dir="$2"
+            local key_path="$3"
+            local output_path="$4"
+            local packed_path="${GITHUB_WORKSPACE}/${source_dir}.crx"
+
+            rm -f "${packed_path}" "${output_path}"
+
+            "${chrome_bin}" \
+              --no-sandbox \
+              --pack-extension="${GITHUB_WORKSPACE}/${source_dir}" \
+              --pack-extension-key="${key_path}"
+
+            mv "${packed_path}" "${output_path}"
+          }
+
+          chrome_bin="$(detect_chrome_bin)"
+          release_dir="${GITHUB_WORKSPACE}/release"
+          temp_dir="$(mktemp -d)"
+
+          trap 'rm -rf "'"${temp_dir}"'"; rm -f "'"${GITHUB_WORKSPACE}"'/dist.crx" "'"${GITHUB_WORKSPACE}"'/dist-edge.crx"' EXIT
+
+          chrome_key="${CHROME_CRX_PRIVATE_KEY:-${CRX_PRIVATE_KEY:-}}"
+          edge_key="${EDGE_CRX_PRIVATE_KEY:-${CRX_PRIVATE_KEY:-}}"
+          chrome_key_path="${temp_dir}/chrome.pem"
+          edge_key_path="${temp_dir}/edge.pem"
+          chrome_output="${release_dir}/youran-tab-chrome-${VERSION}.crx"
+          chrome_store_output="${release_dir}/youran-tab-chrome-webstore-${VERSION}.zip"
+          edge_output="${release_dir}/youran-tab-edge-${VERSION}.crx"
+          firefox_output="${release_dir}/youran-tab-firefox-${VERSION}-unsigned.xpi"
+
+          mkdir -p "${release_dir}"
+
+          write_key_file "${chrome_key}" "${chrome_key_path}"
+          write_key_file "${edge_key}" "${edge_key_path}"
+
+          bun run build
+          bun run build:edge
+          bun run build:firefox
+
+          pack_crx "${chrome_bin}" dist "${chrome_key_path}" "${chrome_output}"
+          pack_crx "${chrome_bin}" dist-edge "${edge_key_path}" "${edge_output}"
+
+          rm -f "${chrome_store_output}" "${firefox_output}"
+          (
+            cd "${GITHUB_WORKSPACE}/dist"
+            zip -qr "${chrome_store_output}" . -x '*.DS_Store' '*/.DS_Store'
+          )
+
+          (
+            cd "${GITHUB_WORKSPACE}/dist-firefox"
+            zip -qr "${firefox_output}" . -x '*.DS_Store' '*/.DS_Store'
+          )
+
+          printf 'Created %s\n' "${chrome_output}"
+          printf 'Created %s\n' "${chrome_store_output}"
+          printf 'Created %s\n' "${edge_output}"
+          printf 'Created %s\n' "${firefox_output}"
+
+      - name: Publish GitHub Release
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" release/*.crx release/*.zip release/*.xpi --clobber
+          else
+            gh release create "${TAG_NAME}" release/*.crx release/*.zip release/*.xpi \
+              --title "youran-tab ${VERSION}" \
+              --generate-notes
+          fi
+
+      - name: Validate Chrome Web Store secrets
+        if: steps.version.outputs.changed == 'true'
+        env:
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=()
+          [[ -n "${CWS_EXTENSION_ID}" ]] || missing+=("CWS_EXTENSION_ID")
+          [[ -n "${CWS_PUBLISHER_ID}" ]] || missing+=("CWS_PUBLISHER_ID")
+          [[ -n "${CWS_SERVICE_ACCOUNT_JSON}" ]] || missing+=("CWS_SERVICE_ACCOUNT_JSON")
+
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required GitHub secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Authenticate Chrome Web Store API
+        id: cws-auth
+        if: steps.version.outputs.changed == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+
+      - name: Publish to Chrome Web Store
+        if: steps.version.outputs.changed == 'true'
+        env:
+          CWS_ACCESS_TOKEN: ${{ steps.cws-auth.outputs.access_token }}
+          CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          upload_file="${GITHUB_WORKSPACE}/release/youran-tab-chrome-webstore-${VERSION}.zip"
+          item_name="publishers/${CWS_PUBLISHER_ID}/items/${CWS_EXTENSION_ID}"
+          upload_url="https://chromewebstore.googleapis.com/upload/v2/${item_name}:upload"
+          status_url="https://chromewebstore.googleapis.com/v2/${item_name}:fetchStatus"
+          publish_url="https://chromewebstore.googleapis.com/v2/${item_name}:publish"
+
+          if [[ ! -f "${upload_file}" ]]; then
+            printf 'Chrome Web Store upload package not found: %s\n' "${upload_file}" >&2
+            exit 1
+          fi
+
+          read_json_field() {
+            local file_path="$1"
+            local field_name="$2"
+            node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8') || '{}'); process.stdout.write(String(data[process.argv[2]] || ''));" "${file_path}" "${field_name}"
+          }
+
+          assert_success_response() {
+            local http_code="$1"
+            local body_path="$2"
+            local action_name="$3"
+
+            cat "${body_path}"
+            printf '\n'
+
+            if [[ "${http_code}" != 2* ]]; then
+              printf '%s failed with HTTP %s.\n' "${action_name}" "${http_code}" >&2
+              exit 1
+            fi
+          }
+
+          upload_body="$(mktemp)"
+          upload_code="$(curl -sS -w '%{http_code}' -o "${upload_body}" \
+            -H "Authorization: Bearer ${CWS_ACCESS_TOKEN}" \
+            -H "Content-Type: application/zip" \
+            -X POST \
+            -T "${upload_file}" \
+            "${upload_url}")"
+          assert_success_response "${upload_code}" "${upload_body}" "Chrome Web Store upload"
+
+          upload_state="$(read_json_field "${upload_body}" "uploadState")"
+
+          if [[ "${upload_state}" == "IN_PROGRESS" || "${upload_state}" == "UPLOAD_IN_PROGRESS" ]]; then
+            for attempt in {1..30}; do
+              sleep 10
+
+              status_body="$(mktemp)"
+              status_code="$(curl -sS -w '%{http_code}' -o "${status_body}" \
+                -H "Authorization: Bearer ${CWS_ACCESS_TOKEN}" \
+                -X GET \
+                "${status_url}")"
+              assert_success_response "${status_code}" "${status_body}" "Chrome Web Store fetchStatus"
+
+              upload_state="$(read_json_field "${status_body}" "lastAsyncUploadState")"
+              if [[ "${upload_state}" != "IN_PROGRESS" && "${upload_state}" != "UPLOAD_IN_PROGRESS" ]]; then
+                break
+              fi
+
+              printf 'Chrome Web Store upload is still processing. Attempt %s/30.\n' "${attempt}"
+            done
+          fi
+
+          if [[ "${upload_state}" == "FAILED" || "${upload_state}" == "NOT_FOUND" ]]; then
+            printf 'Chrome Web Store upload did not succeed. State: %s\n' "${upload_state}" >&2
+            exit 1
+          fi
+
+          if [[ "${upload_state}" == "IN_PROGRESS" || "${upload_state}" == "UPLOAD_IN_PROGRESS" ]]; then
+            printf 'Chrome Web Store upload is still processing after polling.\n' >&2
+            exit 1
+          fi
+
+          publish_body="$(mktemp)"
+          publish_code="$(curl -sS -w '%{http_code}' -o "${publish_body}" \
+            -H "Authorization: Bearer ${CWS_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            -d '{"publishType":"DEFAULT_PUBLISH","blockOnWarnings":true}' \
+            "${publish_url}")"
+          assert_success_response "${publish_code}" "${publish_body}" "Chrome Web Store publish"
