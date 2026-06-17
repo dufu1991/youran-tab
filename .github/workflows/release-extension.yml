@@ -111,22 +111,37 @@ jobs:
             local key_content="$1"
             local key_path="$2"
 
-            if [[ -z "${key_content}" ]]; then
-              echo "Missing private key for CRX packaging." >&2
-              exit 1
-            fi
-
             printf '%s' "${key_content}" > "${key_path}"
+            chmod 600 "${key_path}"
           }
 
-          pack_crx() {
+          zip_dir() {
+            local source_dir="$1"
+            local output_path="$2"
+
+            rm -f "${output_path}"
+            (
+              cd "${GITHUB_WORKSPACE}/${source_dir}"
+              zip -qr "${output_path}" . -x '*.DS_Store' '*/.DS_Store'
+            )
+          }
+
+          pack_crx_if_key() {
             local chrome_bin="$1"
             local source_dir="$2"
-            local key_path="$3"
-            local output_path="$4"
+            local key_content="$3"
+            local key_path="$4"
+            local output_path="$5"
+            local browser_name="$6"
             local packed_path="${GITHUB_WORKSPACE}/${source_dir}.crx"
 
+            if [[ -z "${key_content}" ]]; then
+              printf 'Skipping %s CRX packaging because no private key secret is configured.\n' "${browser_name}"
+              return 0
+            fi
+
             rm -f "${packed_path}" "${output_path}"
+            write_key_file "${key_content}" "${key_path}"
 
             "${chrome_bin}" \
               --no-sandbox \
@@ -136,7 +151,6 @@ jobs:
             mv "${packed_path}" "${output_path}"
           }
 
-          chrome_bin="$(detect_chrome_bin)"
           release_dir="${GITHUB_WORKSPACE}/release"
           temp_dir="$(mktemp -d)"
 
@@ -146,38 +160,38 @@ jobs:
           edge_key="${EDGE_CRX_PRIVATE_KEY:-${CRX_PRIVATE_KEY:-}}"
           chrome_key_path="${temp_dir}/chrome.pem"
           edge_key_path="${temp_dir}/edge.pem"
-          chrome_output="${release_dir}/youran-tab-chrome-${VERSION}.crx"
+          chrome_output="${release_dir}/youran-tab-chrome-${VERSION}.zip"
           chrome_store_output="${release_dir}/youran-tab-chrome-webstore-${VERSION}.zip"
-          edge_output="${release_dir}/youran-tab-edge-${VERSION}.crx"
+          chrome_crx_output="${release_dir}/youran-tab-chrome-${VERSION}.crx"
+          edge_output="${release_dir}/youran-tab-edge-${VERSION}.zip"
+          edge_crx_output="${release_dir}/youran-tab-edge-${VERSION}.crx"
           firefox_output="${release_dir}/youran-tab-firefox-${VERSION}-unsigned.xpi"
+          chrome_bin=""
 
           mkdir -p "${release_dir}"
-
-          write_key_file "${chrome_key}" "${chrome_key_path}"
-          write_key_file "${edge_key}" "${edge_key_path}"
 
           bun run build
           bun run build:edge
           bun run build:firefox
 
-          pack_crx "${chrome_bin}" dist "${chrome_key_path}" "${chrome_output}"
-          pack_crx "${chrome_bin}" dist-edge "${edge_key_path}" "${edge_output}"
+          zip_dir dist "${chrome_output}"
+          zip_dir dist "${chrome_store_output}"
+          zip_dir dist-edge "${edge_output}"
+          zip_dir dist-firefox "${firefox_output}"
 
-          rm -f "${chrome_store_output}" "${firefox_output}"
-          (
-            cd "${GITHUB_WORKSPACE}/dist"
-            zip -qr "${chrome_store_output}" . -x '*.DS_Store' '*/.DS_Store'
-          )
+          if [[ -n "${chrome_key}" || -n "${edge_key}" ]]; then
+            chrome_bin="$(detect_chrome_bin)"
+          fi
 
-          (
-            cd "${GITHUB_WORKSPACE}/dist-firefox"
-            zip -qr "${firefox_output}" . -x '*.DS_Store' '*/.DS_Store'
-          )
+          pack_crx_if_key "${chrome_bin}" dist "${chrome_key}" "${chrome_key_path}" "${chrome_crx_output}" "Chrome"
+          pack_crx_if_key "${chrome_bin}" dist-edge "${edge_key}" "${edge_key_path}" "${edge_crx_output}" "Edge"
 
           printf 'Created %s\n' "${chrome_output}"
           printf 'Created %s\n' "${chrome_store_output}"
           printf 'Created %s\n' "${edge_output}"
           printf 'Created %s\n' "${firefox_output}"
+          [[ -f "${chrome_crx_output}" ]] && printf 'Created %s\n' "${chrome_crx_output}"
+          [[ -f "${edge_crx_output}" ]] && printf 'Created %s\n' "${edge_crx_output}"
 
       - name: Publish GitHub Release
         if: steps.version.outputs.changed == 'true'
@@ -187,10 +201,18 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
+          shopt -s nullglob
+          assets=(release/*.crx release/*.zip release/*.xpi)
+
+          if (( ${#assets[@]} == 0 )); then
+            printf 'No release assets found.\n' >&2
+            exit 1
+          fi
+
           if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
-            gh release upload "${TAG_NAME}" release/*.crx release/*.zip release/*.xpi --clobber
+            gh release upload "${TAG_NAME}" "${assets[@]}" --clobber
           else
-            gh release create "${TAG_NAME}" release/*.crx release/*.zip release/*.xpi \
+            gh release create "${TAG_NAME}" "${assets[@]}" \
               --title "youran-tab ${VERSION}" \
               --generate-notes
           fi
