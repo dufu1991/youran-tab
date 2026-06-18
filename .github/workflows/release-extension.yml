@@ -19,7 +19,7 @@ on:
       publish_firefox:
         description: '发布到 Firefox Add-ons'
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
@@ -90,7 +90,7 @@ jobs:
           else
             publish_chrome="true"
             publish_edge="true"
-            publish_firefox="false"
+            publish_firefox="true"
           fi
 
           printf 'chrome=%s\n' "${publish_chrome}" >> "${GITHUB_OUTPUT}"
