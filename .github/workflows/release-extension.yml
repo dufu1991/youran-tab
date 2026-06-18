@@ -207,6 +207,9 @@ jobs:
         run: |
           shopt -s nullglob
           assets=(release/*.crx release/*.zip release/*.xpi)
+          release_notes="$(mktemp)"
+
+          printf '完整版本记录请看：\n%s\n' 'https://youran-tab.du-fu.com/#changelog' > "${release_notes}"
 
           if (( ${#assets[@]} == 0 )); then
             printf 'No release assets found.\n' >&2
@@ -214,11 +217,14 @@ jobs:
           fi
 
           if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release edit "${TAG_NAME}" \
+              --title "youran-tab ${VERSION}" \
+              --notes-file "${release_notes}"
             gh release upload "${TAG_NAME}" "${assets[@]}" --clobber
           else
             gh release create "${TAG_NAME}" "${assets[@]}" \
               --title "youran-tab ${VERSION}" \
-              --generate-notes
+              --notes-file "${release_notes}"
           fi
 
       - name: Validate Chrome Web Store secrets
