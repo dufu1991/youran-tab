@@ -644,11 +644,14 @@ jobs:
           set -euo pipefail
 
           source_zip="${GITHUB_WORKSPACE}/release/youran-tab-source-${VERSION}.zip"
+          amo_metadata="$(mktemp)"
 
           if [[ ! -f "${source_zip}" ]]; then
             printf 'Firefox source package not found: %s\n' "${source_zip}" >&2
             exit 1
           fi
+
+          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ version: { approval_notes: 'Automated release from GitHub Actions. Full changelog: https://youran-tab.du-fu.com/#changelog\\n\\nSource build steps:\\n1. bun install\\n2. bun run build:firefox\\n3. SOURCE_ZIP_OUTPUT=release/youran-tab-source-${VERSION}.zip bun run pack:source' } }));" "${amo_metadata}"
 
           bunx web-ext@latest sign \
             --source-dir "${GITHUB_WORKSPACE}/dist-firefox" \
@@ -656,6 +659,7 @@ jobs:
             --channel listed \
             --api-key "${AMO_API_KEY}" \
             --api-secret "${AMO_API_SECRET}" \
+            --amo-metadata "${amo_metadata}" \
             --approval-timeout 0 \
             --upload-source-code "${source_zip}" \
             --no-input
