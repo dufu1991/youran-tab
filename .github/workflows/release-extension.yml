@@ -190,8 +190,12 @@ jobs:
           printf 'Created %s\n' "${chrome_store_output}"
           printf 'Created %s\n' "${edge_output}"
           printf 'Created %s\n' "${firefox_output}"
-          [[ -f "${chrome_crx_output}" ]] && printf 'Created %s\n' "${chrome_crx_output}"
-          [[ -f "${edge_crx_output}" ]] && printf 'Created %s\n' "${edge_crx_output}"
+          if [[ -f "${chrome_crx_output}" ]]; then
+            printf 'Created %s\n' "${chrome_crx_output}"
+          fi
+          if [[ -f "${edge_crx_output}" ]]; then
+            printf 'Created %s\n' "${edge_crx_output}"
+          fi
 
       - name: Publish GitHub Release
         if: steps.version.outputs.changed == 'true'
