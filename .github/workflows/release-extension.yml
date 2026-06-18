@@ -522,6 +522,20 @@ jobs:
             fi
           }
 
+          assert_success_response() {
+            local http_code="$1"
+            local body_path="$2"
+            local action_name="$3"
+
+            cat "${body_path}"
+            printf '\n'
+
+            if [[ "${http_code}" != 2* ]]; then
+              printf '%s failed with HTTP %s.\n' "${action_name}" "${http_code}" >&2
+              exit 1
+            fi
+          }
+
           poll_edge_operation() {
             local operation_url="$1"
             local action_name="$2"
@@ -534,7 +548,7 @@ jobs:
                 -H "X-ClientID: ${EDGE_CLIENT_ID}" \
                 -X GET \
                 "${operation_url}")"
-              assert_accepted_response "${status_code}" "${status_body}" "${action_name} status"
+              assert_success_response "${status_code}" "${status_body}" "${action_name} status"
 
               status="$(read_json_field "${status_body}" "status")"
               if [[ -z "${status}" ]]; then
