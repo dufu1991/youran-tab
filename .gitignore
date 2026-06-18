@@ -11,4 +11,3 @@ release/youran-tab-source.zip
 bun.lock
 store/
 .keys/
-scripts/pack-source-zip.js
