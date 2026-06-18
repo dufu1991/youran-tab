@@ -244,11 +244,65 @@ jobs:
       - name: Authenticate Chrome Web Store API
         id: cws-auth
         if: steps.version.outputs.changed == 'true'
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+        env:
+          CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          token_request="$(mktemp)"
+          token_body="$(mktemp)"
+
+          node > "${token_request}" <<'NODE'
+          const crypto = require('node:crypto');
+
+          const serviceAccount = JSON.parse(process.env.CWS_SERVICE_ACCOUNT_JSON);
+          const now = Math.floor(Date.now() / 1000);
+          const base64url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
+          const header = { alg: 'RS256', typ: 'JWT' };
+          const claim = {
+            iss: serviceAccount.client_email,
+            scope: 'https://www.googleapis.com/auth/chromewebstore',
+            aud: 'https://oauth2.googleapis.com/token',
+            iat: now,
+            exp: now + 3600,
+          };
+          const unsignedToken = `${base64url(header)}.${base64url(claim)}`;
+          const signer = crypto.createSign('RSA-SHA256');
+          signer.update(unsignedToken);
+          const signature = signer.sign(serviceAccount.private_key).toString('base64url');
+          const assertion = `${unsignedToken}.${signature}`;
+
+          process.stdout.write(
+            new URLSearchParams({
+              grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+              assertion,
+            }).toString(),
+          );
+          NODE
+
+          token_code="$(curl -sS -w '%{http_code}' -o "${token_body}" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data @"${token_request}" \
+            "https://oauth2.googleapis.com/token")"
+
+          if [[ "${token_code}" != 2* ]]; then
+            cat "${token_body}"
+            printf '\n'
+            printf 'Chrome Web Store token exchange failed with HTTP %s.\n' "${token_code}" >&2
+            exit 1
+          fi
+
+          access_token="$(node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8') || '{}'); process.stdout.write(String(data.access_token || ''));" "${token_body}")"
+          if [[ -z "${access_token}" ]]; then
+            cat "${token_body}"
+            printf '\n'
+            printf 'Chrome Web Store token exchange did not return access_token.\n' >&2
+            exit 1
+          fi
+
+          echo "::add-mask::${access_token}"
+          printf 'access_token=%s\n' "${access_token}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish to Chrome Web Store
         if: steps.version.outputs.changed == 'true'
