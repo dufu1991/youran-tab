@@ -7,6 +7,19 @@ on:
     paths:
       - package.json
   workflow_dispatch:
+    inputs:
+      publish_chrome:
+        description: '发布到 Chrome Web Store'
+        type: boolean
+        default: true
+      publish_edge:
+        description: '发布到 Microsoft Edge Add-ons'
+        type: boolean
+        default: true
+      publish_firefox:
+        description: '发布到 Firefox Add-ons'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -57,6 +70,33 @@ jobs:
           else
             printf 'package.json changed, but version stayed at %s. Skipping release.\n' "${current_version}"
           fi
+
+      - name: Resolve publish targets
+        id: targets
+        if: steps.version.outputs.changed == 'true'
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PUBLISH_CHROME: ${{ inputs.publish_chrome }}
+          INPUT_PUBLISH_EDGE: ${{ inputs.publish_edge }}
+          INPUT_PUBLISH_FIREFOX: ${{ inputs.publish_firefox }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            publish_chrome="${INPUT_PUBLISH_CHROME:-false}"
+            publish_edge="${INPUT_PUBLISH_EDGE:-false}"
+            publish_firefox="${INPUT_PUBLISH_FIREFOX:-false}"
+          else
+            publish_chrome="true"
+            publish_edge="true"
+            publish_firefox="false"
+          fi
+
+          printf 'chrome=%s\n' "${publish_chrome}" >> "${GITHUB_OUTPUT}"
+          printf 'edge=%s\n' "${publish_edge}" >> "${GITHUB_OUTPUT}"
+          printf 'firefox=%s\n' "${publish_firefox}" >> "${GITHUB_OUTPUT}"
+          printf 'Publish targets: chrome=%s edge=%s firefox=%s\n' "${publish_chrome}" "${publish_edge}" "${publish_firefox}"
 
       - name: Setup Bun
         if: steps.version.outputs.changed == 'true'
@@ -166,6 +206,7 @@ jobs:
           edge_output="${release_dir}/youran-tab-edge-${VERSION}.zip"
           edge_crx_output="${release_dir}/youran-tab-edge-${VERSION}.crx"
           firefox_output="${release_dir}/youran-tab-firefox-${VERSION}-unsigned.xpi"
+          source_output="${release_dir}/youran-tab-source-${VERSION}.zip"
           chrome_bin=""
 
           mkdir -p "${release_dir}"
@@ -178,6 +219,7 @@ jobs:
           zip_dir dist "${chrome_store_output}"
           zip_dir dist-edge "${edge_output}"
           zip_dir dist-firefox "${firefox_output}"
+          SOURCE_ZIP_OUTPUT="${source_output}" bun run pack:source
 
           if [[ -n "${chrome_key}" || -n "${edge_key}" ]]; then
             chrome_bin="$(detect_chrome_bin)"
@@ -190,6 +232,7 @@ jobs:
           printf 'Created %s\n' "${chrome_store_output}"
           printf 'Created %s\n' "${edge_output}"
           printf 'Created %s\n' "${firefox_output}"
+          printf 'Created %s\n' "${source_output}"
           if [[ -f "${chrome_crx_output}" ]]; then
             printf 'Created %s\n' "${chrome_crx_output}"
           fi
@@ -228,7 +271,7 @@ jobs:
           fi
 
       - name: Validate Chrome Web Store secrets
-        if: steps.version.outputs.changed == 'true'
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
           CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
@@ -249,7 +292,7 @@ jobs:
 
       - name: Authenticate Chrome Web Store API
         id: cws-auth
-        if: steps.version.outputs.changed == 'true'
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
         shell: bash
@@ -311,7 +354,7 @@ jobs:
           printf 'access_token=%s\n' "${access_token}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish to Chrome Web Store
-        if: steps.version.outputs.changed == 'true'
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_ACCESS_TOKEN: ${{ steps.cws-auth.outputs.access_token }}
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
@@ -401,3 +444,204 @@ jobs:
             -d '{"publishType":"DEFAULT_PUBLISH","blockOnWarnings":true}' \
             "${publish_url}")"
           assert_success_response "${publish_code}" "${publish_body}" "Chrome Web Store publish"
+
+      - name: Validate Edge Add-ons secrets
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.edge == 'true'
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=()
+          [[ -n "${EDGE_PRODUCT_ID}" ]] || missing+=("EDGE_PRODUCT_ID")
+          [[ -n "${EDGE_CLIENT_ID}" ]] || missing+=("EDGE_CLIENT_ID")
+          [[ -n "${EDGE_API_KEY}" ]] || missing+=("EDGE_API_KEY")
+
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required GitHub secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Publish to Microsoft Edge Add-ons
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.edge == 'true'
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api_root="https://api.addons.microsoftedge.microsoft.com"
+          upload_file="${GITHUB_WORKSPACE}/release/youran-tab-edge-${VERSION}.zip"
+          upload_url="${api_root}/v1/products/${EDGE_PRODUCT_ID}/submissions/draft/package"
+          publish_url="${api_root}/v1/products/${EDGE_PRODUCT_ID}/submissions"
+
+          if [[ ! -f "${upload_file}" ]]; then
+            printf 'Edge Add-ons upload package not found: %s\n' "${upload_file}" >&2
+            exit 1
+          fi
+
+          read_json_field() {
+            local file_path="$1"
+            local field_name="$2"
+            node -e "const fs = require('node:fs'); const data = JSON.parse(fs.readFileSync(process.argv[1], 'utf8') || '{}'); process.stdout.write(String(data[process.argv[2]] || ''));" "${file_path}" "${field_name}"
+          }
+
+          read_location_header() {
+            local headers_path="$1"
+            node -e "const fs = require('node:fs'); const headers = fs.readFileSync(process.argv[1], 'utf8').split(/\\r?\\n/); const line = headers.find((item) => item.toLowerCase().startsWith('location:')); process.stdout.write(line ? line.slice(line.indexOf(':') + 1).trim() : '');" "${headers_path}"
+          }
+
+          edge_operation_url() {
+            local base_url="$1"
+            local operation_id="$2"
+
+            if [[ "${operation_id}" == http://* || "${operation_id}" == https://* ]]; then
+              printf '%s\n' "${operation_id}"
+            else
+              printf '%s/operations/%s\n' "${base_url}" "${operation_id}"
+            fi
+          }
+
+          assert_accepted_response() {
+            local http_code="$1"
+            local body_path="$2"
+            local action_name="$3"
+
+            cat "${body_path}"
+            printf '\n'
+
+            if [[ "${http_code}" != "202" ]]; then
+              printf '%s failed with HTTP %s.\n' "${action_name}" "${http_code}" >&2
+              exit 1
+            fi
+          }
+
+          poll_edge_operation() {
+            local operation_url="$1"
+            local action_name="$2"
+            local status=""
+
+            for attempt in {1..30}; do
+              status_body="$(mktemp)"
+              status_code="$(curl -sS -w '%{http_code}' -o "${status_body}" \
+                -H "Authorization: ApiKey ${EDGE_API_KEY}" \
+                -H "X-ClientID: ${EDGE_CLIENT_ID}" \
+                -X GET \
+                "${operation_url}")"
+              assert_accepted_response "${status_code}" "${status_body}" "${action_name} status"
+
+              status="$(read_json_field "${status_body}" "status")"
+              if [[ -z "${status}" ]]; then
+                printf '%s status response did not include status.\n' "${action_name}" >&2
+                exit 1
+              fi
+
+              if [[ "${status}" != "InProgress" ]]; then
+                if [[ "${status}" == *Failed* || "${status}" == *Error* ]]; then
+                  printf '%s failed. Status: %s\n' "${action_name}" "${status}" >&2
+                  exit 1
+                fi
+
+                printf '%s completed. Status: %s\n' "${action_name}" "${status}"
+                return 0
+              fi
+
+              printf '%s is still processing. Attempt %s/30.\n' "${action_name}" "${attempt}"
+              sleep 10
+            done
+
+            printf '%s is still processing after polling.\n' "${action_name}" >&2
+            exit 1
+          }
+
+          upload_headers="$(mktemp)"
+          upload_body="$(mktemp)"
+          upload_code="$(curl -sS -D "${upload_headers}" -w '%{http_code}' -o "${upload_body}" \
+            -H "Authorization: ApiKey ${EDGE_API_KEY}" \
+            -H "X-ClientID: ${EDGE_CLIENT_ID}" \
+            -H "Content-Type: application/zip" \
+            -X POST \
+            -T "${upload_file}" \
+            "${upload_url}")"
+          assert_accepted_response "${upload_code}" "${upload_body}" "Edge Add-ons upload"
+
+          upload_operation_id="$(read_location_header "${upload_headers}")"
+          if [[ -z "${upload_operation_id}" ]]; then
+            printf 'Edge Add-ons upload did not return Location header.\n' >&2
+            exit 1
+          fi
+
+          poll_edge_operation "$(edge_operation_url "${upload_url}" "${upload_operation_id}")" "Edge Add-ons upload"
+
+          publish_payload="$(mktemp)"
+          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ notes: 'Automated release from GitHub Actions. Full changelog: https://youran-tab.du-fu.com/#changelog' }));" "${publish_payload}"
+
+          publish_headers="$(mktemp)"
+          publish_body="$(mktemp)"
+          publish_code="$(curl -sS -D "${publish_headers}" -w '%{http_code}' -o "${publish_body}" \
+            -H "Authorization: ApiKey ${EDGE_API_KEY}" \
+            -H "X-ClientID: ${EDGE_CLIENT_ID}" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            --data @"${publish_payload}" \
+            "${publish_url}")"
+          assert_accepted_response "${publish_code}" "${publish_body}" "Edge Add-ons publish"
+
+          publish_operation_id="$(read_location_header "${publish_headers}")"
+          if [[ -z "${publish_operation_id}" ]]; then
+            printf 'Edge Add-ons publish did not return Location header.\n' >&2
+            exit 1
+          fi
+
+          poll_edge_operation "$(edge_operation_url "${publish_url}" "${publish_operation_id}")" "Edge Add-ons publish"
+
+      - name: Validate Firefox Add-ons secrets
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.firefox == 'true'
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=()
+          [[ -n "${AMO_API_KEY}" ]] || missing+=("AMO_API_KEY")
+          [[ -n "${AMO_API_SECRET}" ]] || missing+=("AMO_API_SECRET")
+
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing required GitHub secrets: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Publish to Firefox Add-ons
+        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.firefox == 'true'
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source_zip="${GITHUB_WORKSPACE}/release/youran-tab-source-${VERSION}.zip"
+
+          if [[ ! -f "${source_zip}" ]]; then
+            printf 'Firefox source package not found: %s\n' "${source_zip}" >&2
+            exit 1
+          fi
+
+          bunx web-ext@latest sign \
+            --source-dir "${GITHUB_WORKSPACE}/dist-firefox" \
+            --artifacts-dir "${GITHUB_WORKSPACE}/release" \
+            --channel listed \
+            --api-key "${AMO_API_KEY}" \
+            --api-secret "${AMO_API_SECRET}" \
+            --approval-timeout 0 \
+            --upload-source-code "${source_zip}" \
+            --no-input
