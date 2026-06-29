@@ -1,8 +1,5 @@
 import { cloneEntry, createFolderEntry, getFolderSites, isFolderItem } from './folders.js'
-
-function getAppVersion() {
-  try { return chrome.runtime.getManifest().version } catch { return '0.0.0' }
-}
+import { getAppVersion } from './appInfo.js'
 
 const SETTINGS_KEYS = {
   newtab_theme: 'theme',
@@ -177,5 +174,5 @@ export function importSettingsData(settings) {
 
 export function getExportFilename(type) {
   const suffix = type === 'all' ? '' : `-${type}`
-  return `youran-tab${suffix}.json`
+  return `youran-tab${suffix}-v${getAppVersion()}.json`
 }
