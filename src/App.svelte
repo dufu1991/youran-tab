@@ -8,6 +8,7 @@
   import ImportModal from './lib/ImportModal.svelte'
   import DynamicBackground from './lib/DynamicBackground.svelte'
   import { getCachedDynamicThumbnail, getDynamicThumbnailKey, requestDynamicThumbnail } from './lib/dynamicBackgroundRuntime.js'
+  import { CHANGELOG_URL, getAppVersion } from './lib/appInfo.js'
   import TerminalTheme from './lib/themes/TerminalTheme.svelte'
   import DefaultTheme from './lib/themes/DefaultTheme.svelte'
   import MinimalTheme from './lib/themes/MinimalTheme.svelte'
@@ -24,6 +25,7 @@
   const bgTypes = ['none', 'solid', 'gradient', 'image', 'dynamic', 'random']
   const randomScopes = ['solid', 'gradient', 'image', 'dynamic']
   const defaultRandomScopes = ['solid', 'gradient', 'dynamic']
+  const appVersion = getAppVersion()
 
   let showModal = $state(false)
   let editingSite = $state(null)
@@ -404,6 +406,10 @@
     }
   }
 
+  function openChangelog() {
+    window.open(CHANGELOG_URL, '_blank', 'noopener,noreferrer')
+  }
+
   function getTabsApi() {
     if (typeof browser !== 'undefined' && browser.tabs?.create) return browser.tabs
     if (typeof chrome !== 'undefined' && chrome.tabs?.create) return chrome.tabs
@@ -566,25 +572,27 @@
         $showSettings = !$showSettings
       }}
       aria-label="Settings"
-    >⚙</button>
+    >
+      ⚙
+    </button>
   {/if}
 
   <!-- 设置面板 -->
   {#if $showSettings}
     <div class="fixed inset-0 z-90" onclick={(e) => { if (e.target === e.currentTarget) $showSettings = false }} role="presentation">
-      <div class="fixed bottom-14 right-4 z-91 max-w-xs rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto whitespace-nowrap
+      <div class="fixed bottom-14 right-4 z-91 max-w-xs rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
         {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}" data-no-context-menu>
 
         <!-- 主题 + 模式 + 对齐 + 语言 -->
-        <div class="space-y-2">
+        <div class="settings-separated">
           <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.theme')}
             </div>
-            <div class="grid grid-cols-4 rounded overflow-hidden">
+            <div class="settings-segmented settings-segmented-grid settings-segmented-cols-4">
               {#each themeKeys as key}
                 <button
-                  class="px-2.5 py-1 text-xs transition-all
+                  class="settings-segmented-button transition-all
                     {$theme === key
                       ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
                       : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
@@ -597,10 +605,10 @@
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.mode')}
             </div>
-            <div class="inline-flex rounded overflow-hidden">
+            <div class="settings-segmented settings-segmented-row">
               {#each modes as m}
                 <button
-                  class="px-2.5 py-1 text-xs transition-all
+                  class="settings-segmented-button transition-all
                     {$mode === m
                       ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
                       : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
@@ -613,10 +621,10 @@
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.align')}
             </div>
-            <div class="inline-flex rounded overflow-hidden">
+            <div class="settings-segmented settings-segmented-row">
               {#each ['top', 'center', 'bottom'] as a}
                 <button
-                  class="px-2.5 py-1 text-xs transition-all
+                  class="settings-segmented-button transition-all
                     {$themeAlign[$theme] === a
                       ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
                       : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
@@ -674,213 +682,218 @@
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.background')}
             </div>
-            <div class="inline-flex rounded overflow-hidden mb-2">
-              {#each bgTypes as bt}
-                <button
-                  class="px-2.5 py-1 text-xs transition-all
-                    {$bgConfig.type === bt
-                      ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
-                  onclick={() => bgConfig.set('type', bt)}
-                >{$t('settings.bg' + bt.charAt(0).toUpperCase() + bt.slice(1))}</button>
-              {/each}
-            </div>
-
-            {#if $bgConfig.type === 'solid'}
-              <div class="space-y-2">
-                <div class="grid grid-cols-6 gap-1.5">
-                  {#each ($isDark ? $solidPresets.dark : $solidPresets.light) as color, i}
-                    <div class="relative group">
-                      <button
-                        class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                        style="background:{color}"
-                        onclick={() => bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', i)}
-                        aria-label="{$t('settings.bgSolid')} {i + 1}"
-                      ></button>
-                      <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        onclick={() => $isDark ? solidPresets.removeDark(i) : solidPresets.removeLight(i)}>×</button>
-                    </div>
-                  {/each}
-                  {#if ($isDark ? $solidPresets.dark : $solidPresets.light).length < BACKGROUND_PRESET_LIMIT}
-                    <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                      onclick={() => $isDark ? solidPresets.addDark() : solidPresets.addLight()}>+</button>
-                  {/if}
-                </div>
-                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.bgGeneratedHint')}
-                </p>
-                <button
-                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                  onclick={regenerateSolidPresets}
-                >{$t('settings.bgRegenerate')}</button>
+            <div class="settings-separated">
+              <div class="settings-segmented settings-segmented-grid">
+                {#each bgTypes as bt}
+                  <button
+                    class="settings-segmented-button transition-all
+                      {$bgConfig.type === bt
+                        ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
+                        : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                    onclick={() => bgConfig.set('type', bt)}
+                  >{$t('settings.bg' + bt.charAt(0).toUpperCase() + bt.slice(1))}</button>
+                {/each}
               </div>
-            {/if}
 
-            {#if $bgConfig.type === 'gradient'}
-              <div class="space-y-2">
-                <div class="grid grid-cols-6 gap-1.5">
-                  {#each ($isDark ? $gradientPresets.dark : $gradientPresets.light) as g, i}
-                    <div class="relative group">
-                      <button
-                        class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                        style="background:{g}"
-                        onclick={() => bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', i)}
-                        aria-label="{$t('settings.bgGradient')} {i + 1}"
-                      ></button>
-                      <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        onclick={() => $isDark ? gradientPresets.removeDark(i) : gradientPresets.removeLight(i)}>×</button>
-                    </div>
-                  {/each}
-                  {#if ($isDark ? $gradientPresets.dark : $gradientPresets.light).length < BACKGROUND_PRESET_LIMIT}
-                    <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                      onclick={() => $isDark ? gradientPresets.addDark() : gradientPresets.addLight()}>+</button>
-                  {/if}
-                </div>
-                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.bgGeneratedHint')}
-                </p>
-                <button
-                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                  onclick={regenerateGradientPresets}
-                >{$t('settings.bgRegenerate')}</button>
-              </div>
-            {/if}
-
-            {#if $bgConfig.type === 'image'}
-              <div class="space-y-2">
-                <div class="grid grid-cols-6 gap-1.5">
-                  {#each $bgImageUrls as url, i}
-                    <div class="relative group">
-                      <button class="w-full aspect-video rounded overflow-hidden transition-all
-                        {$bgConfig.imageId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                        onclick={() => bgConfig.set('imageId', i)}>
-                        <img src={url} alt="" class="w-full h-full object-cover" />
-                      </button>
-                      <button
-                        class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        onclick={() => removeBgImage(i)}>×</button>
-                    </div>
-                  {/each}
-                  {#if $bgImageUrls.length < BACKGROUND_PRESET_LIMIT}
-                    <label class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm cursor-pointer
-                      {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}">
-                      +
-                      <input type="file" accept="image/*" multiple class="hidden" onchange={handleBgUpload} />
-                    </label>
-                  {/if}
-                </div>
-                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.bgImageHint')}
-                </p>
-              </div>
-            {/if}
-
-            {#if $bgConfig.type === 'dynamic'}
-              <div class="space-y-2">
-                <div class="grid grid-cols-6 gap-1.5">
-                  {#each currentDynamicPresets as dynamicBg, i}
-                    <div class="relative group">
-                      <button
-                        class="w-full aspect-video rounded transition-all {currentDynamicId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                        style={getDynamicThumbnailStyle(dynamicBg)}
-                        onclick={() => bgConfig.set($isDark ? 'dynamicDarkId' : 'dynamicLightId', i)}
-                        aria-label="{$t('settings.bgDynamic')} {i + 1}"
-                      ></button>
-                      <button
-                        class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        onclick={() => $isDark ? dynamicPresets.removeDark(i) : dynamicPresets.removeLight(i)}>×</button>
-                    </div>
-                  {/each}
-                  {#if currentDynamicPresets.length < BACKGROUND_PRESET_LIMIT}
-                    <button
-                      class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+              {#if $bgConfig.type === 'solid'}
+                <div class="space-y-2">
+                  <div class="grid grid-cols-6 gap-1.5">
+                    {#each ($isDark ? $solidPresets.dark : $solidPresets.light) as color, i}
+                      <div class="relative group">
+                        <button
+                          class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                          style="background:{color}"
+                          onclick={() => bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', i)}
+                          aria-label="{$t('settings.bgSolid')} {i + 1}"
+                        ></button>
+                        <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onclick={() => $isDark ? solidPresets.removeDark(i) : solidPresets.removeLight(i)}>×</button>
+                      </div>
+                    {/each}
+                    {#if ($isDark ? $solidPresets.dark : $solidPresets.light).length < BACKGROUND_PRESET_LIMIT}
+                      <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
                         {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                      onclick={() => $isDark ? dynamicPresets.addDark() : dynamicPresets.addLight()}>+</button>
-                  {/if}
+                        onclick={() => $isDark ? solidPresets.addDark() : solidPresets.addLight()}>+</button>
+                    {/if}
+                  </div>
+                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                    {$t('settings.bgGeneratedHint')}
+                  </p>
+                  <button
+                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                    onclick={regenerateSolidPresets}
+                  >{$t('settings.bgRegenerate')}</button>
                 </div>
-                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.bgGeneratedHint')}
-                </p>
-                <button
-                  class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                  onclick={regenerateDynamicPresets}
-                >{$t('settings.bgRegenerate')}</button>
-              </div>
-            {/if}
+              {/if}
 
-            {#if $bgConfig.type === 'random'}
-              <div class="space-y-1.5">
-                <div class="inline-flex rounded overflow-hidden">
-                  {#each randomScopes as rs}
-                    <button
-                      class="px-2.5 py-1 text-xs transition-all
-                        {isRandomScopeSelected(rs)
-                          ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                          : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
-                      onclick={() => toggleRandomScope(rs)}
-                      aria-pressed={isRandomScopeSelected(rs)}
-                    >{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</button>
-                  {/each}
+              {#if $bgConfig.type === 'gradient'}
+                <div class="space-y-2">
+                  <div class="grid grid-cols-6 gap-1.5">
+                    {#each ($isDark ? $gradientPresets.dark : $gradientPresets.light) as g, i}
+                      <div class="relative group">
+                        <button
+                          class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                          style="background:{g}"
+                          onclick={() => bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', i)}
+                          aria-label="{$t('settings.bgGradient')} {i + 1}"
+                        ></button>
+                        <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onclick={() => $isDark ? gradientPresets.removeDark(i) : gradientPresets.removeLight(i)}>×</button>
+                      </div>
+                    {/each}
+                    {#if ($isDark ? $gradientPresets.dark : $gradientPresets.light).length < BACKGROUND_PRESET_LIMIT}
+                      <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
+                        onclick={() => $isDark ? gradientPresets.addDark() : gradientPresets.addLight()}>+</button>
+                    {/if}
+                  </div>
+                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                    {$t('settings.bgGeneratedHint')}
+                  </p>
+                  <button
+                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                    onclick={regenerateGradientPresets}
+                  >{$t('settings.bgRegenerate')}</button>
                 </div>
-                <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.bgRandomHint')}
-                </p>
-              </div>
-            {/if}
+              {/if}
+
+              {#if $bgConfig.type === 'image'}
+                <div class="space-y-2">
+                  <div class="grid grid-cols-6 gap-1.5">
+                    {#each $bgImageUrls as url, i}
+                      <div class="relative group">
+                        <button class="w-full aspect-video rounded overflow-hidden transition-all
+                          {$bgConfig.imageId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                          onclick={() => bgConfig.set('imageId', i)}>
+                          <img src={url} alt="" class="w-full h-full object-cover" />
+                        </button>
+                        <button
+                          class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onclick={() => removeBgImage(i)}>×</button>
+                      </div>
+                    {/each}
+                    {#if $bgImageUrls.length < BACKGROUND_PRESET_LIMIT}
+                      <label class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm cursor-pointer
+                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}">
+                        +
+                        <input type="file" accept="image/*" multiple class="hidden" onchange={handleBgUpload} />
+                      </label>
+                    {/if}
+                  </div>
+                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                    {$t('settings.bgImageHint')}
+                  </p>
+                </div>
+              {/if}
+
+              {#if $bgConfig.type === 'dynamic'}
+                <div class="space-y-2">
+                  <div class="grid grid-cols-6 gap-1.5">
+                    {#each currentDynamicPresets as dynamicBg, i}
+                      <div class="relative group">
+                        <button
+                          class="w-full aspect-video rounded transition-all {currentDynamicId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
+                          style={getDynamicThumbnailStyle(dynamicBg)}
+                          onclick={() => bgConfig.set($isDark ? 'dynamicDarkId' : 'dynamicLightId', i)}
+                          aria-label="{$t('settings.bgDynamic')} {i + 1}"
+                        ></button>
+                        <button
+                          class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          onclick={() => $isDark ? dynamicPresets.removeDark(i) : dynamicPresets.removeLight(i)}>×</button>
+                      </div>
+                    {/each}
+                    {#if currentDynamicPresets.length < BACKGROUND_PRESET_LIMIT}
+                      <button
+                        class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
+                          {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
+                        onclick={() => $isDark ? dynamicPresets.addDark() : dynamicPresets.addLight()}>+</button>
+                    {/if}
+                  </div>
+                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                    {$t('settings.bgGeneratedHint')}
+                  </p>
+                  <button
+                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
+                    onclick={regenerateDynamicPresets}
+                  >{$t('settings.bgRegenerate')}</button>
+                </div>
+              {/if}
+
+              {#if $bgConfig.type === 'random'}
+                <div class="space-y-1.5">
+                  <div class="settings-segmented settings-segmented-grid settings-segmented-cols-2">
+                    {#each randomScopes as rs}
+                      <button
+                        class="settings-segmented-button transition-all
+                          {isRandomScopeSelected(rs)
+                            ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
+                            : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                        onclick={() => toggleRandomScope(rs)}
+                        aria-pressed={isRandomScopeSelected(rs)}
+                      >{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</button>
+                    {/each}
+                  </div>
+                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                    {$t('settings.bgRandomHint')}
+                  </p>
+                </div>
+              {/if}
+            </div>
           </div>
         {/if}
 
         <!-- 选项（极简/经典/便当通用） -->
         {#if $theme !== 'terminal'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div class="space-y-1">
+          <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.options')}
             </div>
-            {#if $theme === 'default' || $theme === 'bento' || $theme === 'sketch'}
-              <!-- 显示站点标题 -->
+            <div class="settings-separated">
+              {#if $theme === 'default' || $theme === 'bento' || $theme === 'sketch'}
+                <!-- 显示站点标题 -->
+                <label class="flex items-center justify-between cursor-pointer">
+                  <span class="text-sm">{$t('settings.showTitle')}</span>
+                  <button
+                    class="relative w-9 h-5 rounded-full transition-colors {$showSiteTitle ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
+                    onclick={() => showSiteTitle.set(!$showSiteTitle)}
+                    role="switch"
+                    aria-checked={$showSiteTitle}
+                    aria-label={$t('settings.showTitle')}
+                  >
+                    <span
+                      class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$showSiteTitle ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
+                    ></span>
+                  </button>
+                </label>
+              {/if}
+              <!-- 编辑模式 -->
               <label class="flex items-center justify-between cursor-pointer">
-                <span class="text-sm">{$t('settings.showTitle')}</span>
+                <span class="text-sm">{$t('settings.editMode')}</span>
                 <button
-                  class="relative w-9 h-5 rounded-full transition-colors {$showSiteTitle ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                  onclick={() => showSiteTitle.set(!$showSiteTitle)}
+                  class="relative w-9 h-5 rounded-full transition-colors {$editMode ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
+                  onclick={() => editMode.set(!$editMode)}
                   role="switch"
-                  aria-checked={$showSiteTitle}
-                  aria-label={$t('settings.showTitle')}
+                  aria-checked={$editMode}
+                  aria-label={$t('settings.editMode')}
                 >
                   <span
-                    class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$showSiteTitle ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
+                    class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$editMode ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
                   ></span>
                 </button>
               </label>
-            {/if}
-            <!-- 编辑模式 -->
-            <label class="flex items-center justify-between cursor-pointer">
-              <span class="text-sm">{$t('settings.editMode')}</span>
-              <button
-                class="relative w-9 h-5 rounded-full transition-colors {$editMode ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                onclick={() => editMode.set(!$editMode)}
-                role="switch"
-                aria-checked={$editMode}
-                aria-label={$t('settings.editMode')}
-              >
-                <span
-                  class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$editMode ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                ></span>
-              </button>
-            </label>
+            </div>
           </div>
         {/if}
 
         <!-- 经典主题配置 -->
         {#if $theme === 'default'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div class="space-y-1">
+          <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('theme.default')}
             </div>
+            <div class="settings-separated">
             <label class="flex items-center gap-2 text-sm">
               <span class="flex-1">{$t('settings.bentoWidth')}</span>
               <input type="range" min="400" max="1400" step="50" value={$defaultConfig.width}
@@ -923,16 +936,18 @@
                 class="w-36 accent-white" />
               <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.iconSize}</span>
             </label>
+            </div>
           </div>
         {/if}
 
         <!-- Bento 主题配置 -->
         {#if $theme === 'bento'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div class="space-y-1">
+          <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('theme.bento')}
             </div>
+            <div class="settings-separated">
             <label class="flex items-center gap-2 text-sm">
               <span class="flex-1">{$t('settings.bentoWidth')}</span>
               <input type="range" min="400" max="1400" step="50" value={$bentoConfig.width}
@@ -999,16 +1014,18 @@
                 <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.cols}</span>
               </label>
             {/if}
+            </div>
           </div>
         {/if}
 
         <!-- Glass 主题配置 -->
         {#if $theme === 'glass'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div class="space-y-1">
+          <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('theme.glass')}
             </div>
+            <div class="settings-separated">
             <label class="flex items-center gap-2 text-sm">
               <span class="flex-1">{$t('settings.glassCols')}</span>
               <input type="range" min="1" max="4" step="1" value={$glassConfig.cols}
@@ -1016,24 +1033,26 @@
                 class="w-36 accent-white" />
               <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$glassConfig.cols}</span>
             </label>
+            </div>
           </div>
         {/if}
 
         <!-- Bubble 主题配置 -->
         {#if $theme === 'bubble'}
           <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div class="space-y-1">
+          <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('theme.bubble')}
             </div>
+            <div class="settings-separated">
             <div>
               <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
                 {$t('settings.bubbleLayout')}
               </div>
-              <div class="inline-flex rounded overflow-hidden">
+              <div class="settings-segmented settings-segmented-row">
                 {#each ['fixed', 'random'] as layoutMode}
                   <button
-                    class="px-2.5 py-1 text-xs transition-all
+                    class="settings-segmented-button transition-all
                       {$bubbleConfig.layout === layoutMode
                         ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
                         : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
@@ -1049,29 +1068,48 @@
                 class="w-36 accent-white" />
               <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bubbleConfig.size}</span>
             </label>
+            </div>
           </div>
         {/if}
 
         <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-        <div class="flex gap-2">
-          <button
-            class="flex-1 py-1.5 rounded text-xs transition-all
-              {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-            onclick={() => showExportModal = true}
-          >{$t('settings.exportSites')}</button>
-          <button
-            class="flex-1 py-1.5 rounded text-xs transition-all
-              {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-            onclick={() => showImportModal = true}
-          >{$t('settings.importSites')}</button>
+        <div class="space-y-2">
+          <div class="text-xs uppercase tracking-wider {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
+            {$t('settings.update')}
+          </div>
+          <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-3 {$isDark ? 'bg-neutral-700/50' : 'bg-neutral-50'}">
+            <p class="min-w-0 flex-1 text-xs leading-5 whitespace-normal {$isDark ? 'text-neutral-300' : 'text-neutral-600'}">
+              {$t('settings.updateCurrent', appVersion)}
+            </p>
+            <button
+              class="shrink-0 text-xs underline underline-offset-3 decoration-dotted transition-colors {$isDark ? 'text-neutral-400 hover:text-neutral-100' : 'text-neutral-500 hover:text-neutral-800'}"
+              onclick={openChangelog}
+            >{$t('settings.updateChangelog')} ↗</button>
+          </div>
         </div>
 
-        <!-- 重置设置 -->
-        <button
-          class="w-full py-1.5 rounded text-xs transition-all
-            {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-          onclick={() => { if (confirm($t('settings.resetConfirm'))) resetAllSettings() }}
-        >{$t('settings.resetSettings')}</button>
+        <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
+        <div class="settings-separated">
+          <div class="flex gap-2">
+            <button
+              class="flex-1 py-1.5 rounded text-xs transition-all
+                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
+              onclick={() => showExportModal = true}
+            >{$t('settings.exportSites')}</button>
+            <button
+              class="flex-1 py-1.5 rounded text-xs transition-all
+                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
+              onclick={() => showImportModal = true}
+            >{$t('settings.importSites')}</button>
+          </div>
+
+          <!-- 重置设置 -->
+          <button
+            class="w-full py-1.5 rounded text-xs transition-all
+              {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
+            onclick={() => { if (confirm($t('settings.resetConfirm'))) resetAllSettings() }}
+          >{$t('settings.resetSettings')}</button>
+        </div>
       </div>
     </div>
   {/if}
