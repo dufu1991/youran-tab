@@ -62,6 +62,7 @@
   let selectedSiteIds = $state(
     editingFolder && Array.isArray(init.items) ? init.items.map((item) => item.id) : []
   )
+  let backdropPointerStarted = false
 
   let selectableSites = $derived(
     availableSites.filter((item) => !isFolderItem(item))
@@ -114,6 +115,22 @@
     folderCustomIcon,
   })
   let folderStroke = $derived(getFolderForeground(folderPreview))
+
+  const handleBackdropPointerDown = (event) => {
+    backdropPointerStarted = event.target === event.currentTarget
+  }
+
+  const handleBackdropPointerUp = (event) => {
+    if (backdropPointerStarted && event.target === event.currentTarget) {
+      onclose?.()
+    }
+
+    backdropPointerStarted = false
+  }
+
+  const handleBackdropPointerCancel = () => {
+    backdropPointerStarted = false
+  }
 
   function selectSource(key) {
     iconSource = key
@@ -331,7 +348,9 @@
 
 <div
   class="fixed inset-0 bg-black/50 flex items-center justify-center z-100"
-  onclick={(event) => { if (event.target === event.currentTarget) onclose?.() }}
+  onpointerdown={handleBackdropPointerDown}
+  onpointerup={handleBackdropPointerUp}
+  onpointercancel={handleBackdropPointerCancel}
   onkeydown={(event) => { if (event.key === 'Escape') onclose?.() }}
   role="dialog"
   aria-modal="true"
