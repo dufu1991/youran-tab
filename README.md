@@ -1,84 +1,95 @@
 <p align="center">
-  <img src="https://youran-tab.du-fu.com/logo.png" alt="悠然标签页" width="80" height="80" />
+  <img src="https://youran-tab.du-fu.com/logo.png" alt="Youran Tab" width="80" height="80" />
 </p>
 
-<h1 align="center">悠然标签页</h1>
+<h1 align="center">Youran Tab</h1>
 
 <p align="center">
-  一款开源、高度可定制的浏览器新标签页扩展，适用于 Chrome、Edge、Firefox 以及 360、QQ、搜狗等国产浏览器。
+  An open-source, highly customizable new tab extension for Chrome, Edge, Firefox, and browsers such as 360, QQ Browser, and Sogou Browser.
   <br />
-  所有数据存储在本地，无需登录，不收集任何信息。
+  All data is stored locally. No account is required, and no information is collected.
   <br /><br />
-  <a href="https://youran-tab.du-fu.com/">官网</a>
+  <a href="https://youran-tab.du-fu.com/">Official Website</a>
+  <br /><br />
+  <a href="./README.md">English</a> ·
+  <a href="./readme/README.zh-CN.md">简体中文</a> ·
+  <a href="./readme/README.zh-TW.md">繁體中文</a> ·
+  <a href="./readme/README.ja.md">日本語</a> ·
+  <a href="./readme/README.ko.md">한국어</a> ·
+  <a href="./readme/README.es.md">Español</a> ·
+  <a href="./readme/README.fr.md">Français</a> ·
+  <a href="./readme/README.de.md">Deutsch</a> ·
+  <a href="./readme/README.ru.md">Русский</a> ·
+  <a href="./readme/README.it.md">Italiano</a>
 </p>
 
-## 安装
+## Installation
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/aghmmgdpejlegikblfffnefbkehjdgel?style=for-the-badge&logo=googlechrome&logoColor=white&label=Chrome)](https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel)
 [![Edge Add-ons](https://custom-icon-badges.demolab.com/badge/dynamic/json?style=for-the-badge&logo=edge-white&logoColor=white&label=Edge&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fbijgffabnhpieoedkhlfbijmgollbpbf&color=0078D7)](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf)
 [![Firefox Add-ons](https://img.shields.io/amo/v/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5?style=for-the-badge&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/)
 
-## 主题
+## Themes
 
-| 主题 | 说明 |
-|------|------|
-| 经典 | 传统网格布局，可调节列数、间距、圆角、透明度与图标大小 |
-| 便当 | 卡片式布局，固定或自适应网格，自动统计点击次数并根据频率放大 |
-| 终端 | 完整命令行交互，9 种配色、4 种光标样式、可自定义提示符 |
-| 极简 | 去除一切多余元素，只保留站点 |
-| 玻璃 | 毛玻璃药丸卡片，横向列表布局，列数可调 |
-| 气泡 | 圆形气泡悬浮效果，支持固定排列与随机散布，大小可调 |
-| 像素 | 像素复古风格，命令行式搜索框，菜单列表交互 |
-| 便签 | 便利贴公告板风格，图钉装饰，彩色纸张，瀑布流布局 |
+| Theme | Description |
+|-------|-------------|
+| Classic | A traditional grid layout with adjustable columns, spacing, corner radius, opacity, and icon size |
+| Bento | A card-based layout with fixed or responsive grids that tracks clicks and enlarges frequently used items |
+| Terminal | A complete command-line experience with 9 color schemes, 4 cursor styles, and a customizable prompt |
+| Minimal | Removes every unnecessary element and displays only your sites |
+| Glass | Frosted-glass pill cards in a horizontal list with an adjustable column count |
+| Bubble | Floating circular bubbles with fixed or random placement and adjustable sizes |
+| Pixel | A retro pixel style with a command-line search box and menu-based interactions |
+| Sticky Notes | A sticky-note bulletin board with pushpins, colorful paper, and a masonry layout |
 
-## 功能
+## Features
 
-- 搜索框内置主流搜索引擎与 AI 提问服务，可勾选启用、设置默认项，并可在搜索框前面临时切换
-- 多种背景模式：纯色、渐变、图片、随机，亮色与暗色独立配置
-- 暗色模式，自动跟随系统或手动切换
-- 3 种在线图标源，支持自定义上传，暗色模式独立图标
-- 站点配置导入导出，JSON 格式，方便迁移
+- A search box with popular search engines and AI assistants. Enable the services you need, choose a default, or switch temporarily from the front of the search box
+- Multiple background modes: solid color, gradient, image, and random, with separate settings for light and dark modes
+- Dark mode that follows the system automatically or can be switched manually
+- 3 online icon sources, custom icon uploads, and separate icons for dark mode
+- Import and export site configurations in JSON format for easy migration
 
-## 多语言
+## Languages
 
-支持 10 种语言，自动检测浏览器语言：
+Supports 10 languages and automatically detects the browser language:
 
 `简体中文` `繁體中文` `English` `日本語` `한국어` `Español` `Français` `Deutsch` `Русский` `Italiano`
 
-## 技术栈
+## Tech Stack
 
-- [Svelte](https://svelte.dev/) — UI 框架
-- [Vite](https://vite.dev/) — 构建工具
-- [Tailwind](https://tailwindcss.com/) — 样式框架
-- [Bun](https://bun.sh/) — 包管理与运行时
+- [Svelte](https://svelte.dev/) — UI framework
+- [Vite](https://vite.dev/) — Build tool
+- [Tailwind CSS](https://tailwindcss.com/) — CSS framework
+- [Bun](https://bun.sh/) — Package manager and runtime
 
-## 开发
+## Development
 
 ```bash
-# 安装依赖
+# Install dependencies
 bun install
 
-# 启动开发服务器
+# Start the development server
 bun run dev
 
-# 构建 Chrome / Edge
+# Build for Chrome / Edge
 bun run build
 
-# 构建 Firefox
+# Build for Firefox
 bun run build:firefox
 
-# 打包全部平台
+# Package all platforms
 bun run release
 ```
 
-## 浏览器兼容
+## Browser Compatibility
 
-| 浏览器 | 安装方式 |
-|--------|----------|
-| Chrome | [Chrome 应用商店](https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel) |
-| Edge | [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf) |
-| Firefox | [Firefox 附加组件](https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/) |
-| 360、QQ、搜狗、猎豹等 | 通过 [Edge 插件市场](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf) 安装，完全兼容 |
+| Browser | Installation |
+|---------|--------------|
+| Chrome | [Chrome Web Store](https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel) |
+| Edge | [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf) |
+| Firefox | [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/) |
+| 360, QQ Browser, Sogou Browser, Cheetah Browser, and others | Install from [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf); fully compatible |
 
 ## License
 
