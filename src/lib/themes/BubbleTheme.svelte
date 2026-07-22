@@ -1,9 +1,10 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, sites as sitesStore } from '../stores.js'
+  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, sites as sitesStore, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { getFolderBackground, isFolderItem } from '../folders.js'
+  import SearchTargetPicker from '../SearchTargetPicker.svelte'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
@@ -167,12 +168,10 @@
                 ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)'
                 : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};">
             <form onsubmit={handleSearch} class="search-bubble-form">
-              <svg class="w-4 h-4 shrink-0 {dark ? 'text-white/40' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+              <SearchTargetPicker {dark} />
               <input type="text" bind:value={searchQuery} bind:this={searchInputEl}
                 onblur={handleSearchBlur}
-                placeholder={$t('search.placeholder')}
+                placeholder={$searchPlaceholder}
                 class="flex-1 bg-transparent outline-none text-sm min-w-0
                   {dark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
               <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
@@ -187,7 +186,7 @@
           <button
             type="button"
             class="search-bubble-circle"
-            aria-label={$t('search.placeholder')}
+            aria-label={$searchPlaceholder}
             style="width: {bubbleSize}px; height: {bubbleSize}px;
               background: {dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)'};
               box-shadow: {dark

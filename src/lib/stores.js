@@ -1,5 +1,7 @@
-import { writable, derived } from 'svelte/store'
+import { writable, derived, get } from 'svelte/store'
 import { normalizeSiteTree, removeItemFromTree, updateItemTree } from './folders.js'
+import { SEARCH_ENGINES, AI_PROVIDERS, findTarget } from './searchProviders.js'
+import { t } from './i18n.js'
 
 const STORAGE_KEY_SITES = 'newtab_sites'
 const STORAGE_KEY_THEME = 'newtab_theme'
@@ -201,14 +203,106 @@ function createTerminalConfigStore() {
 
 export const terminalConfig = createTerminalConfigStore()
 
+// 搜索引擎 / AI 提问配置
+const STORAGE_KEY_SEARCH = 'newtab_search'
+
+const defaultSearchConfig = () => {
+  return {
+    enabledEngines: SEARCH_ENGINES.map((engine) => engine.id),
+    enabledAi: AI_PROVIDERS.map((provider) => provider.id),
+    defaultMode: 'search',
+    defaultEngine: 'google',
+    defaultAi: 'chatgpt',
+  }
+}
+
+const normalizeSearchConfig = (value) => {
+  const defaults = defaultSearchConfig()
+  const config = { ...defaults, ...(value && typeof value === 'object' ? value : {}) }
+  const engineIds = new Set(SEARCH_ENGINES.map((engine) => engine.id))
+  const aiIds = new Set(AI_PROVIDERS.map((provider) => provider.id))
+
+  const engines = Array.isArray(config.enabledEngines) ? config.enabledEngines : defaults.enabledEngines
+  config.enabledEngines = engines.filter((id) => engineIds.has(id))
+  if (config.enabledEngines.length === 0) config.enabledEngines = defaults.enabledEngines
+
+  const aiList = Array.isArray(config.enabledAi) ? config.enabledAi : defaults.enabledAi
+  config.enabledAi = aiList.filter((id) => aiIds.has(id))
+
+  if (config.defaultMode !== 'search' && config.defaultMode !== 'ai') config.defaultMode = defaults.defaultMode
+  if (config.defaultMode === 'ai' && config.enabledAi.length === 0) config.defaultMode = 'search'
+  if (!config.enabledEngines.includes(config.defaultEngine)) config.defaultEngine = config.enabledEngines[0]
+  if (!config.enabledAi.includes(config.defaultAi)) config.defaultAi = config.enabledAi[0] || defaults.defaultAi
+
+  return config
+}
+
+const createSearchConfigStore = () => {
+  const initial = normalizeSearchConfig(loadFromStorage(STORAGE_KEY_SEARCH, null))
+  const { subscribe, set, update } = writable(initial)
+  subscribe((v) => localStorage.setItem(STORAGE_KEY_SEARCH, JSON.stringify(v)))
+  return {
+    subscribe,
+    set: (key, val) => update((c) => normalizeSearchConfig({ ...c, [key]: val })),
+    reset: () => set(defaultSearchConfig()),
+  }
+}
+
+export const searchConfig = createSearchConfigStore()
+
+// 会话内临时选择的搜索目标（不持久化，新开标签页恢复默认）
+export const searchTargetOverride = writable(null)
+
+export const activeSearchTarget = derived(
+  [searchConfig, searchTargetOverride],
+  ([$searchConfig, $searchTargetOverride]) => {
+    if ($searchTargetOverride) {
+      const enabled = $searchTargetOverride.type === 'ai' ? $searchConfig.enabledAi : $searchConfig.enabledEngines
+      if (enabled.includes($searchTargetOverride.id)) return $searchTargetOverride
+    }
+
+    if ($searchConfig.defaultMode === 'ai' && $searchConfig.enabledAi.length > 0) {
+      const aiId = $searchConfig.enabledAi.includes($searchConfig.defaultAi)
+        ? $searchConfig.defaultAi
+        : $searchConfig.enabledAi[0]
+      return { type: 'ai', id: aiId }
+    }
+
+    const engineId = $searchConfig.enabledEngines.includes($searchConfig.defaultEngine)
+      ? $searchConfig.defaultEngine
+      : ($searchConfig.enabledEngines[0] || 'browser')
+    return { type: 'engine', id: engineId }
+  }
+)
+
+// 搜索框占位符跟随当前目标（名称 + 搜索 / 提问）
+export const searchPlaceholder = derived(
+  [activeSearchTarget, t],
+  ([$activeSearchTarget, $t]) => {
+    const provider = findTarget($activeSearchTarget)
+    if (!provider || !provider.name) {
+      return $activeSearchTarget.type === 'ai' ? $t('search.placeholderAi') : $t('search.placeholder')
+    }
+    return $activeSearchTarget.type === 'ai'
+      ? $t('search.placeholderAiName', provider.name)
+      : $t('search.placeholderName', provider.name)
+  }
+)
+
 // 搜索
 export function doSearch(query) {
-  // Chrome / Edge
+  // 自定义搜索引擎 / AI 提问
+  const provider = findTarget(get(activeSearchTarget))
+  if (provider && provider.makeUrl) {
+    window.open(provider.makeUrl(query), '_self')
+    return
+  }
+  // 浏览器默认：Chrome / Edge
   if (typeof chrome !== 'undefined' && chrome.search && chrome.search.query) {
     chrome.search.query({ text: query, disposition: 'CURRENT_TAB' })
     return
   }
-  // Firefox
+  // 浏览器默认：Firefox
   if (typeof browser !== 'undefined' && browser.search && browser.search.search) {
     browser.search.search({ query, disposition: 'CURRENT_TAB' })
     return

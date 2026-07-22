@@ -1,9 +1,10 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
+  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
+  import SearchTargetPicker from '../SearchTargetPicker.svelte'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
@@ -123,8 +124,9 @@
             margin-right: 6px;
             user-select: none;
           ">&gt;</span>
+        <SearchTargetPicker {dark} class="mr-2" />
         <input type="text" bind:value={query}
-          placeholder={$t('search.placeholder')}
+          placeholder={$searchPlaceholder}
           style="
             flex: 1;
             background: transparent;

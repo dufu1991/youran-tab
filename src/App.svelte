@@ -1,5 +1,6 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, searchConfig, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
+  import { SEARCH_ENGINES, AI_PROVIDERS } from './lib/searchProviders.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
   import ContextMenu from './lib/ContextMenu.svelte'
@@ -65,6 +66,27 @@
   let currentDynamicId = $derived($isDark ? $bgConfig.dynamicDarkId : $bgConfig.dynamicLightId)
   let showDynamicBackground = $derived($theme !== 'terminal' && $theme !== 'minimal' && !!$activeDynamicBg)
   let dynamicThumbnailUrls = $state({})
+
+  const toggleSearchEngine = (id) => {
+    const current = $searchConfig.enabledEngines
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    if (next.length === 0) return
+    searchConfig.set('enabledEngines', next)
+  }
+
+  const toggleAiProvider = (id) => {
+    const current = $searchConfig.enabledAi
+    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    searchConfig.set('enabledAi', next)
+  }
+
+  const setDefaultEngine = (id) => {
+    searchConfig.set('defaultEngine', id)
+  }
+
+  const setDefaultAi = (id) => {
+    searchConfig.set('defaultAi', id)
+  }
 
   function resizeBgBlob(file) {
     return new Promise((resolve) => {
@@ -580,7 +602,7 @@
   <!-- 设置面板 -->
   {#if $showSettings}
     <div class="fixed inset-0 z-90" onclick={(e) => { if (e.target === e.currentTarget) $showSettings = false }} role="presentation">
-      <div class="fixed bottom-14 right-4 z-91 max-w-xs rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
+      <div class="fixed bottom-14 right-4 z-91 w-84 rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
         {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}" data-no-context-menu>
 
         <!-- 主题 + 模式 + 对齐 + 语言 -->
@@ -672,6 +694,130 @@
                 ></span>
               </button>
             </label>
+
+            {#if $showSearchBar}
+              <div class="settings-separated mt-2">
+                <!-- 默认使用 -->
+                <div>
+                  <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchDefault')}</div>
+                  <div class="settings-segmented settings-segmented-row">
+                    {#each ['search', 'ai'] as sm}
+                      <button
+                        class="settings-segmented-button transition-all
+                          {$searchConfig.defaultMode === sm
+                            ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
+                            : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                        onclick={() => searchConfig.set('defaultMode', sm)}
+                      >{$t(sm === 'search' ? 'search.groupSearch' : 'search.groupAi')}</button>
+                    {/each}
+                  </div>
+                </div>
+
+                <!-- 搜索引擎 + AI 提问（两列） -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchEngines')}</div>
+                    <div class="space-y-1.5">
+                      {#each SEARCH_ENGINES as engine}
+                        {@const enabled = $searchConfig.enabledEngines.includes(engine.id)}
+                        {@const isDefault = $searchConfig.defaultEngine === engine.id}
+                        <div
+                          class="flex items-center rounded-md text-xs transition-all
+                            {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
+                            {enabled
+                              ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
+                              : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
+                        >
+                          <button
+                            class="flex items-center gap-1.5 px-2 py-1.5 flex-1 min-w-0 text-left"
+                            aria-pressed={enabled}
+                            onclick={() => toggleSearchEngine(engine.id)}
+                          >
+                            <span
+                              class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
+                                {enabled
+                                  ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
+                                  : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
+                            >
+                              {#if enabled}
+                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                              {/if}
+                            </span>
+                            {#if engine.logo}
+                              <img src={engine.logo} alt="" class="w-3.5 h-3.5 object-contain rounded-sm bg-white shrink-0" />
+                            {/if}
+                            <span class="truncate">{engine.name || $t(engine.nameKey)}</span>
+                          </button>
+                          {#if enabled}
+                            <button
+                              class="px-2 py-1.5 shrink-0 transition-colors {isDefault ? 'text-amber-500' : ($isDark ? 'text-neutral-500 hover:text-amber-400' : 'text-neutral-400 hover:text-amber-500')}"
+                              title={$t('settings.searchSetDefault')}
+                              aria-label={$t('settings.searchSetDefault')}
+                              onclick={() => setDefaultEngine(engine.id)}
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill={isDefault ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            </button>
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchAi')}</div>
+                    <div class="space-y-1.5">
+                      {#each AI_PROVIDERS as provider}
+                        {@const enabled = $searchConfig.enabledAi.includes(provider.id)}
+                        {@const isDefault = $searchConfig.defaultAi === provider.id}
+                        <div
+                          class="flex items-center rounded-md text-xs transition-all
+                            {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
+                            {enabled
+                              ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
+                              : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
+                        >
+                          <button
+                            class="flex items-center gap-1.5 px-2 py-1.5 flex-1 min-w-0 text-left"
+                            aria-pressed={enabled}
+                            onclick={() => toggleAiProvider(provider.id)}
+                          >
+                            <span
+                              class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
+                                {enabled
+                                  ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
+                                  : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
+                            >
+                              {#if enabled}
+                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                              {/if}
+                            </span>
+                            <img src={provider.logo} alt="" class="w-3.5 h-3.5 object-contain rounded-sm bg-white shrink-0" />
+                            <span class="truncate">{provider.name}</span>
+                          </button>
+                          {#if enabled}
+                            <button
+                              class="px-2 py-1.5 shrink-0 transition-colors {isDefault ? 'text-amber-500' : ($isDark ? 'text-neutral-500 hover:text-amber-400' : 'text-neutral-400 hover:text-amber-500')}"
+                              title={$t('settings.searchSetDefault')}
+                              aria-label={$t('settings.searchSetDefault')}
+                              onclick={() => setDefaultAi(provider.id)}
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill={isDefault ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                            </button>
+                          {/if}
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+                </div>
+                <p class="text-xs leading-4 whitespace-normal mt-1.5 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                  {$t('settings.searchAiHint')}
+                </p>
+              </div>
+            {/if}
           </div>
         {/if}
 
@@ -821,16 +967,30 @@
 
               {#if $bgConfig.type === 'random'}
                 <div class="space-y-1.5">
-                  <div class="settings-segmented settings-segmented-grid settings-segmented-cols-2">
+                  <div class="grid grid-cols-2 gap-1.5">
                     {#each randomScopes as rs}
+                      {@const selected = isRandomScopeSelected(rs)}
                       <button
-                        class="settings-segmented-button transition-all
-                          {isRandomScopeSelected(rs)
-                            ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                            : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                        class="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-all
+                          {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
+                          {selected
+                            ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
+                            : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
                         onclick={() => toggleRandomScope(rs)}
-                        aria-pressed={isRandomScopeSelected(rs)}
-                      >{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</button>
+                        aria-pressed={selected}
+                      >
+                        <span
+                          class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
+                            {selected
+                              ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
+                              : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
+                        >
+                          {#if selected}
+                            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                          {/if}
+                        </span>
+                        <span>{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</span>
+                      </button>
                     {/each}
                   </div>
                   <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">

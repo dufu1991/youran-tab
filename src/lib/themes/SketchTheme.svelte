@@ -1,9 +1,10 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch } from '../stores.js'
+  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
+  import SearchTargetPicker from '../SearchTargetPicker.svelte'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
@@ -147,9 +148,9 @@
           background: {getPastelColor(0)};
           --pin-color: {getPinColor(0)};">
         <div class="sketch-search-row">
-          <span class="sketch-search-icon">🔍</span>
+          <SearchTargetPicker />
           <input type="text" bind:value={query}
-            placeholder={$t('search.placeholder')}
+            placeholder={$searchPlaceholder}
             class="sketch-search-input" />
           <button type="submit" class="shrink-0 ml-1 p-0 border-0 bg-transparent cursor-pointer text-black/40 hover:opacity-80 transition-opacity" aria-label="搜索">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -260,13 +261,6 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-  }
-
-  .sketch-search-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-    transform: rotate(-3deg);
-    opacity: 0.7;
   }
 
   .sketch-search-input {

@@ -14,9 +14,11 @@
         isDark,
         resolvedBgStyle,
         bgIsLight,
+        searchPlaceholder,
         sites as sitesStore,
     } from '../stores.js';
     import { countSites, isFolderItem, sumFolderClicks } from '../folders.js';
+    import SearchTargetPicker from '../SearchTargetPicker.svelte';
 
     let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete, onopenfolder } = $props();
 
@@ -200,17 +202,11 @@
                     class="flex items-center w-full transition-colors"
                     style="border-radius: {cfg.radius}px; padding: 12px 20px; {cardStyle}"
                 >
-                    <svg class="w-4 h-4 mr-3 shrink-0 text-black/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="11" cy="11" r="8" stroke-width="2" /><path
-                            d="m21 21-4.35-4.35"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                        />
-                    </svg>
+                    <SearchTargetPicker class="mr-3" />
                     <input
                         type="text"
                         bind:value={query}
-                        placeholder={$t('search.placeholder')}
+                        placeholder={$searchPlaceholder}
                         class="flex-1 bg-transparent outline-none text-sm text-black placeholder:text-black/40"
                     />
                     <button

@@ -1,9 +1,10 @@
 <script>
   import { t } from '../i18n.js'
   import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, glassConfig, doSearch, sites as sitesStore } from '../stores.js'
+  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, glassConfig, doSearch, sites as sitesStore, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
+  import SearchTargetPicker from '../SearchTargetPicker.svelte'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
@@ -82,11 +83,9 @@
       <form onsubmit={handleSearch}
         class="glass-pill flex items-center gap-3 w-full max-w-lg
           {dark ? 'glass-pill--dark' : 'glass-pill--light'}">
-        <svg class="w-4 h-4 shrink-0 {textDark ? 'text-white/40' : 'text-black/40'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <SearchTargetPicker dark={textDark} />
         <input type="text" bind:value={searchQuery}
-          placeholder={$t('search.placeholder')}
+          placeholder={$searchPlaceholder}
           class="flex-1 bg-transparent outline-none text-sm {textDark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
         <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
           {textDark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label="搜索">

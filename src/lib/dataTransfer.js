@@ -14,6 +14,7 @@ const SETTINGS_KEYS = {
   newtab_gradients: 'gradientPresets',
   newtab_dynamics: 'dynamicPresets',
   newtab_bg: 'bgConfig',
+  newtab_search: 'searchConfig',
   newtab_locale: 'locale',
 }
 

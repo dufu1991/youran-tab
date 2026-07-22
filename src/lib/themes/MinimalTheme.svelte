@@ -1,6 +1,7 @@
 <script>
   import { t, currentLocale } from '../i18n.js'
-  import { doSearch, editMode, showSearchBar, sites as sitesStore } from '../stores.js'
+  import { doSearch, editMode, showSearchBar, sites as sitesStore, searchPlaceholder } from '../stores.js'
+  import SearchTargetPicker from '../SearchTargetPicker.svelte'
   import { isFolderItem } from '../folders.js'
 
   let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete, onopenfolder } = $props()
@@ -69,9 +70,10 @@
 
   <div class="max-w-md w-full px-8">
     {#if $showSearchBar}
-      <form onsubmit={handleSearch} class="mb-8">
-        <input type="text" bind:value={query} placeholder={$t('search.placeholder')}
-          class="w-full bg-transparent outline-none border-b pb-1 text-sm
+      <form onsubmit={handleSearch} class="mb-8 flex items-center gap-2">
+        <SearchTargetPicker {dark} />
+        <input type="text" bind:value={query} placeholder={$searchPlaceholder}
+          class="flex-1 min-w-0 bg-transparent outline-none border-b pb-1 text-sm
             {dark ? 'border-neutral-700 text-neutral-300 placeholder:text-neutral-600' : 'border-neutral-200 text-neutral-600 placeholder:text-neutral-300'}" />
       </form>
     {/if}
