@@ -1,2 +1,101 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+:root {
+    color-scheme: dark;
+}
+
+html[data-theme='light'] {
+    color-scheme: light;
+    --color-white: #18181b;
+    --color-neutral-50: #09090b;
+    --color-neutral-100: #18181b;
+    --color-neutral-200: #27272a;
+    --color-neutral-300: #3f3f46;
+    --color-neutral-400: #52525b;
+    --color-neutral-500: #71717a;
+    --color-neutral-600: #a1a1aa;
+    --color-neutral-700: #d4d4d8;
+    --color-neutral-800: #e4e4e7;
+    --color-neutral-900: #ffffff;
+    --color-neutral-950: #fafafa;
+    --color-amber-200: #a16207;
+    --color-amber-300: #b45309;
+    --color-blue-200: #1d4ed8;
+    --color-blue-300: #2563eb;
+    --color-blue-400: #2563eb;
+    --color-cyan-200: #0e7490;
+    --color-emerald-200: #047857;
+    --color-emerald-300: #059669;
+    --color-emerald-400: #059669;
+    --color-green-200: #15803d;
+    --color-green-400: #15803d;
+    --color-indigo-200: #4338ca;
+    --color-indigo-300: #4f46e5;
+    --color-indigo-400: #4f46e5;
+    --color-orange-200: #c2410c;
+    --color-purple-200: #7e22ce;
+    --color-rose-200: #be123c;
+    --color-sky-200: #0369a1;
+    --color-yellow-200: #a16207;
+}
+
+html[data-theme='dark'] {
+    color-scheme: dark;
+}
+
+body {
+    min-height: 100dvh;
+}
+
+.theme-panel {
+    background-image: linear-gradient(135deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.02));
+    box-shadow: 0 24px 80px rgb(0 0 0 / 0.28);
+}
+
+html[data-theme='light'] .theme-panel {
+    background-image: linear-gradient(135deg, rgb(24 24 27 / 0.04), rgb(24 24 27 / 0.015));
+    box-shadow: 0 24px 80px rgb(24 24 27 / 0.1);
+}
+
+html[data-theme='light'] .theme-soft-surface {
+    background-color: rgb(255 255 255 / 0.72);
+}
+
+html[data-theme='light'] .prose-invert {
+    --tw-prose-body: #3f3f46;
+    --tw-prose-headings: #18181b;
+    --tw-prose-lead: #52525b;
+    --tw-prose-links: #4338ca;
+    --tw-prose-bold: #18181b;
+    --tw-prose-counters: #71717a;
+    --tw-prose-bullets: #a1a1aa;
+    --tw-prose-hr: #e4e4e7;
+    --tw-prose-quotes: #27272a;
+    --tw-prose-quote-borders: #d4d4d8;
+    --tw-prose-captions: #71717a;
+    --tw-prose-kbd: #18181b;
+    --tw-prose-kbd-shadows: rgb(24 24 27 / 0.1);
+    --tw-prose-code: #18181b;
+    --tw-prose-pre-code: #e4e4e7;
+    --tw-prose-pre-bg: #18181b;
+    --tw-prose-th-borders: #d4d4d8;
+    --tw-prose-td-borders: #e4e4e7;
+}
+
+.theme-fixed-light-surface {
+    background-color: #ffffff;
+}
+
+html[data-theme='light'] .shadow-black\/40,
+html[data-theme='light'] .shadow-black\/50 {
+    --tw-shadow-color: rgb(24 24 27 / 0.14);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    body {
+        transition:
+            background-color 180ms ease,
+            color 180ms ease;
+    }
+}

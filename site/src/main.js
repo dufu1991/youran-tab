@@ -27,6 +27,10 @@ const messages = {
             'Youran Tab is an open-source, highly customizable new tab extension with multiple themes, backgrounds, and layouts.',
         'lang.label': 'Language',
         'lang.auto': 'Follow browser',
+        'theme.label': 'Theme',
+        'theme.auto': 'Automatic',
+        'theme.light': 'Light',
+        'theme.dark': 'Dark',
         'hero.badge': 'Works with Chrome / Edge / Firefox',
         'hero.compat':
             'Domestic browsers like 360, QQ, Sogou, and Liebao can install directly from the Edge Add-ons store — fully compatible.',
@@ -182,6 +186,10 @@ const messages = {
         'site.description': '悠然标签页：一款开源且高度可定制的浏览器新标签页扩展，支持多种主题、背景和布局。',
         'lang.label': '语言',
         'lang.auto': '跟随浏览器',
+        'theme.label': '外观',
+        'theme.auto': '自动',
+        'theme.light': '亮色',
+        'theme.dark': '暗色',
         'hero.badge': '适用于 Chrome、Edge、Firefox',
         'hero.compat': '360、QQ、搜狗、360 极速、猎豹等国产浏览器可通过 Edge 插件市场直接安装，完全兼容。',
         'hero.title': '悠然标签页',
@@ -329,6 +337,10 @@ const messages = {
         'site.description': '悠然標籤頁：一款開源且高度可自訂的瀏覽器新標籤頁擴充功能，支援多種主題、背景和版面。',
         'lang.label': '語言',
         'lang.auto': '跟隨瀏覽器',
+        'theme.label': '外觀',
+        'theme.auto': '自動',
+        'theme.light': '亮色',
+        'theme.dark': '暗色',
         'hero.badge': '適用於 Chrome、Edge、Firefox',
         'hero.compat': '360、QQ、搜狗、360 極速、獵豹等國產瀏覽器可透過 Edge 擴充功能市場直接安裝，完全相容。',
         'hero.title': '悠然標籤頁',
@@ -477,6 +489,10 @@ const messages = {
             '悠然タブは、複数のテーマ、背景、レイアウトを備えたオープンソースで高いカスタマイズ性の新しいタブ拡張機能です。',
         'lang.label': '言語',
         'lang.auto': 'ブラウザに従う',
+        'theme.label': 'テーマ',
+        'theme.auto': '自動',
+        'theme.light': 'ライト',
+        'theme.dark': 'ダーク',
         'hero.badge': 'Chrome / Edge / Firefox に対応',
         'hero.compat': '360、QQ、Sogou、Liebao などの中国製ブラウザは Edge アドオンストアから直接インストールできます。完全互換。',
         'hero.title': '悠然タブ',
@@ -630,6 +646,10 @@ const messages = {
         'site.description': 'Youran Tab 은 여러 테마, 배경, 레이아웃을 지원하는 오픈 소스 고급 맞춤형 새 탭 확장 프로그램입니다.',
         'lang.label': '언어',
         'lang.auto': '브라우저 언어 따르기',
+        'theme.label': '테마',
+        'theme.auto': '자동',
+        'theme.light': '라이트',
+        'theme.dark': '다크',
         'hero.badge': 'Chrome / Edge / Firefox 지원',
         'hero.compat': '360, QQ, Sogou, Liebao 등의 중국 브라우저는 Edge 추가 기능 스토어에서 직접 설치할 수 있으며, 완벽하게 호환됩니다.',
         'hero.title': 'Youran Tab',
@@ -785,6 +805,10 @@ const messages = {
             'Youran Tab es una extensión de nueva pestaña de código abierto y altamente personalizable, con múltiples temas, fondos y diseños.',
         'lang.label': 'Idioma',
         'lang.auto': 'Seguir navegador',
+        'theme.label': 'Tema',
+        'theme.auto': 'Automático',
+        'theme.light': 'Claro',
+        'theme.dark': 'Oscuro',
         'hero.badge': 'Compatible con Chrome / Edge / Firefox',
         'hero.compat':
             'Navegadores como 360, QQ, Sogou y Liebao pueden instalar directamente desde la tienda de complementos de Edge, totalmente compatibles.',
@@ -942,6 +966,10 @@ const messages = {
             'Youran Tab — это расширение новой вкладки с открытым исходным кодом и высокой настраиваемостью, с множеством тем, фонов и макетов.',
         'lang.label': 'Язык',
         'lang.auto': 'Язык браузера',
+        'theme.label': 'Тема',
+        'theme.auto': 'Авто',
+        'theme.light': 'Светлая',
+        'theme.dark': 'Тёмная',
         'hero.badge': 'Подходит для Chrome / Edge / Firefox',
         'hero.compat':
             'Браузеры 360, QQ, Sogou, Liebao и другие могут устанавливать расширения прямо из магазина Edge — полная совместимость.',
@@ -1098,6 +1126,10 @@ const messages = {
             'Youran Tab est une extension de nouvel onglet open source et hautement personnalisable, avec plusieurs thèmes, fonds et mises en page.',
         'lang.label': 'Langue',
         'lang.auto': 'Suivre le navigateur',
+        'theme.label': 'Thème',
+        'theme.auto': 'Automatique',
+        'theme.light': 'Clair',
+        'theme.dark': 'Sombre',
         'hero.badge': 'Compatible avec Chrome / Edge / Firefox',
         'hero.compat':
             'Les navigateurs 360, QQ, Sogou et Liebao peuvent installer directement depuis le store Edge — entièrement compatibles.',
@@ -1254,6 +1286,10 @@ const messages = {
             'Youran Tab ist eine Open-Source-Erweiterung für neue Tabs mit hoher Anpassbarkeit, mehreren Themes, Hintergründen und Layouts.',
         'lang.label': 'Sprache',
         'lang.auto': 'Browser folgen',
+        'theme.label': 'Darstellung',
+        'theme.auto': 'Automatisch',
+        'theme.light': 'Hell',
+        'theme.dark': 'Dunkel',
         'hero.badge': 'Kompatibel mit Chrome / Edge / Firefox',
         'hero.compat': 'Browser wie 360, QQ, Sogou und Liebao können direkt aus dem Edge Add-ons Store installieren — voll kompatibel.',
         'hero.title': 'Youran Tab',
@@ -1409,6 +1445,10 @@ const messages = {
             "Youran Tab è un'estensione di nuova scheda open source e altamente personalizzabile, con più temi, sfondi e layout.",
         'lang.label': 'Lingua',
         'lang.auto': 'Segui il browser',
+        'theme.label': 'Tema',
+        'theme.auto': 'Automatico',
+        'theme.light': 'Chiaro',
+        'theme.dark': 'Scuro',
         'hero.badge': 'Compatibile con Chrome / Edge / Firefox',
         'hero.compat': 'I browser 360, QQ, Sogou e Liebao possono installare direttamente dallo store Edge — pienamente compatibili.',
         'hero.title': 'Youran Tab',
@@ -1565,6 +1605,15 @@ const getMessage = (locale, key) => {
     return dict[key] ?? messages[fallbackLocale]?.[key];
 };
 
+const themeSettings = ['auto', 'light', 'dark'];
+const storageKeyTheme = 'doc_theme';
+const themeIconIds = {
+    auto: 'icon-monitor',
+    light: 'icon-sun',
+    dark: 'icon-moon',
+};
+const systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
 const normalizeLocale = value => {
     if (!value) return null;
     if (value === 'auto') return null;
@@ -1658,13 +1707,152 @@ const applyLocaleSetting = stored => {
 };
 
 const initialStored = getStoredLocale();
-applyLocaleSetting(initialStored);
+let currentLocale = applyLocaleSetting(initialStored);
+
+const themePicker = document.getElementById('theme-picker');
+const themeToggle = document.getElementById('theme-toggle');
+const themeToggleIcon = document.getElementById('theme-toggle-icon');
+const themeToggleLabel = document.getElementById('theme-toggle-label');
+const themeMenu = document.getElementById('theme-menu');
+
+const getStoredThemeSetting = () => {
+    const stored = localStorage.getItem(storageKeyTheme);
+    if (themeSettings.includes(stored)) return stored;
+    localStorage.removeItem(storageKeyTheme);
+    return 'auto';
+};
+
+const setStoredThemeSetting = setting => {
+    if (setting === 'auto') {
+        localStorage.removeItem(storageKeyTheme);
+        return;
+    }
+    localStorage.setItem(storageKeyTheme, setting);
+};
+
+const resolveTheme = setting => {
+    if (setting === 'auto') return systemThemeMedia.matches ? 'dark' : 'light';
+    return setting;
+};
+
+const createThemeIcon = setting => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    svg.setAttribute('class', 'h-4 w-4 shrink-0');
+    svg.setAttribute('aria-hidden', 'true');
+    use.setAttribute('href', `#${themeIconIds[setting]}`);
+    svg.appendChild(use);
+    return svg;
+};
+
+let currentThemeSetting = getStoredThemeSetting();
+
+const setThemeMenuVisible = visible => {
+    if (!themeMenu || !themeToggle) return;
+    themeMenu.classList.toggle('hidden', !visible);
+    themeToggle.setAttribute('aria-expanded', String(visible));
+};
+
+const updateThemeControls = () => {
+    const currentLabel = getMessage(currentLocale, `theme.${currentThemeSetting}`);
+    if (themeToggleIcon) {
+        themeToggleIcon.setAttribute('href', `#${themeIconIds[currentThemeSetting]}`);
+    }
+    if (themeToggleLabel) {
+        themeToggleLabel.textContent = currentLabel;
+    }
+    if (themeToggle) {
+        themeToggle.setAttribute('aria-label', getMessage(currentLocale, 'theme.label'));
+        themeToggle.title = currentLabel;
+    }
+    if (!themeMenu) return;
+
+    themeMenu.innerHTML = '';
+    themeSettings.forEach(setting => {
+        const isActive = setting === currentThemeSetting;
+        const button = document.createElement('button');
+        const label = document.createElement('span');
+        const check = document.createElement('span');
+
+        button.type = 'button';
+        button.dataset.themeSetting = setting;
+        button.setAttribute('role', 'menuitemradio');
+        button.setAttribute('aria-checked', String(isActive));
+        button.className =
+            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-300 hover:bg-white/10 hover:text-white';
+        if (isActive) {
+            button.className += ' bg-white/10 text-white';
+        }
+
+        label.className = 'flex-1';
+        label.textContent = getMessage(currentLocale, `theme.${setting}`);
+        check.className = 'text-xs';
+        check.setAttribute('aria-hidden', 'true');
+        check.textContent = isActive ? '✓' : '';
+        button.append(createThemeIcon(setting), label, check);
+        themeMenu.appendChild(button);
+    });
+};
+
+const applyThemeSetting = setting => {
+    currentThemeSetting = themeSettings.includes(setting) ? setting : 'auto';
+    const theme = resolveTheme(currentThemeSetting);
+    const root = document.documentElement;
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+
+    root.dataset.theme = theme;
+    root.dataset.themeSetting = currentThemeSetting;
+    root.style.colorScheme = theme;
+    if (themeColorMeta) {
+        themeColorMeta.content = theme === 'dark' ? '#0a0a0a' : '#fafafa';
+    }
+    updateThemeControls();
+};
+
+applyThemeSetting(currentThemeSetting);
+
+if (themeToggle && themeMenu) {
+    themeToggle.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const shouldOpen = themeMenu.classList.contains('hidden');
+        setMenuVisible(false);
+        setThemeMenuVisible(shouldOpen);
+    });
+
+    themeMenu.addEventListener('click', event => {
+        const button = event.target.closest('button[data-theme-setting]');
+        if (!button) return;
+        setStoredThemeSetting(button.dataset.themeSetting);
+        applyThemeSetting(button.dataset.themeSetting);
+        setThemeMenuVisible(false);
+    });
+
+    document.addEventListener('click', event => {
+        if (!themePicker?.contains(event.target)) {
+            setThemeMenuVisible(false);
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            setThemeMenuVisible(false);
+        }
+    });
+}
+
+systemThemeMedia.addEventListener('change', () => {
+    if (currentThemeSetting === 'auto') {
+        applyThemeSetting('auto');
+    }
+});
 
 if (langToggle && langMenu) {
     langToggle.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         const shouldOpen = langMenu.classList.contains('hidden');
+        setThemeMenuVisible(false);
         setMenuVisible(shouldOpen);
     });
 
@@ -1675,7 +1863,8 @@ if (langToggle && langMenu) {
         const nextLocale = normalizeLocale(button.dataset.lang) || detected;
         const stored = nextLocale === detected ? null : nextLocale;
         setStoredLocale(stored);
-        applyLocaleSetting(stored);
+        currentLocale = applyLocaleSetting(stored);
+        updateThemeControls();
         setMenuVisible(false);
     });
 

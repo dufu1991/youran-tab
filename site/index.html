@@ -7,6 +7,22 @@
   <meta name="description" data-i18n="site.description" data-i18n-attr="content"
     content="悠然标签页：一款开源且高度可定制的浏览器新标签页扩展，支持多种主题、背景和布局。" />
   <meta name="theme-color" content="#0a0a0a" />
+  <script>
+    ;(() => {
+      const storageKey = 'doc_theme'
+      const storedSetting = localStorage.getItem(storageKey)
+      const setting = storedSetting === 'light' || storedSetting === 'dark' ? storedSetting : 'auto'
+      const theme = setting === 'auto'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : setting
+      const root = document.documentElement
+
+      root.dataset.theme = theme
+      root.dataset.themeSetting = setting
+      root.style.colorScheme = theme
+      document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0a0a0a' : '#fafafa'
+    })()
+  </script>
   <link rel="canonical" href="https://youran-tab.du-fu.com/" />
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/favicon.png" />
@@ -107,34 +123,58 @@
       <path d="M8 3h8l-1 5 3 4H6l3-4-1-5Z" />
     </symbol>
     <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 21-4.34-4.34" />
       <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
     </symbol>
-    <symbol id="icon-swatch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M11 3a2 2 0 0 0-2 2v4H5a2 2 0 0 0-2 2v2" />
-      <path d="M13 5h4a2 2 0 0 1 2 2v4" />
-      <path d="M5 13v4a2 2 0 0 0 2 2h4" />
-      <path d="M19 13v4a2 2 0 0 1-2 2h-4" />
-      <rect x="9" y="9" width="6" height="6" rx="1" />
+    <symbol id="icon-wallpaper" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 17v4" />
+      <path d="M8 21h8" />
+      <path d="m9 17 6.1-6.1a2 2 0 0 1 2.81.01L22 15" />
+      <circle cx="8" cy="9" r="2" />
+      <rect x="2" y="3" width="20" height="14" rx="2" />
     </symbol>
     <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
     </symbol>
-    <symbol id="icon-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z" />
+    <symbol id="icon-moon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 5h4" />
+      <path d="M20 3v4" />
+      <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
     </symbol>
-    <symbol id="icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <circle cx="8.5" cy="10.5" r="1.5" />
-      <path d="m21 15-5-5L5 21" />
+    <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.42 1.42" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
     </symbol>
-    <symbol id="icon-arrow-left-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M8 3 4 7l4 4" />
-      <path d="M4 7h16" />
-      <path d="m16 21 4-4-4-4" />
-      <path d="M20 17H4" />
+    <symbol id="icon-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8" />
+      <path d="M12 17v4" />
+    </symbol>
+    <symbol id="icon-languages" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m5 8 6 6" />
+      <path d="m4 14 6-6 2-3" />
+      <path d="M2 5h12" />
+      <path d="M7 2h1" />
+      <path d="m22 22-5-10-5 10" />
+      <path d="M14 18h6" />
+    </symbol>
+    <symbol id="icon-shapes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8.3 10a.7.7 0 0 1-.626-1.079L11.4 3a.7.7 0 0 1 1.198-.043L16.3 8.9a.7.7 0 0 1-.572 1.1Z" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <circle cx="17.5" cy="17.5" r="3.5" />
+    </symbol>
+    <symbol id="icon-arrow-up-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 16-4 4-4-4" />
+      <path d="M17 20V4" />
+      <path d="m3 8 4-4 4 4" />
+      <path d="M7 4v16" />
     </symbol>
     <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z" />
@@ -153,7 +193,7 @@
         <span class="w-2 h-2 rounded-full bg-green-400"></span>
         <span data-i18n="hero.badge">适用于 Chrome、Edge、Firefox</span>
       </div>
-      <img src="/logo.png" alt="悠然标签页" class="w-20 h-20 mx-auto mb-6 rounded-2xl shadow-lg shadow-indigo-500/20" />
+      <img src="/logo.png" alt="悠然标签页" class="w-20 h-20 mx-auto mb-6" />
       <h1 class="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
         <span class="bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent" data-i18n="hero.title">悠然标签页</span>
       </h1>
@@ -313,43 +353,43 @@
       <p class="text-neutral-400 text-center mb-14 max-w-lg mx-auto" data-i18n="features.subtitle">完全开源，所有数据存储在本地，无需登录，不收集任何信息。</p>
       <div class="grid sm:grid-cols-3 gap-6">
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-search"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-search"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.search.title">快速搜索</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.search.desc">内置搜索框，使用浏览器默认搜索引擎，尊重用户设置。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-swatch"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/20 text-sky-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-wallpaper"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.background.title">多种背景</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.background.desc">纯色、渐变、图片、随机，亮色暗色独立配置。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-moon"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-moon-star"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.dark.title">暗色模式</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.dark.desc">自动跟随系统，也可手动切换亮色或暗色。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-globe"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-languages"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.languages.title">10 种语言</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.languages.desc">中、英、日、韩、法、德、西、俄、意大利语，自动检测系统语言。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-image"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20 text-orange-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-shapes"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.icons.title">图标灵活</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.icons.desc">3 种在线图标源，支持自定义上传，暗色模式独立图标。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-3 text-neutral-200">
-            <svg class="w-6 h-6"><use href="#icon-arrow-left-right"></use></svg>
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-arrow-up-down"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.sync.title">导入导出</h3>
           <p class="text-sm text-neutral-400" data-i18n="features.sync.desc">一键导出站点配置为 JSON，轻松迁移到其他设备。</p>
@@ -359,7 +399,7 @@
   </section>
 
   <section class="max-w-5xl mx-auto px-6 pb-6">
-    <div class="rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-6 sm:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
+    <div class="theme-panel rounded-3xl border border-white/10 p-6 sm:p-8">
       <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div>
           <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/15">
@@ -368,7 +408,7 @@
           <h2 class="mt-4 text-3xl font-bold" data-i18n="foldersSpotlight.title">新增文件夹，收纳更从容</h2>
           <p class="mt-3 max-w-2xl leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.desc" data-i18n-mode="html">从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，除了手动整理已有网站，也支持直接选择当前打开的标签页组创建文件夹。做完一类临时工作后，可以放心关闭原来的标签页组，需要时再一键打开，让浏览器重新干净下来。</p>
         </div>
-        <div class="rounded-2xl border border-white/8 bg-black/20 p-5 backdrop-blur-sm">
+        <div class="theme-soft-surface rounded-2xl border border-white/8 bg-black/20 p-5 backdrop-blur-sm">
           <p class="text-sm font-medium tracking-[0.2em] text-neutral-400 uppercase" data-i18n="foldersSpotlight.sceneTitle">适合这些场景</p>
           <p class="mt-3 leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.sceneDesc">很多网页只会在某个阶段集中使用几天，不值得加入收藏夹，却又需要暂时保留。像项目后台、活动页面、文档索引、临时专题资料这类任务，都可以先用标签页组整理，再保存成文件夹，释放标签栏空间，也减少浏览器被一堆分组占满的压迫感。</p>
         </div>
@@ -627,6 +667,20 @@
     <div class="max-w-5xl mx-auto px-6 flex flex-wrap items-center justify-between gap-3 text-sm text-neutral-500">
       <span class="text-xs tracking-widest uppercase">Design • Made by DUFU</span>
       <div class="flex items-center gap-4">
+        <div id="theme-picker" class="relative">
+          <button id="theme-toggle" type="button"
+            class="inline-flex items-center gap-1.5 text-neutral-500 hover:text-neutral-300 transition-colors"
+            aria-haspopup="menu" aria-expanded="false">
+            <svg class="h-4 w-4" aria-hidden="true">
+              <use id="theme-toggle-icon" href="#icon-monitor"></use>
+            </svg>
+            <span id="theme-toggle-label">自动</span>
+          </button>
+          <div id="theme-menu" role="menu"
+            class="absolute left-0 bottom-full mb-2 hidden w-32 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/95 text-neutral-200 shadow-lg backdrop-blur">
+          </div>
+        </div>
+        <span class="h-3 w-px bg-neutral-800" aria-hidden="true"></span>
         <div id="lang-picker" class="relative">
           <button id="lang-toggle" type="button" class="text-neutral-500 hover:text-neutral-300 transition-colors">
             简体中文
@@ -690,7 +744,7 @@
               </div>
               <h3 class="text-base sm:text-lg font-semibold text-white" data-i18n="support.wechat.title">微信赞赏</h3>
               <p class="mt-1.5 sm:mt-2 text-sm leading-5 sm:leading-6 text-neutral-400" data-i18n="support.wechat.desc">打开微信扫一扫，感谢你的支持与鼓励。</p>
-              <div class="mt-3 sm:mt-4 rounded-2xl bg-white p-2.5 sm:p-3">
+              <div class="theme-fixed-light-surface mt-3 sm:mt-4 rounded-2xl bg-white p-2.5 sm:p-3">
                 <img src="/fund/wp_code.png" alt="微信赞赏码" class="mx-auto w-full max-w-[180px] sm:max-w-[220px] rounded-xl" />
               </div>
             </div>
@@ -700,7 +754,7 @@
               </div>
               <h3 class="text-base sm:text-lg font-semibold text-white" data-i18n="support.alipay.title">支付宝收款</h3>
               <p class="mt-1.5 sm:mt-2 text-sm leading-5 sm:leading-6 text-neutral-400" data-i18n="support.alipay.desc">使用支付宝扫一扫，支持项目继续迭代更新。</p>
-              <div class="mt-3 sm:mt-4 rounded-2xl bg-white p-2.5 sm:p-3">
+              <div class="theme-fixed-light-surface mt-3 sm:mt-4 rounded-2xl bg-white p-2.5 sm:p-3">
                 <img src="/fund/ap_code.png" alt="支付宝收款码" class="mx-auto w-full max-w-[180px] sm:max-w-[220px] rounded-xl" />
               </div>
             </div>
