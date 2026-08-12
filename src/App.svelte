@@ -10,6 +10,7 @@
   import DynamicBackground from './lib/DynamicBackground.svelte'
   import { getCachedDynamicThumbnail, getDynamicThumbnailKey, requestDynamicThumbnail } from './lib/dynamicBackgroundRuntime.js'
   import { CHANGELOG_URL, getAppVersion } from './lib/appInfo.js'
+  import { clearIconCache } from './lib/iconCache.js'
   import TerminalTheme from './lib/themes/TerminalTheme.svelte'
   import DefaultTheme from './lib/themes/DefaultTheme.svelte'
   import MinimalTheme from './lib/themes/MinimalTheme.svelte'
@@ -1263,12 +1264,19 @@
             >{$t('settings.importSites')}</button>
           </div>
 
-          <!-- 重置设置 -->
-          <button
-            class="w-full py-1.5 rounded text-xs transition-all
-              {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-            onclick={() => { if (confirm($t('settings.resetConfirm'))) resetAllSettings() }}
-          >{$t('settings.resetSettings')}</button>
+          <!-- 清除图标缓存 / 重置设置 -->
+          <div class="flex gap-2">
+            <button
+              class="flex-1 py-1.5 rounded text-xs transition-all
+                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
+              onclick={() => { if (confirm($t('settings.clearIconCacheConfirm'))) clearIconCache().finally(() => location.reload()) }}
+            >{$t('settings.clearIconCache')}</button>
+            <button
+              class="flex-1 py-1.5 rounded text-xs transition-all
+                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
+              onclick={() => { if (confirm($t('settings.resetConfirm'))) resetAllSettings() }}
+            >{$t('settings.resetSettings')}</button>
+          </div>
         </div>
       </div>
     </div>
