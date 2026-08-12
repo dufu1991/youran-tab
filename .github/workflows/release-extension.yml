@@ -29,9 +29,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  # 检测版本变化、解析发布目标，供后续所有 job 使用
+  version:
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      changed: ${{ steps.version.outputs.changed }}
+      chrome: ${{ steps.targets.outputs.chrome }}
+      edge: ${{ steps.targets.outputs.edge }}
+      firefox: ${{ steps.targets.outputs.firefox }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,7 +80,6 @@ jobs:
 
       - name: Resolve publish targets
         id: targets
-        if: steps.version.outputs.changed == 'true'
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
@@ -98,22 +104,27 @@ jobs:
           printf 'firefox=%s\n' "${publish_firefox}" >> "${GITHUB_OUTPUT}"
           printf 'Publish targets: chrome=%s edge=%s firefox=%s\n' "${publish_chrome}" "${publish_edge}" "${publish_firefox}"
 
+  # 构建全部产物并发布 GitHub Release
+  github-release:
+    needs: version
+    if: needs.version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Bun
-        if: steps.version.outputs.changed == 'true'
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        if: steps.version.outputs.changed == 'true'
         run: bun install
 
       - name: Setup Chrome
-        if: steps.version.outputs.changed == 'true'
         uses: browser-actions/setup-chrome@v1
 
       - name: Build release assets
-        if: steps.version.outputs.changed == 'true'
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
           CHROME_CRX_PRIVATE_KEY: ${{ secrets.CHROME_CRX_PRIVATE_KEY }}
           EDGE_CRX_PRIVATE_KEY: ${{ secrets.EDGE_CRX_PRIVATE_KEY }}
           CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
@@ -241,11 +252,10 @@ jobs:
           fi
 
       - name: Publish GitHub Release
-        if: steps.version.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ steps.version.outputs.tag }}
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG_NAME: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
         shell: bash
         run: |
           shopt -s nullglob
@@ -270,8 +280,36 @@ jobs:
               --notes-file "${release_notes}"
           fi
 
+  # 以下三个商店发布 job 相互独立并行执行，
+  # 单个失败不影响其他，可在 Actions 页面单独重跑失败的 job。
+  publish-chrome:
+    needs: version
+    if: needs.version.outputs.changed == 'true' && needs.version.outputs.chrome == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Chrome Web Store package
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          bun run build
+          (
+            cd dist
+            zip -qr "${GITHUB_WORKSPACE}/release/youran-tab-chrome-webstore-${VERSION}.zip" . -x '*.DS_Store' '*/.DS_Store'
+          )
+
       - name: Validate Chrome Web Store secrets
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
           CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
@@ -292,7 +330,6 @@ jobs:
 
       - name: Authenticate Chrome Web Store API
         id: cws-auth
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
         shell: bash
@@ -354,12 +391,11 @@ jobs:
           printf 'access_token=%s\n' "${access_token}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish to Chrome Web Store
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.chrome == 'true'
         env:
           CWS_ACCESS_TOKEN: ${{ steps.cws-auth.outputs.access_token }}
           CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
           CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
@@ -445,8 +481,34 @@ jobs:
             "${publish_url}")"
           assert_success_response "${publish_code}" "${publish_body}" "Chrome Web Store publish"
 
+  publish-edge:
+    needs: version
+    if: needs.version.outputs.changed == 'true' && needs.version.outputs.edge == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Edge Add-ons package
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          bun run build:edge
+          (
+            cd dist-edge
+            zip -qr "${GITHUB_WORKSPACE}/release/youran-tab-edge-${VERSION}.zip" . -x '*.DS_Store' '*/.DS_Store'
+          )
+
       - name: Validate Edge Add-ons secrets
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.edge == 'true'
         env:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
@@ -466,12 +528,11 @@ jobs:
           fi
 
       - name: Publish to Microsoft Edge Add-ons
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.edge == 'true'
         env:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
           EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
@@ -615,8 +676,31 @@ jobs:
 
           poll_edge_operation "$(edge_operation_url "${publish_url}" "${publish_operation_id}")" "Edge Add-ons publish"
 
+  publish-firefox:
+    needs: version
+    if: needs.version.outputs.changed == 'true' && needs.version.outputs.firefox == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Firefox Add-ons package
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          bun run build:firefox
+          SOURCE_ZIP_OUTPUT="${GITHUB_WORKSPACE}/release/youran-tab-source-${VERSION}.zip" bun run pack:source
+
       - name: Validate Firefox Add-ons secrets
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.firefox == 'true'
         env:
           AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
           AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
@@ -634,11 +718,10 @@ jobs:
           fi
 
       - name: Publish to Firefox Add-ons
-        if: steps.version.outputs.changed == 'true' && steps.targets.outputs.firefox == 'true'
         env:
           AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
           AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
