@@ -1,9 +1,10 @@
 {
   "name": "youran-tab",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "scripts": {
+    "test": "bun test",
     "dev": "vite",
     "build": "vite build && node scripts/apply-browser-manifest.js chrome dist",
     "build:edge": "vite build --outDir dist-edge && node scripts/apply-browser-manifest.js edge dist-edge",

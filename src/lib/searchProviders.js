@@ -20,7 +20,7 @@ export const AI_PROVIDERS = [
   { id: 'claude', name: 'Claude', logo: 'logos/claude.svg', makeUrl: (q) => 'https://claude.ai/new?q=' + encodeURIComponent(q) },
   { id: 'perplexity', name: 'Perplexity', logo: 'logos/perplexity.svg', makeUrl: (q) => 'https://www.perplexity.ai/search?q=' + encodeURIComponent(q) },
   { id: 'copilot', name: 'Copilot', logo: 'logos/copilot.jpg', makeUrl: (q) => 'https://copilot.microsoft.com/?q=' + encodeURIComponent(q) },
-  { id: 'mistral', name: 'Mistral', logo: 'logos/mistralai.svg', makeUrl: (q) => 'https://chat.mistral.ai/chat?q=' + encodeURIComponent(q) },
+  { id: 'deepseek', name: 'DeepSeek', logo: 'logos/deepseek.svg', makeUrl: (q) => 'https://chat.deepseek.com/?q=' + encodeURIComponent(q) },
   { id: 'kimi', name: 'Kimi', logo: 'logos/kimi.png', makeUrl: (q) => 'https://www.kimi.com/_prefill_chat?send_immediately=true&force_search=false&prefill_prompt=' + encodeURIComponent(q) },
   { id: 'doubao', name: '豆包', logo: 'logos/doubao.png', makeUrl: (q) => 'https://www.doubao.com/chat/url-action?action=' + encodeURIComponent(JSON.stringify({ pluginId: 'Send_Message', payload: { text: q } })) },
   { id: 'baiduai', name: '百度 AI', logo: 'logos/baidu.svg', makeUrl: (q) => 'https://wenxin.baidu.com/search?word=' + encodeURIComponent(q) },

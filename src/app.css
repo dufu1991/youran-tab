@@ -57,10 +57,119 @@
 }
 
 @layer components {
+  .settings-panel {
+    width: 336px;
+    max-width: calc(100vw - 32px);
+  }
+
   .settings-separated > * + * {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid #e5e5e5;
+  }
+
+  .settings-disclosure {
+    border-radius: 8px;
+    padding: 2px;
+    background: #e5e5e5;
+  }
+
+  .dark .settings-disclosure {
+    background: #525252;
+  }
+
+  .settings-disclosure-summary {
+    display: flex;
+    min-height: 36px;
+    cursor: pointer;
+    list-style: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #f5f5f5;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .dark .settings-disclosure-summary {
+    background: #404040;
+  }
+
+  .settings-disclosure-summary:hover {
+    background: #eaeaea;
+  }
+
+  .dark .settings-disclosure-summary:hover {
+    background: #4a4a4a;
+  }
+
+  .settings-disclosure[open] > .settings-disclosure-summary {
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .settings-disclosure[open] > .settings-disclosure-summary {
+    background: #484848;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+
+  .settings-disclosure[open] > .settings-disclosure-summary:hover {
+    background: #f7f7f7;
+  }
+
+  .dark .settings-disclosure[open] > .settings-disclosure-summary:hover {
+    background: #505050;
+  }
+
+  .settings-disclosure-summary:active {
+    background: #e5e5e5;
+    box-shadow: none;
+  }
+
+  .dark .settings-disclosure-summary:active {
+    background: #525252;
+  }
+
+  .settings-disclosure-summary:focus-visible {
+    outline: 2px solid #737373;
+    outline-offset: 2px;
+  }
+
+  .dark .settings-disclosure-summary:focus-visible {
+    outline-color: #d4d4d4;
+  }
+
+  .settings-disclosure-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .settings-disclosure-chevron {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    color: #737373;
+    transition: transform 160ms ease, color 160ms ease;
+  }
+
+  .dark .settings-disclosure-chevron {
+    color: #a3a3a3;
+  }
+
+  .settings-disclosure-summary:hover .settings-disclosure-chevron,
+  .settings-disclosure[open] > .settings-disclosure-summary .settings-disclosure-chevron {
+    color: currentColor;
+  }
+
+  .settings-disclosure[open] > .settings-disclosure-summary .settings-disclosure-chevron {
+    transform: rotate(180deg);
+  }
+
+  .settings-disclosure > :not(summary) {
+    margin: 2px 6px 6px;
   }
 
   .dark .settings-separated > * + * {
@@ -70,10 +179,10 @@
   .settings-segmented {
     display: grid;
     width: 100%;
-    gap: 1px;
-    padding: 1px;
+    gap: 2px;
+    padding: 2px;
     overflow: hidden;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #e5e5e5;
     border: 1px solid #e5e5e5;
   }
@@ -107,10 +216,52 @@
     align-items: center;
     justify-content: center;
     padding: 6px 8px;
+    border-radius: 6px;
     text-align: center;
     font-size: 12px;
     line-height: 16px;
     white-space: normal;
     overflow-wrap: anywhere;
+    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 100ms ease;
+  }
+
+  .settings-segmented-button:active {
+    transform: scale(0.98);
+  }
+
+  .settings-segmented-button-inactive {
+    background: #f5f5f5;
+  }
+
+  .settings-segmented-button-inactive:hover {
+    background: #d4d4d4;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .dark .settings-segmented-button-inactive {
+    background: #404040;
+  }
+
+  .dark .settings-segmented-button-inactive:hover {
+    background: #666666;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+  }
+
+  .settings-segmented-button[aria-pressed="true"] {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  }
+
+  .dark .settings-segmented-button[aria-pressed="true"] {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  }
+
+  .settings-segmented-button:focus-visible {
+    z-index: 1;
+    outline: 2px solid #737373;
+    outline-offset: -2px;
+  }
+
+  .dark .settings-segmented-button:focus-visible {
+    outline-color: #d4d4d4;
   }
 }

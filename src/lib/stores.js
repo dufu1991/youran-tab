@@ -2,15 +2,20 @@ import { writable, derived, get } from 'svelte/store'
 import { normalizeSiteTree, removeItemFromTree, updateItemTree } from './folders.js'
 import { SEARCH_ENGINES, AI_PROVIDERS, findTarget } from './searchProviders.js'
 import { t } from './i18n.js'
+import { getInitialBackgroundType, hasExistingNewtabData, migrateAiProviderId, migrateAiProviderIds } from './configMigrations.js'
 
 const STORAGE_KEY_SITES = 'newtab_sites'
 const STORAGE_KEY_THEME = 'newtab_theme'
 const STORAGE_KEY_MODE = 'newtab_mode'
 export const BACKGROUND_PRESET_LIMIT = 18
 const BACKGROUND_PRESET_STORAGE_VERSION = 5
+const hadExistingNewtabData = hasExistingNewtabData(Object.keys(localStorage))
 
 const defaultSites = [
-  { id: '1', name: 'Google', url: 'https://google.com' },
+  { id: '1', name: 'Google', url: 'https://google.com', iconSource: 'custom', customIcon: 'logos/google.svg' },
+  { id: '2', name: 'YouTube', url: 'https://youtube.com', iconSource: 'custom', customIcon: 'logos/youtube.svg' },
+  { id: '3', name: 'ChatGPT', url: 'https://chatgpt.com', iconSource: 'custom', customIcon: 'logos/openai.svg' },
+  { id: '4', name: '百度', url: 'https://baidu.com', iconSource: 'custom', customIcon: 'logos/baidu.svg' },
 ]
 
 function loadFromStorage(key, fallback) {
@@ -226,8 +231,12 @@ const normalizeSearchConfig = (value) => {
   config.enabledEngines = engines.filter((id) => engineIds.has(id))
   if (config.enabledEngines.length === 0) config.enabledEngines = defaults.enabledEngines
 
-  const aiList = Array.isArray(config.enabledAi) ? config.enabledAi : defaults.enabledAi
+  const aiList = Array.isArray(config.enabledAi)
+    ? migrateAiProviderIds(config.enabledAi)
+    : defaults.enabledAi
   config.enabledAi = aiList.filter((id) => aiIds.has(id))
+
+  config.defaultAi = migrateAiProviderId(config.defaultAi)
 
   if (config.defaultMode !== 'search' && config.defaultMode !== 'ai') config.defaultMode = defaults.defaultMode
   if (config.defaultMode === 'ai' && config.enabledAi.length === 0) config.defaultMode = 'search'
@@ -882,7 +891,9 @@ function isAllRandomScopes(value) {
 }
 
 function createBgConfigStore() {
-  const defaults = { version: BG_CONFIG_STORAGE_VERSION, type: 'none', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, dynamicDarkId: 0, dynamicLightId: 0, randomScopes: defaultRandomScopeKeys }
+  const hasStoredBackground = localStorage.getItem(STORAGE_KEY_BG) !== null
+  const initialBackgroundType = getInitialBackgroundType({ hasStoredBackground, hasExistingData: hadExistingNewtabData })
+  const defaults = { version: BG_CONFIG_STORAGE_VERSION, type: initialBackgroundType || 'random', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, dynamicDarkId: 0, dynamicLightId: 0, randomScopes: defaultRandomScopeKeys }
   const initial = loadFromStorage(STORAGE_KEY_BG, defaults)
   // 旧字段迁移
   const { images, solid, solidId, gradientId, randomScope, ...rest } = { ...defaults, ...initial }

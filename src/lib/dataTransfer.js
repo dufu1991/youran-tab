@@ -10,6 +10,8 @@ const SETTINGS_KEYS = {
   newtab_default: 'defaultConfig',
   newtab_terminal: 'terminalConfig',
   newtab_bento: 'bentoConfig',
+  newtab_glass: 'glassConfig',
+  newtab_bubble: 'bubbleConfig',
   newtab_solids: 'solidPresets',
   newtab_gradients: 'gradientPresets',
   newtab_dynamics: 'dynamicPresets',

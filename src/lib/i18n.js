@@ -10,6 +10,19 @@ const localeNames = {
   'ru': 'Русский', 'fr': 'Français', 'de': 'Deutsch', 'it': 'Italiano',
 }
 
+const themeParameterTemplates = {
+  'en-US': '{0} theme parameters',
+  'zh-CN': '{0}主题参数',
+  'zh-TW': '{0}主題參數',
+  ja: '{0}テーマ設定',
+  ko: '{0} 테마 설정',
+  es: 'Parámetros del tema {0}',
+  ru: 'Параметры темы «{0}»',
+  fr: 'Paramètres du thème {0}',
+  de: 'Parameter für das Thema {0}',
+  it: 'Parametri del tema {0}',
+}
+
 const messages = {
   'en-US': {
     appName: 'Youran Tab',
@@ -129,7 +142,7 @@ const messages = {
       unknown: 'Unknown command: {0}. Type h for help.',
     },
     search: { placeholder: 'Search the web...', placeholderAi: 'Ask AI...', placeholderName: 'Search {0}...', placeholderAiName: 'Ask {0}...', groupSearch: 'Search', groupAi: 'Ask AI' },
-    settings: { theme: 'Theme', mode: 'Mode', align: 'Align', language: 'Language', search: 'Search / Ask', options: 'Options', editMode: 'Edit mode', showSearch: 'Show search / ask bar', editModeHint: 'Edit mode — click to edit or delete', editModeDone: 'Done', bentoCols: 'Columns', bentoWidth: 'Width', bentoGap: 'Gap', bentoRadius: 'Radius', bentoFixed: 'Equal grid', bentoOpacity: 'Opacity', bentoBlur: 'Blur', bentoIconSize: 'Icon size', glassCols: 'Columns', bubbleLayout: 'Layout', bubbleFixed: 'Fixed', bubbleRandom: 'Random', bubbleSize: 'Size', showTitle: 'Site titles', langAuto: 'Follow browser', resetSettings: 'Reset settings', resetConfirm: 'Reset all settings to default? Site data will be kept.', clearIconCache: 'Clear icon cache', clearIconCacheConfirm: 'Clear all cached site icons? They will be downloaded again on next load.', background: 'Background', bgNone: 'None', bgSolid: 'Solid', bgGradient: 'Gradient', bgImage: 'Image', bgDynamic: 'Dynamic', bgRandom: 'Random', bgRefresh: 'Change background', bgCustomColor: 'Custom color', bgUpload: 'Upload', bgClearAll: 'Clear all', bgAddGradient: 'Random gradient', bgImageHint: 'Max 18 local images, uploaded from this device', bgRandomSolid: 'Solid', bgRandomGradient: 'Gradient', bgRandomImage: 'Image', bgRandomDynamic: 'Dynamic', bgRandomHint: 'Random picks from the selected background types when the page loads or when you change background.', bgGeneratedHint: 'Solid, gradient, and dynamic backgrounds start with 18 presets. Delete any you dislike; adding a new one regenerates it.', bgRegenerate: 'Regenerate 18 presets', bgRandomAll: 'All', exportSites: 'Export sites', importSites: 'Import sites', update: 'Update', updateCurrent: 'Current version v {0}', updateChangelog: 'Changelog', searchDefault: 'Default action', searchSetDefault: 'Set as default', searchEngines: 'Search engines', searchAi: 'AI assistants', searchAiHint: 'AI assistants open the service website; signing in first is recommended.' },
+    settings: { theme: 'Theme', themeParameters: '{0} theme parameters', mode: 'Mode', align: 'Align', language: 'Language', search: 'Search / Ask', options: 'Options', editMode: 'Edit mode', showSearch: 'Show search / ask bar', editModeHint: 'Edit mode — click to edit or delete', editModeDone: 'Done', bentoCols: 'Columns', bentoWidth: 'Width', bentoGap: 'Gap', bentoRadius: 'Radius', bentoFixed: 'Equal grid', bentoOpacity: 'Opacity', bentoBlur: 'Blur', bentoIconSize: 'Icon size', glassCols: 'Columns', bubbleLayout: 'Layout', bubbleFixed: 'Fixed', bubbleRandom: 'Random', bubbleSize: 'Size', showTitle: 'Site titles', langAuto: 'Follow browser', resetSettings: 'Reset settings', resetConfirm: 'Reset all settings to default? Site data will be kept.', clearIconCache: 'Clear icon cache', clearIconCacheConfirm: 'Clear all cached site icons? They will be downloaded again on next load.', background: 'Background', bgNone: 'None', bgSolid: 'Solid', bgGradient: 'Gradient', bgImage: 'Image', bgDynamic: 'Dynamic', bgRandom: 'Random', bgRefresh: 'Change background', bgCustomColor: 'Custom color', bgUpload: 'Upload', bgClearAll: 'Clear all', bgAddGradient: 'Random gradient', bgImageHint: 'Max 18 local images, uploaded from this device', bgRandomSolid: 'Solid', bgRandomGradient: 'Gradient', bgRandomImage: 'Image', bgRandomDynamic: 'Dynamic', bgRandomHint: 'Random picks from the selected background types when the page loads or when you change background.', bgGeneratedHint: 'Solid, gradient, and dynamic backgrounds start with 18 presets. Delete any you dislike; adding a new one regenerates it.', bgRegenerate: 'Regenerate 18 presets', bgRandomAll: 'All', exportSites: 'Export sites', importSites: 'Import sites', update: 'Update', updateCurrent: 'Current version v {0}', updateChangelog: 'Changelog', searchDefault: 'Default action', searchSetDefault: 'Set as default', searchEngines: 'Search engines', searchAi: 'AI assistants', searchAiHint: 'AI assistants open the service website; signing in first is recommended.' },
     dataTransfer: {
       exportTitle: 'Export Data', exportBtn: 'Export', importTitle: 'Import Data', importBtn: 'Import',
       exportPreparing: 'Preparing export file...',
@@ -261,7 +274,7 @@ const messages = {
       unknown: '未知命令：{0}。输入 h 查看帮助。',
     },
     search: { placeholder: '搜索...', placeholderAi: '提问...', placeholderName: '{0} 搜索...', placeholderAiName: '向 {0} 提问...', groupSearch: '搜索', groupAi: 'AI 提问' },
-    settings: { theme: '主题', mode: '模式', align: '对齐', language: '语言', search: '搜索 / 提问', options: '选项', editMode: '编辑模式', showSearch: '显示搜索 / 提问框', editModeHint: '编辑模式 — 点击可编辑或删除', editModeDone: '完成', bentoCols: '列数', bentoWidth: '宽度', bentoGap: '间距', bentoRadius: '圆角', bentoFixed: '等分网格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '图标大小', glassCols: '列数', bubbleLayout: '布局模式', bubbleFixed: '固定排列', bubbleRandom: '随机散布', bubbleSize: '大小', showTitle: '站点标题', langAuto: '跟随浏览器', resetSettings: '重置设置', resetConfirm: '确定将所有设置恢复为默认值吗？站点数据将保留。', clearIconCache: '清除图标缓存', clearIconCacheConfirm: '确定清除所有已缓存的站点图标吗？下次打开时将重新下载。', background: '背景', bgNone: '无', bgSolid: '纯色', bgGradient: '渐变', bgImage: '图片', bgDynamic: '动态', bgRandom: '随机', bgRefresh: '换个背景', bgCustomColor: '自定义颜色', bgUpload: '上传图片', bgClearAll: '清除全部', bgAddGradient: '随机渐变', bgImageHint: '最多 18 张，从本地上传并存储在本地', bgRandomSolid: '纯色', bgRandomGradient: '渐变', bgRandomImage: '图片', bgRandomDynamic: '动态', bgRandomHint: '随机会在选中的背景类型中切换，每次加载或点击换个背景时重新选择。', bgGeneratedHint: '纯色、渐变和动态初始各生成 18 种。如果有觉得不好看的，可以删除，新加会重新生成。', bgRegenerate: '重新生成 18 种', bgRandomAll: '全部', exportSites: '导出站点列表', importSites: '导入站点', update: '更新', updateCurrent: '当前版本 v {0}', updateChangelog: '更新日志', searchDefault: '默认使用', searchSetDefault: '设为默认', searchEngines: '搜索引擎', searchAi: 'AI 提问', searchAiHint: '使用 AI 提问会打开对应网站，建议先登录该服务账号。' },
+    settings: { theme: '主题', themeParameters: '{0}主题参数', mode: '模式', align: '对齐', language: '语言', search: '搜索 / 提问', options: '选项', editMode: '编辑模式', showSearch: '显示搜索 / 提问框', editModeHint: '编辑模式 — 点击可编辑或删除', editModeDone: '完成', bentoCols: '列数', bentoWidth: '宽度', bentoGap: '间距', bentoRadius: '圆角', bentoFixed: '等分网格', bentoOpacity: '透明度', bentoBlur: '模糊', bentoIconSize: '图标大小', glassCols: '列数', bubbleLayout: '布局模式', bubbleFixed: '固定排列', bubbleRandom: '随机散布', bubbleSize: '大小', showTitle: '站点标题', langAuto: '跟随浏览器', resetSettings: '重置设置', resetConfirm: '确定将所有设置恢复为默认值吗？站点数据将保留。', clearIconCache: '清除图标缓存', clearIconCacheConfirm: '确定清除所有已缓存的站点图标吗？下次打开时将重新下载。', background: '背景', bgNone: '无', bgSolid: '纯色', bgGradient: '渐变', bgImage: '图片', bgDynamic: '动态', bgRandom: '随机', bgRefresh: '换个背景', bgCustomColor: '自定义颜色', bgUpload: '上传图片', bgClearAll: '清除全部', bgAddGradient: '随机渐变', bgImageHint: '最多 18 张，从本地上传并存储在本地', bgRandomSolid: '纯色', bgRandomGradient: '渐变', bgRandomImage: '图片', bgRandomDynamic: '动态', bgRandomHint: '随机会在选中的背景类型中切换，每次加载或点击换个背景时重新选择。', bgGeneratedHint: '纯色、渐变和动态初始各生成 18 种。如果有觉得不好看的，可以删除，新加会重新生成。', bgRegenerate: '重新生成 18 种', bgRandomAll: '全部', exportSites: '导出站点列表', importSites: '导入站点', update: '更新', updateCurrent: '当前版本 v {0}', updateChangelog: '更新日志', searchDefault: '默认使用', searchSetDefault: '设为默认', searchEngines: '搜索引擎', searchAi: 'AI 提问', searchAiHint: '使用 AI 提问会打开对应网站，建议先登录该服务账号。' },
     dataTransfer: {
       exportTitle: '导出数据', exportBtn: '导出', importTitle: '导入数据', importBtn: '导入',
       exportPreparing: '正在准备导出文件……',
@@ -1241,6 +1254,10 @@ export const t = derived(currentLocale, ($locale) => {
   const en = messages['en-US']
   document.title = m.appName || 'Youran Tab'
   return (key, ...args) => {
+    if (key === 'settings.themeParameters') {
+      const template = themeParameterTemplates[$locale] || themeParameterTemplates['zh-CN']
+      return template.replace('{0}', args[0] ?? '')
+    }
     const parts = key.split('.')
     const resolve = (source) => {
       let val = source

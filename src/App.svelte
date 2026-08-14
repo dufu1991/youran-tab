@@ -1,5 +1,5 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, glassConfig, bubbleConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, searchConfig, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
+  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, searchConfig, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
   import { SEARCH_ENGINES, AI_PROVIDERS } from './lib/searchProviders.js'
   import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
   import AddSiteModal from './lib/AddSiteModal.svelte'
@@ -8,6 +8,7 @@
   import ExportModal from './lib/ExportModal.svelte'
   import ImportModal from './lib/ImportModal.svelte'
   import DynamicBackground from './lib/DynamicBackground.svelte'
+  import ThemeSettings from './lib/ThemeSettings.svelte'
   import { getCachedDynamicThumbnail, getDynamicThumbnailKey, requestDynamicThumbnail } from './lib/dynamicBackgroundRuntime.js'
   import { CHANGELOG_URL, getAppVersion } from './lib/appInfo.js'
   import { clearIconCache } from './lib/iconCache.js'
@@ -603,10 +604,10 @@
   <!-- 设置面板 -->
   {#if $showSettings}
     <div class="fixed inset-0 z-90" onclick={(e) => { if (e.target === e.currentTarget) $showSettings = false }} role="presentation">
-      <div class="fixed bottom-14 right-4 z-91 w-84 rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
+      <div class="settings-panel fixed bottom-14 right-4 z-91 rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
         {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}" data-no-context-menu>
 
-        <!-- 主题 + 模式 + 对齐 + 语言 -->
+        <!-- 主题 + 当前主题参数 + 模式 + 语言 -->
         <div class="settings-separated">
           <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
@@ -618,12 +619,14 @@
                   class="settings-segmented-button transition-all
                     {$theme === key
                       ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                      : 'settings-segmented-button-inactive'}"
+                  aria-pressed={$theme === key}
                   onclick={() => theme.set(key)}
                 >{$t('theme.' + key)}</button>
               {/each}
             </div>
           </div>
+          <ThemeSettings dark={$isDark} />
           <div>
             <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
               {$t('settings.mode')}
@@ -634,25 +637,10 @@
                   class="settings-segmented-button transition-all
                     {$mode === m
                       ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                      : 'settings-segmented-button-inactive'}"
+                  aria-pressed={$mode === m}
                   onclick={() => mode.set(m)}
                 >{$t('mode.' + m)}</button>
-              {/each}
-            </div>
-          </div>
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.align')}
-            </div>
-            <div class="settings-segmented settings-segmented-row">
-              {#each ['top', 'center', 'bottom'] as a}
-                <button
-                  class="settings-segmented-button transition-all
-                    {$themeAlign[$theme] === a
-                      ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
-                  onclick={() => themeAlign.set($theme, a)}
-                >{$t('align.' + a)}</button>
               {/each}
             </div>
           </div>
@@ -707,17 +695,23 @@
                         class="settings-segmented-button transition-all
                           {$searchConfig.defaultMode === sm
                             ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                            : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                            : 'settings-segmented-button-inactive'}"
+                        aria-pressed={$searchConfig.defaultMode === sm}
                         onclick={() => searchConfig.set('defaultMode', sm)}
                       >{$t(sm === 'search' ? 'search.groupSearch' : 'search.groupAi')}</button>
                     {/each}
                   </div>
                 </div>
 
-                <!-- 搜索引擎 + AI 提问（两列） -->
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchEngines')}</div>
+                <div>
+                <details class="settings-disclosure">
+                  <summary class="settings-disclosure-summary">
+                    <span>{$t('settings.searchEngines')}</span>
+                    <svg class="settings-disclosure-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </summary>
+                  <div class="pt-1">
                     <div class="space-y-1.5">
                       {#each SEARCH_ENGINES as engine}
                         {@const enabled = $searchConfig.enabledEngines.includes(engine.id)}
@@ -765,9 +759,18 @@
                       {/each}
                     </div>
                   </div>
+                </details>
+                </div>
 
-                  <div>
-                    <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchAi')}</div>
+                <div>
+                <details class="settings-disclosure">
+                  <summary class="settings-disclosure-summary">
+                    <span>{$t('settings.searchAi')}</span>
+                    <svg class="settings-disclosure-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </summary>
+                  <div class="pt-1">
                     <div class="space-y-1.5">
                       {#each AI_PROVIDERS as provider}
                         {@const enabled = $searchConfig.enabledAi.includes(provider.id)}
@@ -812,11 +815,12 @@
                         </div>
                       {/each}
                     </div>
+                    <p class="text-xs leading-4 whitespace-normal mt-2 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
+                      {$t('settings.searchAiHint')}
+                    </p>
                   </div>
+                </details>
                 </div>
-                <p class="text-xs leading-4 whitespace-normal mt-1.5 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                  {$t('settings.searchAiHint')}
-                </p>
               </div>
             {/if}
           </div>
@@ -836,7 +840,8 @@
                     class="settings-segmented-button transition-all
                       {$bgConfig.type === bt
                         ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                        : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
+                        : 'settings-segmented-button-inactive'}"
+                    aria-pressed={$bgConfig.type === bt}
                     onclick={() => bgConfig.set('type', bt)}
                   >{$t('settings.bg' + bt.charAt(0).toUpperCase() + bt.slice(1))}</button>
                 {/each}
@@ -1043,192 +1048,6 @@
                   ></span>
                 </button>
               </label>
-            </div>
-          </div>
-        {/if}
-
-        <!-- 经典主题配置 -->
-        {#if $theme === 'default'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('theme.default')}
-            </div>
-            <div class="settings-separated">
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoWidth')}</span>
-              <input type="range" min="400" max="1400" step="50" value={$defaultConfig.width}
-                oninput={(e) => defaultConfig.set('width', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.width}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoCols')}</span>
-              <input type="range" min="3" max="8" step="1" value={$defaultConfig.cols}
-                oninput={(e) => defaultConfig.set('cols', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.cols}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoRadius')}</span>
-              <input type="range" min="0" max="32" step="2" value={$defaultConfig.radius}
-                oninput={(e) => defaultConfig.set('radius', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.radius}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoOpacity')}</span>
-              <input type="range" min="0" max="100" step="5" value={$defaultConfig.cardOpacity}
-                oninput={(e) => defaultConfig.set('cardOpacity', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.cardOpacity}%</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoBlur')}</span>
-              <input type="range" min="0" max="20" step="1" value={$defaultConfig.cardBlur}
-                oninput={(e) => defaultConfig.set('cardBlur', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.cardBlur}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoIconSize')}</span>
-              <input type="range" min="24" max="64" step="2" value={$defaultConfig.iconSize}
-                oninput={(e) => defaultConfig.set('iconSize', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$defaultConfig.iconSize}</span>
-            </label>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Bento 主题配置 -->
-        {#if $theme === 'bento'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('theme.bento')}
-            </div>
-            <div class="settings-separated">
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoWidth')}</span>
-              <input type="range" min="400" max="1400" step="50" value={$bentoConfig.width}
-                oninput={(e) => bentoConfig.set('width', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.width}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoGap')}</span>
-              <input type="range" min="4" max="32" step="2" value={$bentoConfig.gap}
-                oninput={(e) => bentoConfig.set('gap', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.gap}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoRadius')}</span>
-              <input type="range" min="0" max="32" step="2" value={$bentoConfig.radius}
-                oninput={(e) => bentoConfig.set('radius', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.radius}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoOpacity')}</span>
-              <input type="range" min="0" max="100" step="5" value={$bentoConfig.cardOpacity}
-                oninput={(e) => bentoConfig.set('cardOpacity', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.cardOpacity}%</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoBlur')}</span>
-              <input type="range" min="0" max="20" step="1" value={$bentoConfig.cardBlur}
-                oninput={(e) => bentoConfig.set('cardBlur', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.cardBlur}</span>
-            </label>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bentoIconSize')}</span>
-              <input type="range" min="24" max="64" step="2" value={$bentoConfig.iconSize}
-                oninput={(e) => bentoConfig.set('iconSize', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.iconSize}</span>
-            </label>
-            <!-- 固定布局 -->
-            <label class="flex items-center justify-between cursor-pointer">
-              <span class="text-sm">{$t('settings.bentoFixed')}</span>
-              <button
-                class="relative w-9 h-5 rounded-full transition-colors {$bentoConfig.fixed ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                onclick={() => bentoConfig.set('fixed', !$bentoConfig.fixed)}
-                role="switch"
-                aria-checked={$bentoConfig.fixed}
-                aria-label={$t('settings.bentoFixed')}
-              >
-                <span
-                  class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$bentoConfig.fixed ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                ></span>
-              </button>
-            </label>
-            {#if $bentoConfig.fixed}
-              <label class="flex items-center gap-2 text-sm">
-                <span class="flex-1">{$t('settings.bentoCols')}</span>
-                <input type="range" min="3" max="8" step="1" value={$bentoConfig.cols}
-                  oninput={(e) => bentoConfig.set('cols', +e.target.value)}
-                  class="w-36 accent-white" />
-                <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bentoConfig.cols}</span>
-              </label>
-            {/if}
-            </div>
-          </div>
-        {/if}
-
-        <!-- Glass 主题配置 -->
-        {#if $theme === 'glass'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('theme.glass')}
-            </div>
-            <div class="settings-separated">
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.glassCols')}</span>
-              <input type="range" min="1" max="4" step="1" value={$glassConfig.cols}
-                oninput={(e) => glassConfig.set('cols', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$glassConfig.cols}</span>
-            </label>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Bubble 主题配置 -->
-        {#if $theme === 'bubble'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('theme.bubble')}
-            </div>
-            <div class="settings-separated">
-            <div>
-              <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-                {$t('settings.bubbleLayout')}
-              </div>
-              <div class="settings-segmented settings-segmented-row">
-                {#each ['fixed', 'random'] as layoutMode}
-                  <button
-                    class="settings-segmented-button transition-all
-                      {$bubbleConfig.layout === layoutMode
-                        ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                        : ($isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200')}"
-                    onclick={() => bubbleConfig.set('layout', layoutMode)}
-                  >{$t('settings.bubble' + layoutMode.charAt(0).toUpperCase() + layoutMode.slice(1))}</button>
-                {/each}
-              </div>
-            </div>
-            <label class="flex items-center gap-2 text-sm">
-              <span class="flex-1">{$t('settings.bubbleSize')}</span>
-              <input type="range" min="48" max="120" step="4" value={$bubbleConfig.size}
-                oninput={(e) => bubbleConfig.set('size', +e.target.value)}
-                class="w-36 accent-white" />
-              <span class="w-10 text-right text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$bubbleConfig.size}</span>
-            </label>
             </div>
           </div>
         {/if}
