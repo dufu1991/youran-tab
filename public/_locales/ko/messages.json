@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "다양한 테마, 배경 및 레이아웃을 지원하는 맞춤형 새 탭 페이지."
+  },
+  "contextAddPage": {
+    "message": "Youran Tab에 추가"
+  },
+  "contextPageAdded": {
+    "message": "Youran Tab에 추가했습니다"
+  },
+  "contextPageExists": {
+    "message": "이미 Youran Tab에 있습니다"
+  },
+  "contextAddToMainList": {
+    "message": "메인 목록"
+  },
+  "contextPageAddedToFolder": {
+    "message": "“$FOLDER$”에 추가했습니다",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

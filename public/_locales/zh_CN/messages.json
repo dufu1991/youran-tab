@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "可自定义的新标签页，支持多种主题、背景和布局。"
+  },
+  "contextAddPage": {
+    "message": "加入悠然标签页"
+  },
+  "contextPageAdded": {
+    "message": "已加入悠然标签页"
+  },
+  "contextPageExists": {
+    "message": "已在悠然标签页中"
+  },
+  "contextAddToMainList": {
+    "message": "主列表"
+  },
+  "contextPageAddedToFolder": {
+    "message": "已加入“$FOLDER$”",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

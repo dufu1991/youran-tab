@@ -655,7 +655,8 @@ jobs:
           poll_edge_operation "$(edge_operation_url "${upload_url}" "${upload_operation_id}")" "Edge Add-ons upload"
 
           publish_payload="$(mktemp)"
-          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ notes: 'Automated release from GitHub Actions. Full changelog: https://youran-tab.du-fu.com/#changelog' }));" "${publish_payload}"
+          # 给认证团队的备注：权限用途与测试步骤，见 .github/review-notes/edge.txt
+          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ notes: fs.readFileSync(process.argv[2], 'utf8').trim() }));" "${publish_payload}" "${GITHUB_WORKSPACE}/.github/review-notes/edge.txt"
 
           publish_headers="$(mktemp)"
           publish_body="$(mktemp)"
@@ -734,7 +735,8 @@ jobs:
             exit 1
           fi
 
-          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ version: { approval_notes: 'Automated release from GitHub Actions. Full changelog: https://youran-tab.du-fu.com/#changelog\\n\\nSource build steps:\\n1. bun install\\n2. bun run build:firefox\\n3. SOURCE_ZIP_OUTPUT=release/youran-tab-source-${VERSION}.zip bun run pack:source' } }));" "${amo_metadata}"
+          # 给审核员的备注：权限用途、测试步骤与源码构建步骤，见 .github/review-notes/firefox.txt
+          node -e "const fs = require('node:fs'); fs.writeFileSync(process.argv[1], JSON.stringify({ version: { approval_notes: fs.readFileSync(process.argv[2], 'utf8').trim() } }));" "${amo_metadata}" "${GITHUB_WORKSPACE}/.github/review-notes/firefox.txt"
 
           bunx web-ext@latest sign \
             --source-dir "${GITHUB_WORKSPACE}/dist-firefox" \

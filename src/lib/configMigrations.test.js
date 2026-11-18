@@ -27,3 +27,34 @@ describe('AI provider migration', () => {
     expect(migrateAiProviderIds(['mistral', 'deepseek', 'chatgpt', 'mistral'])).toEqual(['deepseek', 'chatgpt'])
   })
 })
+
+describe('folder icon migration', () => {
+  test('turns default briefcase folders into grid folders', async () => {
+    const { migrateFolderIconsToDefault } = await import('./configMigrations.js')
+    const items = [
+      { id: 's', name: 'Site', url: 'https://s.com' },
+      { id: 'a', type: 'folder', name: 'A', folderIconType: 'briefcase', items: [] },
+      { id: 'b', type: 'folder', name: 'B', items: [] },
+      { id: 'c', type: 'folder', name: 'C', folderIconType: 'custom', folderCustomIcon: 'data:x', items: [] },
+      { id: 'd', type: 'folder', name: 'D', folderCustomIcon: 'data:y', items: [] },
+      { id: 'e', type: 'folder', name: 'E', folderIconType: 'svg', folderCustomIcon: 'data:z', items: [] },
+      { id: 'f', type: 'folder', name: 'F', folderIconType: 'custom', folderCustomIcon: '', items: [] },
+      { id: 'g', type: 'folder', name: 'G', folderIconType: 'svg', items: [] },
+      { id: 'h', type: 'folder', name: 'H', folderIconType: 'briefcase', folderCustomIcon: 'data:stale', items: [] },
+    ]
+    const migrated = migrateFolderIconsToDefault(items)
+    expect(migrated.map((item) => item.folderIconType)).toEqual([undefined, 'grid', 'grid', 'custom', undefined, 'svg', 'grid', 'grid', 'grid'])
+    expect(migrated[0]).toBe(items[0])
+    expect(migrated[3]).toBe(items[3])
+    expect(migrateFolderIconsToDefault(null)).toBeNull()
+  })
+})
+
+describe('folder icon migration from the 0.5.0 development build', () => {
+  test('keeps stacked folders unless asked to convert them', async () => {
+    const { migrateFolderIconsToDefault } = await import('./configMigrations.js')
+    const items = [{ id: 's', type: 'folder', name: 'S', folderIconType: 'stack', items: [] }, { id: 'g', type: 'folder', name: 'G', folderIconType: 'grid', items: [] }]
+    expect(migrateFolderIconsToDefault(items).map((item) => item.folderIconType)).toEqual(['stack', 'grid'])
+    expect(migrateFolderIconsToDefault(items, { includeStack: true }).map((item) => item.folderIconType)).toEqual(['grid', 'grid'])
+  })
+})

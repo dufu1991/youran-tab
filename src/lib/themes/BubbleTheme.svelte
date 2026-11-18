@@ -1,51 +1,32 @@
 <script>
   import { t } from '../i18n.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, sites as sitesStore, searchPlaceholder } from '../stores.js'
+  import SiteIcon from '../SiteIcon.svelte'
+  import { clickCounts, editMode, showSearchBar, resolvedBgStyle, bgIsLight, bubbleConfig, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { getFolderBackground, isFolderItem } from '../folders.js'
   import SearchTargetPicker from '../SearchTargetPicker.svelte'
+  import SiteSuggestions from '../SiteSuggestions.svelte'
+  import { createSiteDrag } from './siteDrag.svelte.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
-  let dragIndex = $state(-1)
-  let dragOverIndex = $state(-1)
+  // 编辑模式下拖拽排序
+  const drag = createSiteDrag()
 
-  function handleDragStart(e, i) {
-    dragIndex = i
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e, i) {
-    e.preventDefault()
-    dragOverIndex = i
-  }
-
-  function handleDrop(e, i) {
-    e.preventDefault()
-    if (dragIndex >= 0 && dragIndex !== i) {
-      sitesStore.reorder(dragIndex, i)
-    }
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleDragEnd() {
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleSiteClick(e, site) {
+  const handleSiteClick = (e, site) => {
     if (isFolderItem(site)) {
       handleFolderClick(e, site)
       return
     }
     if ($editMode) {
       e.preventDefault()
+      return
     }
+    // 正常打开时累加点击次数，便当主题据此排布
+    clickCounts.increment(site.id)
   }
 
-  function handleFolderClick(e, folder) {
+  const handleFolderClick = (e, folder) => {
     e.preventDefault()
     onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
@@ -55,18 +36,18 @@
   let searchQuery = $state('')
   let searchInputEl = $state(null)
 
-  function handleSearchClick() {
+  const handleSearchClick = () => {
     searchExpanded = true
     requestAnimationFrame(() => searchInputEl?.focus())
   }
 
-  function handleSearch(e) {
+  const handleSearch = (e) => {
     e.preventDefault()
     if (!searchQuery.trim()) return
     doSearch(searchQuery.trim())
   }
 
-  function handleSearchBlur() {
+  const handleSearchBlur = () => {
     if (!searchQuery.trim()) {
       searchExpanded = false
     }
@@ -76,21 +57,30 @@
   let isRandom = $derived($bubbleConfig.layout === 'random')
   let bubbleSize = $derived($bubbleConfig.size || 80)
   let alignClass = $derived(
-    align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24'
+    align === 'center' ? 'justify-center-safe py-12' : align === 'bottom' ? 'justify-end-safe pt-12 pb-24' : 'pt-24 pb-12'
   )
 
   // 随机布局：使用确定性伪随机 + 碰撞检测，保证不重叠
-  function seededRandom(seed) {
+  const seededRandom = (seed) => {
     let x = Math.sin(seed * 9301 + 49297) * 233280
     return x - Math.floor(x)
   }
+
+  // 随机布局的画布高度：按气泡数量扩展，保证站点多时也能放得下而不互相重叠
+  let randomHeight = $derived.by(() => {
+    const count = sites.length + ($editMode ? 1 : 0)
+    const cell = bubbleSize + 48 // 气泡 + 间距 + 标题
+    const perRow = Math.max(1, Math.floor((800 - 80) / cell))
+    // 随机摆放的空间利用率远低于网格，按约 1.6 倍行数预留
+    return Math.max(500, Math.ceil(count / perRow * 1.6) * cell + 80)
+  })
 
   let randomPositions = $derived.by(() => {
     if (!isRandom) return []
     const count = sites.length + ($editMode ? 1 : 0)
     const placed = []
     const size = bubbleSize
-    const W = 800, H = 500
+    const W = 800, H = randomHeight
     const pad = 40
 
     for (let i = 0; i < count; i++) {
@@ -141,16 +131,16 @@
   })
 </script>
 
-<div class="w-full h-full flex flex-col items-center {alignClass}
-  {$resolvedBgStyle ? '' : (dark ? 'bg-neutral-900' : 'bg-neutral-100')}"
+<div class="w-full h-full overflow-x-hidden overflow-y-auto flex flex-col items-center {alignClass}
+  {$resolvedBgStyle ? '' : 'not-dark:bg-neutral-100 dark:bg-neutral-900'}"
   style={$resolvedBgStyle}>
 
   {#if $editMode}
     <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-3 py-2
-      {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm">
+      not-dark:bg-neutral-800/90 not-dark:text-white dark:bg-white/90 dark:text-black text-sm backdrop-blur-sm">
       <span>✏️ {$t('settings.editModeHint')}</span>
       <button
-        class="px-3 py-0.5 rounded text-xs transition-colors {dark ? 'bg-black/15 hover:bg-black/25' : 'bg-white/20 hover:bg-white/30'}"
+        class="px-3 py-0.5 rounded text-xs transition-colors not-dark:bg-white/20 not-dark:hover:bg-white/30 dark:bg-black/15 dark:hover:bg-black/25"
         onclick={() => editMode.set(false)}
       >{$t('settings.editModeDone')}</button>
     </div>
@@ -169,13 +159,14 @@
                 : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};">
             <form onsubmit={handleSearch} class="search-bubble-form">
               <SearchTargetPicker {dark} />
+              <SiteSuggestions input={searchInputEl} query={searchQuery} dark={dark} />
               <input type="text" bind:value={searchQuery} bind:this={searchInputEl}
                 onblur={handleSearchBlur}
                 placeholder={$searchPlaceholder}
                 class="flex-1 bg-transparent outline-none text-sm min-w-0
-                  {dark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
+                  not-dark:text-black not-dark:placeholder:text-black/40 dark:text-white dark:placeholder:text-white/40" />
               <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
-                {dark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label="搜索">
+                not-dark:text-black/40 dark:text-white/40 hover:opacity-80" aria-label={$t('search.submit')}>
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
                 </svg>
@@ -194,7 +185,7 @@
                 : '0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)'};"
             onclick={handleSearchClick}
           >
-            <svg class="w-6 h-6 {dark ? 'text-white/40' : 'text-black/30'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-6 h-6 not-dark:text-black/30 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
             </svg>
           </button>
@@ -204,26 +195,27 @@
   {/if}
 
   <div class="bubble-container {isRandom ? 'relative w-full' : 'flex flex-wrap justify-center items-center gap-6 px-8 mx-auto'}"
-    style="{isRandom ? 'max-width: 800px; height: 500px;' : 'max-width: 600px;'}">
-    {#each sites as site, i}
+    style="{isRandom ? `max-width: 800px; height: ${randomHeight}px; flex-shrink: 0;` : 'max-width: 600px;'}">
+    {#each sites as site, i (site.id)}
       <a href={isFolderItem(site) ? '#' : site.url}
         data-context-item={isFolderItem(site) ? 'folder' : 'site'}
         data-item-id={site.id}
         onclick={(e) => handleSiteClick(e, site)}
         draggable={$editMode}
-        ondragstart={(e) => handleDragStart(e, i)}
-        ondragover={(e) => handleDragOver(e, i)}
-        ondrop={(e) => handleDrop(e, i)}
-        ondragend={handleDragEnd}
+        ondragstart={(e) => drag.start(e, i)}
+        ondragover={(e) => drag.over(e, i)}
+        ondrop={(e) => drag.drop(e, i)}
+        ondragend={drag.end}
+        data-drop-into={drag.isInto(i)}
         class="bubble group {isRandom ? 'absolute' : 'relative'} flex flex-col items-center no-underline
           {$editMode ? 'cursor-grab' : ''}
-          {$editMode && dragIndex === i ? 'opacity-40' : ''}
-          {$editMode && dragOverIndex === i && dragIndex !== i ? 'bubble-dragover' : ''}"
+          {$editMode && drag.index === i ? 'opacity-40' : ''}
+          {$editMode && drag.isTarget(i) ? 'bubble-dragover' : ''}"
         style="{isRandom && randomPositions[i] ? `left: ${randomPositions[i].x}%; top: ${randomPositions[i].y}%;` : ''}">
 
         <div class="bubble-circle relative rounded-full flex items-center justify-center
           transition-all duration-300 ease-out
-          {$editMode ? 'ring-2 ' + (dark ? 'ring-white/20' : 'ring-black/10') : ''}"
+          {$editMode ? 'ring-2 ' + 'not-dark:ring-black/10 dark:ring-white/20' : ''}"
           style="width: {bubbleSize}px; height: {bubbleSize}px;
             background: {isFolderItem(site) ? getFolderBackground(site) : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.65)')};
             box-shadow: {dark
@@ -232,23 +224,19 @@
           {#if isFolderItem(site)}
             <FolderGlyph folder={site} size={Math.round(bubbleSize * 0.5)} className="transition-transform duration-300" />
           {:else}
-            <img src={resolveSiteIcon(site, $isDark)} alt=""
-              onload={(e) => handleIconLoad(e, site)}
-              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-              class="transition-transform duration-300"
-              style="width: {Math.round(bubbleSize * 0.5)}px; height: {Math.round(bubbleSize * 0.5)}px; border-radius: {site.iconRadius ?? 4}%" />
+            <SiteIcon site={site} class="transition-transform duration-300" style="width: {Math.round(bubbleSize * 0.5)}px; height: {Math.round(bubbleSize * 0.5)}px; border-radius: {site.iconRadius ?? 4}%" />
           {/if}
         </div>
 
         {#if $editMode}
           <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100
             flex gap-1 transition-opacity z-10 whitespace-nowrap">
-            <button class="text-[10px] px-1.5 py-0.5 rounded-full
-              {dark ? 'bg-neutral-700/90 text-neutral-300 hover:bg-neutral-600' : 'bg-white/90 text-neutral-500 hover:bg-white'}
+            <button class="text-2xs px-1.5 py-0.5 rounded-full
+              not-dark:bg-white/90 not-dark:text-neutral-500 not-dark:hover:bg-white dark:bg-neutral-700/90 dark:text-neutral-300 dark:hover:bg-neutral-600
               shadow-sm backdrop-blur-sm"
               onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-            <button class="text-[10px] px-1.5 py-0.5 rounded-full
-              {dark ? 'bg-neutral-700/90 text-red-400 hover:bg-neutral-600' : 'bg-white/90 text-red-400 hover:bg-red-50'}
+            <button class="text-2xs px-1.5 py-0.5 rounded-full
+              text-red-400 not-dark:bg-white/90 not-dark:hover:bg-red-50 dark:bg-neutral-700/90 dark:hover:bg-neutral-600
               shadow-sm backdrop-blur-sm"
               onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
           </div>
@@ -293,7 +281,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   }
 
-  .bubble:hover img {
+  .bubble:hover :global(img) {
     transform: scale(1.12);
   }
 

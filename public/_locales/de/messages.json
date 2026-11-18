@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "Eine anpassbare Neuer-Tab-Seite mit verschiedenen Themen, Hintergründen und Layouts."
+  },
+  "contextAddPage": {
+    "message": "Zu Youran Tab hinzufügen"
+  },
+  "contextPageAdded": {
+    "message": "Zu Youran Tab hinzugefügt"
+  },
+  "contextPageExists": {
+    "message": "Bereits in Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Hauptliste"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Zu „$FOLDER$“ hinzugefügt",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

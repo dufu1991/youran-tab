@@ -1,22 +1,22 @@
 const TAB_GROUP_ID_NONE = -1
 
-function getBrowserNamespace() {
+const getBrowserNamespace = () => {
   if (typeof browser !== 'undefined') return browser
   if (typeof chrome !== 'undefined') return chrome
   return null
 }
 
-function getTabsApi() {
+const getTabsApi = () => {
   const extensionApi = getBrowserNamespace()
   return extensionApi?.tabs?.query ? extensionApi.tabs : null
 }
 
-function getTabGroupsApi() {
+const getTabGroupsApi = () => {
   const extensionApi = getBrowserNamespace()
   return extensionApi?.tabGroups?.query ? extensionApi.tabGroups : null
 }
 
-function queryTabs(tabsApi) {
+const queryTabs = (tabsApi) => {
   if (!tabsApi) return Promise.resolve([])
 
   if (typeof browser !== 'undefined' && browser.tabs?.query === tabsApi.query) {
@@ -30,7 +30,7 @@ function queryTabs(tabsApi) {
   })
 }
 
-function queryTabGroups(tabGroupsApi, windowId) {
+const queryTabGroups = (tabGroupsApi, windowId) => {
   if (!tabGroupsApi || typeof windowId !== 'number') return Promise.resolve([])
 
   if (typeof browser !== 'undefined' && browser.tabGroups?.query === tabGroupsApi.query) {
@@ -44,7 +44,7 @@ function queryTabGroups(tabGroupsApi, windowId) {
   })
 }
 
-function normalizeTab(tab) {
+const normalizeTab = (tab) => {
   return {
     type: 'tab',
     id: String(tab.id ?? crypto.randomUUID()),
@@ -56,7 +56,7 @@ function normalizeTab(tab) {
   }
 }
 
-function normalizeGroup(groupId, group) {
+const normalizeGroup = (groupId, group) => {
   return {
     type: 'group',
     id: `group:${groupId}`,
@@ -68,7 +68,7 @@ function normalizeGroup(groupId, group) {
   }
 }
 
-function buildTabTree(tabs, groups) {
+const buildTabTree = (tabs, groups) => {
   const groupMap = new Map(groups.map((group) => [group.id, group]))
   const groupedEntries = new Map()
   const entries = []
@@ -91,7 +91,7 @@ function buildTabTree(tabs, groups) {
   return entries
 }
 
-export async function queryCurrentWindowTabs() {
+export const queryCurrentWindowTabs = async () => {
   const tabsApi = getTabsApi()
   const tabGroupsApi = getTabGroupsApi()
   if (!tabsApi) return []
@@ -109,4 +109,33 @@ export async function queryCurrentWindowTabs() {
 
   const groups = groupIds.size > 0 ? await queryTabGroups(tabGroupsApi, windowId) : []
   return buildTabTree(tabs, groups)
+}
+
+// 当前浏览器是否支持把标签页放进标签页分组（需要 tabs.group 与 tabGroups.update）
+export const canOpenInTabGroup = () => {
+  const extensionApi = getBrowserNamespace()
+  return typeof extensionApi?.tabs?.create === 'function'
+    && typeof extensionApi?.tabs?.group === 'function'
+    && typeof extensionApi?.tabGroups?.update === 'function'
+}
+
+// 在当前窗口新建一个标签页分组并打开全部网址，返回是否已按分组打开
+export const openUrlsInTabGroup = async (urls, title = '') => {
+  const validUrls = urls.filter((url) => typeof url === 'string' && /^https?:\/\//.test(url))
+  if (validUrls.length === 0 || !canOpenInTabGroup()) return false
+
+  const extensionApi = getBrowserNamespace()
+  const tabs = []
+  // 逐个创建以保持文件夹内的顺序，先不激活，等分组完成后再切换
+  for (const url of validUrls) {
+    tabs.push(await extensionApi.tabs.create({ url, active: false }))
+  }
+
+  const groupId = await extensionApi.tabs.group({
+    tabIds: tabs.map((tab) => tab.id),
+    createProperties: { windowId: tabs[0].windowId },
+  })
+  await extensionApi.tabGroups.update(groupId, { title, collapsed: false })
+  await extensionApi.tabs.update(tabs[0].id, { active: true })
+  return true
 }

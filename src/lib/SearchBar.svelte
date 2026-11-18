@@ -1,10 +1,14 @@
 <script>
   import { doSearch, showSearchBar, defaultConfig, bgIsLight, searchPlaceholder } from './stores.js'
   import SearchTargetPicker from './SearchTargetPicker.svelte'
+  import SiteSuggestions from './SiteSuggestions.svelte'
+  import { t } from './i18n.js'
 
   let query = $state('')
 
-  function handleSearch(e) {
+  let searchInputEl = $state(null)
+
+  const handleSearch = (e) => {
     e.preventDefault()
     if (!query.trim()) return
     doSearch(query.trim())
@@ -19,11 +23,12 @@
   class="flex items-center w-full max-w-lg px-5 py-3 transition-all"
   style="background:{cardBg};backdrop-filter:blur({cfg.cardBlur}px);-webkit-backdrop-filter:blur({cfg.cardBlur}px);border-radius:{cfg.radius}px;{cardBorder}">
   <SearchTargetPicker class="mr-3" />
-  <input type="text" bind:value={query}
+  <SiteSuggestions input={searchInputEl} query={query} dark={false} />
+  <input type="text" bind:value={query} bind:this={searchInputEl}
     placeholder={$searchPlaceholder}
     class="flex-1 bg-transparent outline-none text-sm text-black placeholder:text-black/40" />
   <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
-    text-black/40 hover:opacity-80" aria-label="搜索">
+    text-black/40 hover:opacity-80" aria-label={$t('search.submit')}>
     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
     </svg>

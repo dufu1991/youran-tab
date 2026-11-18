@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "A customizable new tab page with multiple themes, backgrounds and layouts."
+  },
+  "contextAddPage": {
+    "message": "Add to Youran Tab"
+  },
+  "contextPageAdded": {
+    "message": "Added to Youran Tab"
+  },
+  "contextPageExists": {
+    "message": "Already in Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Main list"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Added to “$FOLDER$”",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

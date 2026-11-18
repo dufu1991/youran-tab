@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "Una pagina Nuova scheda personalizzabile con diversi temi, sfondi e layout."
+  },
+  "contextAddPage": {
+    "message": "Aggiungi a Youran Tab"
+  },
+  "contextPageAdded": {
+    "message": "Aggiunto a Youran Tab"
+  },
+  "contextPageExists": {
+    "message": "Già presente in Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Elenco principale"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Aggiunto a “$FOLDER$”",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

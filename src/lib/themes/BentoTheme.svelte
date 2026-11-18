@@ -1,8 +1,7 @@
 <script>
     import { t } from '../i18n.js';
     import { get } from 'svelte/store';
-    import { getCachedIconUrl, fetchAndCacheIcon } from '../iconCache.js';
-    import { resolveSiteIcon, handleIconLoad, getFaviconFallback } from '../favicon.js';
+    import SiteIcon from '../SiteIcon.svelte';
     import FolderGlyph from '../FolderGlyph.svelte';
     import {
         editMode,
@@ -15,51 +14,30 @@
         resolvedBgStyle,
         bgIsLight,
         searchPlaceholder,
-        sites as sitesStore,
     } from '../stores.js';
     import { countSites, isFolderItem, sumFolderClicks } from '../folders.js';
     import SearchTargetPicker from '../SearchTargetPicker.svelte';
+    import SiteSuggestions from '../SiteSuggestions.svelte';
+    import { createSiteDrag } from './siteDrag.svelte.js';
 
     let { sites = [], dark = false, align = 'center', onadd, onedit, ondelete, onopenfolder } = $props();
 
-    let dragIndex = $state(-1);
-    let dragOverIndex = $state(-1);
-
-    function handleDragStart(e, i) {
-        dragIndex = i;
-        e.dataTransfer.effectAllowed = 'move';
-    }
-
-    function handleDragOver(e, i) {
-        e.preventDefault();
-        dragOverIndex = i;
-    }
-
-    function handleDrop(e, i) {
-        e.preventDefault();
-        if (dragIndex >= 0 && dragIndex !== i) {
-            sitesStore.reorder(dragIndex, i);
-        }
-        dragIndex = -1;
-        dragOverIndex = -1;
-    }
-
-    function handleDragEnd() {
-        dragIndex = -1;
-        dragOverIndex = -1;
-    }
+    // 编辑模式下拖拽排序
+    const drag = createSiteDrag();
 
     // 页面加载时快照点击次数，避免点击后立即重排
     const initialCounts = { ...get(clickCounts) };
 
     let query = $state('');
-    function handleSearch(e) {
+
+    let searchInputEl = $state(null);
+    const handleSearch = (e) => {
         e.preventDefault();
         if (!query.trim()) return;
         doSearch(query.trim());
     }
 
-    function handleSiteClick(e, site) {
+    const handleSiteClick = (e, site) => {
         if (isFolderItem(site)) {
             e.preventDefault();
             onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() });
@@ -73,7 +51,7 @@
     }
 
     // Squarified treemap
-    function treemap(items, w, h) {
+    const treemap = (items, w, h) => {
         if (!items.length) return [];
         const total = items.reduce((s, d) => s + d.value, 0);
         const rects = [];
@@ -88,7 +66,7 @@
         return rects;
     }
 
-    function squarify(data, x, y, w, h, rects) {
+    const squarify = (data, x, y, w, h, rects) => {
         if (!data.length) return;
         if (data.length === 1) {
             rects.push({ ...data[0], x, y, w, h });
@@ -99,7 +77,7 @@
         let strip = [data[0]];
         let stripArea = data[0].area;
 
-        function worst(st, sArea) {
+        const worst = (st, sArea) => {
             const len = sArea / side;
             let mx = 0;
             for (const d of st) {
@@ -141,7 +119,7 @@
         }
     }
 
-    function computeLayout(siteList, counts, cw, ch) {
+    const computeLayout = (siteList, counts, cw, ch) => {
         const items = siteList
             .map(s => ({
                 id: s.id,
@@ -170,20 +148,23 @@
     let cardStyle = $derived(
         `background:${cardBg};backdrop-filter:blur(${cfg.cardBlur}px);-webkit-backdrop-filter:blur(${cfg.cardBlur}px);${cardBorder}`,
     );
-    let containerH = $derived(cfg.width * 0.6);
-    let layout = $derived(cfg.fixed ? [] : computeLayout(sites, initialCounts, cfg.width, containerH));
-    let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-8' : 'justify-start pt-8');
+    // 按容器实际宽度排布：窗口比设置宽度窄时随之收窄，避免磁贴超出右侧产生横向滚动
+    let treemapW = $state(0);
+    let layoutW = $derived(treemapW > 0 ? Math.min(cfg.width, treemapW) : cfg.width);
+    let containerH = $derived(layoutW * 0.6);
+    let layout = $derived(cfg.fixed ? [] : computeLayout(sites, initialCounts, layoutW, containerH));
+    let alignClass = $derived(align === 'center' ? 'justify-center-safe py-8' : align === 'bottom' ? 'justify-end-safe pt-8 pb-8' : 'justify-start pt-8 pb-8');
 </script>
 
 <div
-    class="w-full h-full flex flex-col items-center
-  {$resolvedBgStyle ? '' : dark ? 'bg-neutral-900' : 'bg-neutral-100'}"
+    class="w-full h-full overflow-x-hidden overflow-y-auto flex flex-col items-center
+  {$resolvedBgStyle ? '' : 'not-dark:bg-neutral-100 dark:bg-neutral-900'}"
     style="{$resolvedBgStyle}{$resolvedBgStyle ? ';' : ''}padding-top: {$editMode ? '40px' : '0'}"
 >
     {#if $editMode}
         <div
             class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-3 py-2
-      {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm"
+      not-dark:bg-neutral-800/90 not-dark:text-white dark:bg-white/90 dark:text-black text-sm backdrop-blur-sm"
         >
             <span>✏️ {$t('settings.editModeHint')}</span>
             <button
@@ -203,9 +184,10 @@
                     style="border-radius: {cfg.radius}px; padding: 12px 20px; {cardStyle}"
                 >
                     <SearchTargetPicker class="mr-3" />
+                    <SiteSuggestions input={searchInputEl} query={query} dark={false} />
                     <input
                         type="text"
-                        bind:value={query}
+                        bind:value={query} bind:this={searchInputEl}
                         placeholder={$searchPlaceholder}
                         class="flex-1 bg-transparent outline-none text-sm text-black placeholder:text-black/40"
                     />
@@ -213,7 +195,7 @@
                         type="submit"
                         class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
             text-black/40 hover:opacity-80"
-                        aria-label="搜索"
+                        aria-label={$t('search.submit')}
                     >
                         <svg
                             class="w-4 h-4"
@@ -238,44 +220,36 @@
                 style="max-width: {cfg.width}px;
         grid-template-columns: repeat({cfg.cols}, 1fr); gap: {cfg.gap}px;"
             >
-                {#each sites as site, i}
+                {#each sites as site, i (site.id)}
                     <a
                         href={isFolderItem(site) ? '#' : site.url}
                         data-context-item={isFolderItem(site) ? 'folder' : 'site'}
                         data-item-id={site.id}
                         onclick={e => handleSiteClick(e, site)}
                         draggable={$editMode}
-                        ondragstart={e => handleDragStart(e, i)}
-                        ondragover={e => handleDragOver(e, i)}
-                        ondrop={e => handleDrop(e, i)}
-                        ondragend={handleDragEnd}
+                        ondragstart={e => drag.start(e, i)}
+                        ondragover={e => drag.over(e, i)}
+                        ondrop={e => drag.drop(e, i)}
+                        ondragend={drag.end}
+                        data-drop-into={drag.isInto(i)}
                         class="group relative flex flex-col items-center justify-center overflow-hidden transition-all aspect-square
-              {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-600' : 'ring-neutral-300') : ''}
-              {$editMode && dragOverIndex === i && dragIndex !== i ? 'ring-2 ' + (dark ? 'ring-white' : 'ring-neutral-800') : ''}"
-                        style="border-radius: {cfg.radius}px; {cardStyle}; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
+              {$editMode ? 'ring-1 cursor-grab ' + 'not-dark:ring-neutral-300 dark:ring-neutral-600' : ''}
+              {$editMode && drag.isTarget(i) ? 'ring-2 ' + 'not-dark:ring-neutral-800 dark:ring-white' : ''}"
+                        style="border-radius: {cfg.radius}px; {cardStyle}; {$editMode && drag.index === i ? 'opacity:0.4' : ''}"
                     >
                         {#if isFolderItem(site)}
                             <FolderGlyph folder={site} size={cfg.iconSize} className="mb-1 group-hover:scale-110 transition-transform" />
                         {:else}
-                            <img
-                                src={resolveSiteIcon(site, $isDark)}
-                                alt=""
-                                onload={e => handleIconLoad(e, site)}
-                                onerror={e => {
-                                    if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url);
-                                }}
-                                class="mb-1 group-hover:scale-110 transition-transform"
-                                style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%"
-                            />
+                            <SiteIcon site={site} class="mb-1 group-hover:scale-110 transition-transform" style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%" />
                         {/if}
                         {#if $showSiteTitle}
-                            <span class="text-xs truncate max-w-[90%] text-black">{site.name}</span>
+                            <span class="text-xs truncate max-w-9/10 text-black">{site.name}</span>
                         {/if}
                         {#if $editMode}
                             <div class="absolute bottom-1.5 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
                                 <button
                                     class="text-xs px-1.5 py-0.5 rounded
-                  {dark ? 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}"
+                  not-dark:bg-neutral-100 not-dark:text-neutral-500 not-dark:hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
                                     onclick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -284,7 +258,7 @@
                                 >
                                 <button
                                     class="text-xs px-1.5 py-0.5 rounded
-                  {dark ? 'bg-neutral-700 text-red-400 hover:bg-neutral-600' : 'bg-neutral-100 text-red-400 hover:bg-red-50'}"
+                  text-red-400 not-dark:bg-neutral-100 not-dark:hover:bg-red-50 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                                     onclick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -298,7 +272,7 @@
                 {#if $editMode}
                     <button
                         class="flex flex-col items-center justify-center transition-all aspect-square
-            {dark ? 'bg-neutral-800/50 hover:bg-neutral-800 text-neutral-500' : 'bg-white/50 hover:bg-white text-neutral-400'}"
+            not-dark:bg-white/50 not-dark:hover:bg-white not-dark:text-neutral-400 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 dark:text-neutral-500"
                         style="border-radius: {cfg.radius}px; border: 2px dashed {dark ? '#525252' : '#d4d4d4'};"
                         onclick={() => onadd?.()}
                     >
@@ -309,8 +283,8 @@
             </div>
         {:else}
             <!-- Treemap 布局 -->
-            <div class="relative w-full" style="max-width: {cfg.width}px; height: {containerH}px;">
-                {#each layout as tile}
+            <div class="relative w-full shrink-0" style="max-width: {cfg.width}px; height: {containerH}px;" bind:clientWidth={treemapW}>
+                {#each layout as tile (tile.id)}
                     {@const gap = cfg.gap / 2}
                     {@const iconSize = Math.max(20, Math.min(cfg.iconSize, Math.min(tile.w - cfg.gap, tile.h - cfg.gap) * 0.4))}
                     {@const tileSite = sites.find(s => s.id === tile.id) || tile}
@@ -320,7 +294,7 @@
                         data-item-id={tileSite.id}
                         onclick={e => handleSiteClick(e, tileSite)}
                         class="group absolute flex flex-col items-center justify-center overflow-hidden transition-all
-              {$editMode ? 'ring-1 ' + (dark ? 'ring-neutral-600' : 'ring-neutral-300') : ''}"
+              {$editMode ? 'ring-1 ' + 'not-dark:ring-neutral-300 dark:ring-neutral-600' : ''}"
                         style="left: {tile.x + gap}px; top: {tile.y + gap}px;
               width: {tile.w - cfg.gap}px; height: {tile.h - cfg.gap}px;
               border-radius: {cfg.radius}px; {cardStyle}"
@@ -328,25 +302,16 @@
                         {#if isFolderItem(tileSite)}
                             <FolderGlyph folder={tileSite} size={iconSize} className="mb-1 group-hover:scale-110 transition-transform" />
                         {:else}
-                            <img
-                                src={resolveSiteIcon(tileSite, $isDark)}
-                                alt=""
-                                onload={e => handleIconLoad(e, tileSite)}
-                                onerror={e => {
-                                    if (tileSite.iconSource !== 'custom') e.target.src = getFaviconFallback(tile.url);
-                                }}
-                                class="mb-1 group-hover:scale-110 transition-transform"
-                                style="width: {iconSize}px; height: {iconSize}px; border-radius: {tileSite.iconRadius ?? 4}%"
-                            />
+                            <SiteIcon site={tileSite} class="mb-1 group-hover:scale-110 transition-transform" style="width: {iconSize}px; height: {iconSize}px; border-radius: {tileSite.iconRadius ?? 4}%" />
                         {/if}
                         {#if $showSiteTitle && tile.h - cfg.gap > 60}
-                            <span class="text-xs truncate max-w-[90%] text-black">{tile.name}</span>
+                            <span class="text-xs truncate max-w-9/10 text-black">{tile.name}</span>
                         {/if}
                         {#if $editMode}
                             <div class="absolute bottom-1.5 opacity-0 group-hover:opacity-100 flex gap-2 transition-opacity">
                                 <button
                                     class="text-xs px-1.5 py-0.5 rounded
-                  {dark ? 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600' : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'}"
+                  not-dark:bg-neutral-100 not-dark:text-neutral-500 not-dark:hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
                                     onclick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -355,7 +320,7 @@
                                 >
                                 <button
                                     class="text-xs px-1.5 py-0.5 rounded
-                  {dark ? 'bg-neutral-700 text-red-400 hover:bg-neutral-600' : 'bg-neutral-100 text-red-400 hover:bg-red-50'}"
+                  text-red-400 not-dark:bg-neutral-100 not-dark:hover:bg-red-50 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                                     onclick={e => {
                                         e.preventDefault();
                                         e.stopPropagation();
@@ -372,7 +337,7 @@
         {#if $editMode}
             <button
                 class="flex items-center justify-center transition-all mt-3
-        {dark ? 'bg-neutral-800/50 hover:bg-neutral-800 text-neutral-500' : 'bg-white/50 hover:bg-white text-neutral-400'}"
+        not-dark:bg-white/50 not-dark:hover:bg-white not-dark:text-neutral-400 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 dark:text-neutral-500"
                 style="width: 56px; height: 56px;
           border-radius: {cfg.radius}px; border: 2px dashed {dark ? '#525252' : '#d4d4d4'};"
                 onclick={() => onadd?.()}

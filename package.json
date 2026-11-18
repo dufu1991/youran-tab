@@ -1,7 +1,7 @@
 {
   "name": "youran-tab",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "test": "bun test",
@@ -9,19 +9,19 @@
     "build": "vite build && node scripts/apply-browser-manifest.js chrome dist",
     "build:edge": "vite build --outDir dist-edge && node scripts/apply-browser-manifest.js edge dist-edge",
     "build:firefox": "vite build --outDir dist-firefox && node scripts/apply-browser-manifest.js firefox dist-firefox",
-    "pack": "mkdir -p release && cd dist && zip -r ../release/youran-tab-chrome.zip . -x '.DS_Store' '*/.DS_Store'",
-    "pack:edge": "mkdir -p release && cd dist-edge && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
-    "pack:firefox": "mkdir -p release && (cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store') && bun run pack:source",
+    "pack": "mkdir -p release && rm -f release/youran-tab-chrome.zip && cd dist && zip -r ../release/youran-tab-chrome.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:edge": "mkdir -p release && rm -f release/youran-tab-edge.zip && cd dist-edge && zip -r ../release/youran-tab-edge.zip . -x '.DS_Store' '*/.DS_Store'",
+    "pack:firefox": "mkdir -p release && rm -f release/youran-tab-firefox.zip && (cd dist-firefox && zip -r ../release/youran-tab-firefox.zip . -x '.DS_Store' '*/.DS_Store') && bun run pack:source",
     "pack:source": "bun scripts/pack-source-zip.js",
     "release": "bun run build && bun run pack && bun run build:edge && bun run pack:edge && bun run build:firefox && bun run pack:firefox",
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6.2.4",
-    "@tailwindcss/vite": "^4.2.1",
-    "svelte": "^5.53.3",
-    "tailwindcss": "^4.2.1",
-    "vite": "^7.3.1"
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "svelte": "^5.57.3",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8"
   },
   "dependencies": {
     "color4bg": "^0.1.1"

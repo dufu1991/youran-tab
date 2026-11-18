@@ -1,9 +1,22 @@
 {
-  "permissions": ["favicon", "search", "tabs", "tabGroups"],
+  "permissions": [
+    "favicon",
+    "search",
+    "tabs",
+    "tabGroups",
+    "contextMenus",
+    "storage",
+    "unlimitedStorage",
+    "activeTab",
+    "scripting"
+  ],
   "host_permissions": [
     "https://www.google.com/s2/favicons*",
     "https://*.gstatic.com/*",
     "https://www.faviconextractor.com/*",
     "https://icon.horse/*"
-  ]
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
 }

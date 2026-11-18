@@ -5,6 +5,16 @@
 @theme {
   --font-mono: Menlo, Monaco, Consolas, monospace;
   --animate-blink: blink 1s step-end infinite;
+
+  /* 比 text-xs 更小或介于 xs 与 sm 之间的字号，替代 text-[xxpx] 写法 */
+  --text-3xs: 0.5625rem;
+  --text-3xs--line-height: 1;
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.875rem;
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1rem;
+  --text-compact: 0.8125rem;
+  --text-compact--line-height: 1.25rem;
 }
 
 @keyframes blink {
@@ -57,9 +67,24 @@
 }
 
 @layer components {
+  /* 编辑模式下把网站拖到文件夹中间时，文件夹轻微放大并显示虚线框，表示松手会放进去；各主题共用 */
+  [data-drop-into="true"] {
+    outline: 2px dashed currentColor;
+    outline-offset: 4px;
+    transform: scale(1.06);
+    transition: transform 150ms ease, outline-offset 150ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-drop-into="true"] {
+      transform: none;
+    }
+  }
+
   .settings-panel {
     width: 336px;
     max-width: calc(100vw - 32px);
+    max-height: 80vh;
   }
 
   .settings-separated > * + * {

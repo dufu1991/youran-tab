@@ -1,0 +1,15 @@
+Youran Tab replaces the new tab page with a customizable start page. All data stays on the user's device; nothing is collected or sent to the developer.
+Changelog: https://youran-tab.du-fu.com/#changelog
+Privacy policy: https://youran-tab.du-fu.com/#privacy
+
+Permissions:
+- tabs, tabGroups: list open tabs and tab groups in the add-site and folder dialogs; open a folder's sites as a tab group.
+- contextMenus: adds "Add to Youran Tab" to the web page context menu, with a submenu of the user's folders.
+- activeTab, scripting: after the user clicks that menu item, run a bundled function from background.js that shows a short confirmation toast on that page. Page content is not read and no remote code is executed.
+- storage: saves sites and settings in storage.local (migrated from localStorage on first run) and passes pages added from the context menu to the new tab page.
+- unlimitedStorage: custom icons uploaded by the user are stored as data URLs with the site list and can exceed the default storage quota.
+- search: runs searches with the browser's default search engine.
+- favicon: reads the browser's built-in site icons.
+- Host permissions (Google favicons, gstatic, faviconextractor.com, icon.horse): fetch site icons; only the site domain is sent.
+
+How to test: open a new tab to see the start page. Then right-click any http/https web page and choose "Add to Youran Tab" (choose "Main list" if a submenu appears). A toast appears on the page, and the page is added to the new tab page.

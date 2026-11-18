@@ -179,6 +179,19 @@
     <symbol id="icon-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z" />
     </symbol>
+    <symbol id="icon-bookmark-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />
+      <path d="M12 7v6" />
+      <path d="M9 10h6" />
+    </symbol>
+    <symbol id="icon-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v20" />
+      <path d="m15 19-3 3-3-3" />
+      <path d="m19 9 3 3-3 3" />
+      <path d="M2 12h20" />
+      <path d="m5 9-3 3 3 3" />
+      <path d="m9 5 3-3 3 3" />
+    </symbol>
   </svg>
 
   <div id="page-home">
@@ -188,160 +201,136 @@
     <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-500/30 rounded-full blur-[120px]"></div>
     <div class="absolute top-1/3 right-1/4 w-72 h-72 bg-purple-500/30 rounded-full blur-[120px]"></div>
     <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-96 h-64 bg-sky-500/20 rounded-full blur-[100px]"></div>
-    <div class="relative max-w-5xl mx-auto px-6 pt-28 pb-24 text-center">
+    <div class="relative max-w-5xl mx-auto px-6 pt-20 sm:pt-24 pb-20 text-center">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm text-neutral-300 mb-8">
         <span class="w-2 h-2 rounded-full bg-green-400"></span>
         <span data-i18n="hero.badge">适用于 Chrome、Edge、Firefox</span>
       </div>
-      <img src="/logo.png" alt="悠然标签页" class="w-20 h-20 mx-auto mb-6" />
-      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight mb-6">
+      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight mb-6 text-balance">
         <span class="bg-linear-to-r from-white to-neutral-400 bg-clip-text text-transparent" data-i18n="hero.title">悠然标签页</span>
       </h1>
-      <p class="text-lg sm:text-xl text-neutral-400 max-w-2xl mx-auto mb-10 leading-relaxed" data-i18n="hero.desc" data-i18n-mode="html">
+      <p class="text-lg sm:text-xl text-neutral-400 max-w-2xl mx-auto mb-10 leading-relaxed text-balance" data-i18n="hero.desc" data-i18n-mode="html">
         一款开源、高度可定制的浏览器新标签页扩展。<br />
         8 种主题、10 种语言、多种背景，打造专属你的浏览器起始页。
       </p>
-      <div class="flex items-center justify-center gap-2 sm:gap-4">
-        <a href="https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel" target="_blank"
-          class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+      <div class="store-group flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        <a href="https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel" target="_blank" data-store="chrome"
+          class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
           <img class="w-5 h-5" src="/chrome.svg" alt="Chrome" />
           Chrome
         </a>
-        <a href="https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf" target="_blank"
-          class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+        <a href="https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf" target="_blank" data-store="edge"
+          class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
           <img class="w-5 h-5" src="/edge.svg" alt="Edge" />
           Edge
         </a>
-        <a href="https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/" target="_blank"
-          class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+        <a href="https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/" target="_blank" data-store="firefox"
+          class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
           <img class="w-5 h-5" src="/firefox.svg" alt="Firefox" />
           Firefox
         </a>
       </div>
-      <p class="text-xs text-neutral-500 mt-4" data-i18n="hero.compat" data-i18n-mode="html">360、QQ、搜狗、360 极速、猎豹等国产浏览器可通过 Edge 插件市场直接安装，完全兼容。</p>
+      <p class="text-xs text-neutral-500 mt-4 text-balance" data-i18n="hero.compat" data-i18n-mode="html">360、QQ、搜狗、360 极速、猎豹等国产浏览器可通过 Edge 插件市场直接安装，完全兼容。</p>
+
+      <!-- 产品预览：8 种主题轮播 -->
+      <div id="hero-carousel" class="mt-14 sm:mt-20">
+        <div id="hero-showcase" class="hero-frame mx-auto max-w-4xl rounded-2xl ring-1 ring-white/15 bg-neutral-900/70 p-1.5 sm:p-2 backdrop-blur-xl">
+          <div class="flex items-center gap-3 px-2 pt-1 pb-2 sm:px-3 sm:pb-2.5" aria-hidden="true">
+            <div class="flex gap-1.5 w-12">
+              <span class="traffic-light traffic-light-close w-2.5 h-2.5 rounded-full"></span>
+              <span class="traffic-light traffic-light-min w-2.5 h-2.5 rounded-full"></span>
+              <span class="traffic-light traffic-light-max w-2.5 h-2.5 rounded-full"></span>
+            </div>
+            <div class="flex-1 max-w-xs mx-auto h-5 sm:h-6 rounded-md bg-white/10"></div>
+            <div class="w-12"></div>
+          </div>
+          <div class="relative aspect-16/10 overflow-hidden rounded-xl bg-neutral-950 cursor-zoom-in">
+            <img src="/screenshots/classic.webp" alt="经典主题预览" data-hero-slide class="hero-slide is-active" fetchpriority="high" />
+            <img src="/screenshots/bento.webp" alt="便当主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/terminal.webp" alt="终端主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/minimal.webp" alt="极简主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/glass.webp" alt="玻璃主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/bubble.webp" alt="气泡主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/pixel.webp" alt="像素主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+            <img src="/screenshots/sticky.webp" alt="便签主题预览" data-hero-slide class="hero-slide" loading="lazy" />
+          </div>
+        </div>
+        <div class="mt-6 flex flex-wrap justify-center gap-1" role="tablist">
+          <button type="button" role="tab" aria-selected="true" data-hero-tab="0" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-layout-grid"></use></svg>
+            <span data-i18n="themes.classic.title">经典</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="1" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-panels"></use></svg>
+            <span data-i18n="themes.bento.title">便当</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="2" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-terminal"></use></svg>
+            <span data-i18n="themes.terminal.title">终端</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="3" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-type"></use></svg>
+            <span data-i18n="themes.minimal.title">极简</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="4" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-window"></use></svg>
+            <span data-i18n="themes.glass.title">玻璃</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="5" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-circle-dot"></use></svg>
+            <span data-i18n="themes.bubble.title">气泡</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="6" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-binary"></use></svg>
+            <span data-i18n="themes.pixel.title">像素</span>
+          </button>
+          <button type="button" role="tab" aria-selected="false" data-hero-tab="7" class="hero-tab relative overflow-hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-neutral-400 hover:text-white transition-colors">
+            <svg class="w-4 h-4"><use href="#icon-pin"></use></svg>
+            <span data-i18n="themes.sticky.title">便签</span>
+          </button>
+        </div>
+        <div class="mt-4 grid max-w-xl mx-auto px-2">
+          <p data-hero-desc class="hero-desc is-active col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.classic.desc">传统网格布局，可调节列数、间距、圆角、透明度和图标大小。简洁实用的默认选择。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.bento.desc">类似 macOS 小组件的卡片式布局，支持固定或自适应网格，自动统计点击次数，并根据点击次数自动放大。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.terminal.desc">完整的命令行交互体验。9 种配色、4 种光标样式、可自定义提示符，极客的选择。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.minimal.desc">去除一切多余元素，只保留站点。干净、专注、无干扰。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.glass.desc">毛玻璃药丸卡片，横向列表布局，列数可调，简洁现代。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.bubble.desc">圆形气泡悬浮效果，支持固定排列与随机散布，大小可调。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.pixel.desc">像素复古风格，命令行式搜索框，菜单列表交互。</p>
+          <p data-hero-desc class="hero-desc col-start-1 row-start-1 text-sm sm:text-base text-neutral-400 leading-relaxed text-balance" data-i18n="themes.sticky.desc">便利贴公告板风格，图钉装饰，彩色纸张，瀑布流布局。</p>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- 主题展示 -->
-  <section class="max-w-5xl mx-auto px-6 py-20">
-    <h2 class="text-3xl font-bold text-center mb-4" data-i18n="themes.title">8 种主题，随心切换</h2>
-    <p class="text-neutral-400 text-center mb-14 max-w-lg mx-auto" data-i18n="themes.subtitle">每种主题都有独立的配置项，满足不同使用习惯。</p>
-    <!-- 预览图 -->
-    <div id="theme-previews" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/1.png" alt="经典主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.classic.title">经典</p>
+  <!-- 文件夹：按分组保存与恢复标签页 -->
+  <section class="max-w-5xl mx-auto px-6 pt-20 pb-20">
+    <div class="theme-panel rounded-3xl border border-white/10 p-6 sm:p-10">
+      <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/15">
+        <svg class="w-6 h-6"><use href="#icon-folder"></use></svg>
       </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/2.png" alt="便当主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.bento.title">便当</p>
+      <h2 class="mt-4 text-3xl font-bold text-balance" data-i18n="foldersSpotlight.title">标签页太多？收进文件夹，用时一键打开</h2>
+      <p class="mt-3 max-w-3xl leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.desc">把一组正在用的网页保存成文件夹，暂时用不到时整组关掉，释放标签栏和电脑内存。下次需要时，右键文件夹选择「在标签页分组中打开全部」，网页会按文件夹名称重新组成一个标签页分组，工作现场原样回来。</p>
+      <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="theme-soft-surface rounded-2xl border border-white/8 bg-black/20 p-5">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 text-sm font-semibold text-amber-200">1</span>
+            <h3 class="mt-3 font-semibold" data-i18n="foldersSpotlight.step1.title">整组保存</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-neutral-400" data-i18n="foldersSpotlight.step1.desc">新建文件夹时直接勾选当前的标签页分组，也可以在任意网页上右键，加入指定文件夹。</p>
+          </div>
+          <div class="theme-soft-surface rounded-2xl border border-white/8 bg-black/20 p-5">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 text-sm font-semibold text-amber-200">2</span>
+            <h3 class="mt-3 font-semibold" data-i18n="foldersSpotlight.step2.title">放心关闭</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-neutral-400" data-i18n="foldersSpotlight.step2.desc">在浏览器中关掉整个标签页分组，不再占用标签栏，也不再占用内存。</p>
+          </div>
+          <div class="theme-soft-surface rounded-2xl border border-white/8 bg-black/20 p-5">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/15 text-sm font-semibold text-amber-200">3</span>
+            <h3 class="mt-3 font-semibold" data-i18n="foldersSpotlight.step3.title">一键恢复</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-neutral-400" data-i18n="foldersSpotlight.step3.desc">右键文件夹，在标签页分组中打开全部，分组自动以文件夹名称命名。</p>
+          </div>
       </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/3.png" alt="终端主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.terminal.title">终端</p>
-      </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/4.png" alt="极简主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.minimal.title">极简</p>
-      </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/5.png" alt="玻璃主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.glass.title">玻璃</p>
-      </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/6.png" alt="气泡主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.bubble.title">气泡</p>
-      </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/7.png" alt="像素主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.pixel.title">像素</p>
-      </div>
-      <div class="text-center">
-        <div class="aspect-[16/10] rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-lg shadow-black/40">
-          <img src="/8.png" alt="便签主题预览" class="block w-full h-full object-cover cursor-pointer scale-110" />
-        </div>
-        <p class="mt-3 text-sm text-neutral-400" data-i18n="themes.sticky.title">便签</p>
-      </div>
-    </div>
-    <!-- 主题说明 -->
-    <div class="grid sm:grid-cols-2 gap-6">
-      <!-- 经典 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center mb-4 text-indigo-200">
-          <svg class="w-5 h-5"><use href="#icon-layout-grid"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.classic.title">经典</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.classic.desc">传统网格布局，可调节列数、间距、圆角、透明度和图标大小。简洁实用的默认选择。</p>
-      </div>
-      <!-- 便当 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center mb-4 text-orange-200">
-          <svg class="w-5 h-5"><use href="#icon-panels"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.bento.title">便当</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.bento.desc">类似 macOS 小组件的卡片式布局，支持固定或自适应网格，自动统计点击次数，并根据点击次数自动放大。</p>
-      </div>
-      <!-- 终端 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mb-4 text-green-200">
-          <svg class="w-5 h-5"><use href="#icon-terminal"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.terminal.title">终端</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.terminal.desc">完整的命令行交互体验。9 种配色、4 种光标样式、可自定义提示符，极客的选择。</p>
-      </div>
-      <!-- 极简 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center mb-4 text-sky-200">
-          <svg class="w-5 h-5"><use href="#icon-type"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.minimal.title">极简</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.minimal.desc">去除一切多余元素，只保留站点。干净、专注、无干扰。</p>
-      </div>
-      <!-- 玻璃 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center mb-4 text-cyan-200">
-          <svg class="w-5 h-5"><use href="#icon-window"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.glass.title">玻璃</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.glass.desc">毛玻璃药丸卡片，横向列表布局，列数可调，简洁现代。</p>
-      </div>
-      <!-- 气泡 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4 text-purple-200">
-          <svg class="w-5 h-5"><use href="#icon-circle-dot"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.bubble.title">气泡</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.bubble.desc">圆形气泡悬浮效果，支持固定排列与随机散布，大小可调。</p>
-      </div>
-      <!-- 像素 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center mb-4 text-rose-200">
-          <svg class="w-5 h-5"><use href="#icon-binary"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.pixel.title">像素</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.pixel.desc">像素复古风格，命令行式搜索框，菜单列表交互。</p>
-      </div>
-      <!-- 便签 -->
-      <div class="group rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
-        <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center mb-4 text-yellow-200">
-          <svg class="w-5 h-5"><use href="#icon-pin"></use></svg>
-        </div>
-        <h3 class="text-lg font-semibold mb-2" data-i18n="themes.sticky.title">便签</h3>
-        <p class="text-sm text-neutral-400 leading-relaxed" data-i18n="themes.sticky.desc">便利贴公告板风格，图钉装饰，彩色纸张，瀑布流布局。</p>
+      <div class="mt-6 border-t border-white/10 pt-5">
+        <p class="text-xs font-medium tracking-widest text-neutral-500 uppercase" data-i18n="foldersSpotlight.sceneTitle">适合这些场景</p>
+        <p class="mt-2 text-sm leading-relaxed text-neutral-400" data-i18n="foldersSpotlight.sceneDesc">项目后台、活动页面、文档资料、临时调研……这些网页往往只集中用几天，不值得加入收藏夹，却又需要暂时保留，用文件夹收着最合适。</p>
       </div>
     </div>
   </section>
@@ -357,14 +346,42 @@
             <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-search"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.search.title">快速搜索</h3>
-          <p class="text-sm text-neutral-400" data-i18n="features.search.desc">内置搜索框，使用浏览器默认搜索引擎，尊重用户设置。</p>
+          <p class="text-sm text-neutral-400" data-i18n="features.search.desc">内置 10 个主流搜索引擎与 10 个 AI 提问服务，可勾选启用、设置默认项，也能在搜索框前方临时切换，不影响浏览器自身的搜索设置。输入时还会列出匹配的已收藏网站。</p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-amber-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-folder"></use></svg>
+          </div>
+          <h3 class="font-semibold mb-1" data-i18n="features.folders.title">文件夹收纳</h3>
+          <p class="text-sm text-neutral-400" data-i18n="features.folders.desc">把同类网站收进文件夹，用宫格或堆叠图标展示，可整组保存标签页分组，也能一键按分组打开全部。</p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500/20 text-rose-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-bookmark-plus"></use></svg>
+          </div>
+          <h3 class="font-semibold mb-1" data-i18n="features.clip.title">网页一键加入</h3>
+          <p class="text-sm text-neutral-400" data-i18n="features.clip.desc">在任意网页上右键选择「加入悠然标签页」，直接放进主列表或指定文件夹。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
           <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/20 text-sky-200">
             <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-wallpaper"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.background.title">多种背景</h3>
-          <p class="text-sm text-neutral-400" data-i18n="features.background.desc">纯色、渐变、图片、随机，亮色暗色独立配置。</p>
+          <p class="text-sm text-neutral-400" data-i18n="features.background.desc">纯色、渐变、图片、动态和随机背景，亮色暗色独立配置，随机模式每次打开都有新背景。</p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20 text-orange-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-shapes"></use></svg>
+          </div>
+          <h3 class="font-semibold mb-1" data-i18n="features.icons.title">清晰图标</h3>
+          <p class="text-sm text-neutral-400" data-i18n="features.icons.desc">自动从多个图标源挑出最清晰的一个，也可手动指定图标源、上传自定义图标，并为暗色模式单独设置图标。</p>
+        </div>
+        <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-200">
+            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-move"></use></svg>
+          </div>
+          <h3 class="font-semibold mb-1" data-i18n="features.organize.title">拖拽整理</h3>
+          <p class="text-sm text-neutral-400" data-i18n="features.organize.desc">编辑模式下拖动即可排序，拖到文件夹上即可归类；误删网站或文件夹可以立即撤销。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
           <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-200">
@@ -381,40 +398,16 @@
           <p class="text-sm text-neutral-400" data-i18n="features.languages.desc">中、英、日、韩、法、德、西、俄、意大利语，自动检测系统语言。</p>
         </div>
         <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
-          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20 text-orange-200">
-            <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-shapes"></use></svg>
-          </div>
-          <h3 class="font-semibold mb-1" data-i18n="features.icons.title">图标灵活</h3>
-          <p class="text-sm text-neutral-400" data-i18n="features.icons.desc">3 种在线图标源，支持自定义上传，暗色模式独立图标。</p>
-        </div>
-        <div class="p-5 rounded-xl bg-neutral-900 border border-neutral-800">
           <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-200">
             <svg class="h-6 w-6" aria-hidden="true"><use href="#icon-arrow-up-down"></use></svg>
           </div>
           <h3 class="font-semibold mb-1" data-i18n="features.sync.title">导入导出</h3>
-          <p class="text-sm text-neutral-400" data-i18n="features.sync.desc">一键导出站点配置为 JSON，轻松迁移到其他设备。</p>
+          <p class="text-sm text-neutral-400" data-i18n="features.sync.desc">站点和设置可以分别或一起导出为 JSON，换设备时一键恢复。</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="max-w-5xl mx-auto px-6 pb-6">
-    <div class="theme-panel rounded-3xl border border-white/10 p-6 sm:p-8">
-      <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div>
-          <div class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-200 ring-1 ring-amber-300/15">
-            <svg class="w-6 h-6"><use href="#icon-folder"></use></svg>
-          </div>
-          <h2 class="mt-4 text-3xl font-bold" data-i18n="foldersSpotlight.title">新增文件夹，收纳更从容</h2>
-          <p class="mt-3 max-w-2xl leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.desc" data-i18n-mode="html">从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，除了手动整理已有网站，也支持直接选择当前打开的标签页组创建文件夹。做完一类临时工作后，可以放心关闭原来的标签页组，需要时再一键打开，让浏览器重新干净下来。</p>
-        </div>
-        <div class="theme-soft-surface rounded-2xl border border-white/8 bg-black/20 p-5 backdrop-blur-sm">
-          <p class="text-sm font-medium tracking-[0.2em] text-neutral-400 uppercase" data-i18n="foldersSpotlight.sceneTitle">适合这些场景</p>
-          <p class="mt-3 leading-relaxed text-neutral-300" data-i18n="foldersSpotlight.sceneDesc">很多网页只会在某个阶段集中使用几天，不值得加入收藏夹，却又需要暂时保留。像项目后台、活动页面、文档索引、临时专题资料这类任务，都可以先用标签页组整理，再保存成文件夹，释放标签栏空间，也减少浏览器被一堆分组占满的压迫感。</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- 终端命令展示 -->
   <section class="max-w-5xl mx-auto px-6 py-20">
@@ -502,19 +495,19 @@
   <section class="max-w-5xl mx-auto px-6 py-24 text-center">
     <h2 class="text-3xl font-bold mb-4" data-i18n="cta.title">开始使用</h2>
     <p class="text-neutral-400 mb-10 max-w-md mx-auto" data-i18n="cta.subtitle">开源免费，安装后即可使用，无需注册，所有数据保存在本地。</p>
-    <div class="flex items-center justify-center gap-2 sm:gap-4">
-      <a href="https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel" target="_blank"
-        class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+    <div class="store-group flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+      <a href="https://chromewebstore.google.com/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/aghmmgdpejlegikblfffnefbkehjdgel" target="_blank" data-store="chrome"
+        class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
         <img class="w-5 h-5" src="/chrome.svg" alt="Chrome" />
         Chrome
       </a>
-      <a href="https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf" target="_blank"
-        class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+      <a href="https://microsoftedge.microsoft.com/addons/detail/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/bijgffabnhpieoedkhlfbijmgollbpbf" target="_blank" data-store="edge"
+        class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
         <img class="w-5 h-5" src="/edge.svg" alt="Edge" />
         Edge
       </a>
-      <a href="https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/" target="_blank"
-        class="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
+      <a href="https://addons.mozilla.org/firefox/addon/%E6%82%A0%E7%84%B6%E6%A0%87%E7%AD%BE%E9%A1%B5/" target="_blank" data-store="firefox"
+        class="store-btn inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white/10 ring-1 ring-white/10 text-white font-medium text-sm hover:bg-white/20 transition-colors">
         <img class="w-5 h-5" src="/firefox.svg" alt="Firefox" />
         Firefox
       </a>
@@ -525,7 +518,7 @@
   <div id="page-privacy" class="hidden">
     <div class="max-w-3xl mx-auto px-6 pt-24 pb-20">
       <h1 class="text-3xl font-bold mb-8" data-i18n="privacy.title">隐私政策</h1>
-      <p class="text-sm text-neutral-500 mb-8" data-i18n="privacy.updated">最后更新：2026 年 4 月 15 日</p>
+      <p class="text-sm text-neutral-500 mb-8" data-i18n="privacy.updated">最后更新：2026 年 11 月 18 日</p>
       <div class="space-y-6 text-neutral-300 leading-relaxed">
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.intro.title">概述</h2>
@@ -533,15 +526,15 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.collect.title">数据收集</h2>
-          <p data-i18n="privacy.collect.desc">本扩展不收集任何个人信息或使用数据。所有配置数据（包括站点列表、主题设置、背景设置等）均保存在浏览器本地存储中，不会发送到任何外部服务器。启用“从当前标签页快速添加”时，本扩展只会在本地读取当前浏览器窗口中已打开标签页和标签页组的标题、地址与分组名称，用于展示选择列表和快速创建站点或文件夹。</p>
+          <p data-i18n="privacy.collect.desc">本扩展不收集任何个人信息或使用数据。所有配置数据（包括站点列表、主题设置、背景设置等）均保存在浏览器本地存储中，不会发送到任何外部服务器。使用「从当前标签页添加」时，本扩展只会在本地读取当前浏览器窗口中已打开标签页和标签页分组的标题、网址与分组名称，用于展示选择列表。使用网页右键菜单「加入悠然标签页」时，本扩展只会读取你右键的这个网页的标题和网址，并保存为站点。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.storage.title">本地存储</h2>
-          <p data-i18n="privacy.storage.desc">本扩展使用浏览器的本地存储（localStorage / chrome.storage.local）来保存您的个性化设置。这些数据完全存储在您的设备上，您可以随时通过扩展的导出功能备份数据，也可以通过卸载扩展清除所有数据。</p>
+          <p data-i18n="privacy.storage.desc">本扩展使用浏览器的扩展存储（storage.local）保存你的站点和个性化设置。后台脚本会读取其中的站点列表，用于判断网页是否已加入和生成文件夹菜单，并通过它把右键加入的网页交给新标签页。从 0.5.0 之前的版本升级时，原来保存在 localStorage 中的数据会自动迁移过来，并在本地保留一份备份。这些数据完全存储在你的设备上，你可以随时通过扩展的导出功能备份数据，也可以通过卸载扩展清除所有数据。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.network.title">网络请求</h2>
-          <p data-i18n="privacy.network.desc">本扩展仅会在获取站点图标时请求公共图标服务。这些请求不会包含你的站点列表、设置、背景等本地配置数据。</p>
+          <p data-i18n="privacy.network.desc">本扩展仅在获取站点图标时请求公共图标服务（Google、Favicon Extractor、icon.horse）和网站自身的图标文件，请求中只包含网站域名。当你提交搜索或 AI 提问时，查询内容会直接发送至所选的第三方服务并打开结果页面。本扩展及其开发者不会收集或存储查询内容，也不会发送你的站点列表、设置、背景等本地配置数据。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.thirdparty.title">第三方服务</h2>
@@ -549,7 +542,7 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.permissions.title">权限说明</h2>
-          <p data-i18n="privacy.permissions.desc" data-i18n-mode="html">本扩展仅申请运行所需的最小权限。新增的 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code> 权限，仅用于读取当前浏览器窗口中已打开标签页和标签页组的标题、地址与分组名称，不会读取也无法读取页面正文、表单内容、个人身份信息、账户信息、密码或支付数据，也不会访问您的浏览历史或书签。</p>
+          <p data-i18n="privacy.permissions.desc" data-i18n-mode="html">本扩展只申请运行所需的权限：<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code> 用于读取当前窗口标签页的标题、网址和分组名称，并在标签页分组中打开文件夹；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">contextMenus</code> 用于在网页右键菜单中提供「加入悠然标签页」；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">activeTab</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">scripting</code> 仅用于在你点击该菜单后，在当前网页显示一条加入提示，不会读取页面内容；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">storage</code> 用于保存站点和设置，并在扩展内部传递待加入的网页；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">unlimitedStorage</code>（仅 Chrome 和 Edge）用于解除扩展存储的容量上限，避免上传的自定义图标较多时无法保存；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code> 用于调用浏览器默认搜索引擎；<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">favicon</code> 用于读取浏览器内置的网站图标。本扩展不会读取页面正文、表单内容、个人身份信息、账户信息、密码或支付数据，也不会访问你的浏览历史或书签。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="privacy.changes.title">政策变更</h2>
@@ -573,7 +566,43 @@
       <div class="space-y-8 text-neutral-300 leading-relaxed">
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.install.title">安装</h2>
-          <p data-i18n="guide.install.desc">从 Chrome 应用商店、Edge 扩展商店或 Firefox 附加组件中搜索"悠然标签页"并安装。安装后打开新标签页即可使用。</p>
+          <p data-i18n="guide.install.desc">在 Chrome 应用商店、Edge 扩展商店或 Firefox 附加组件中搜索「悠然标签页」并安装，安装后打开新标签页即可使用。360、QQ、搜狗等国产浏览器可以从 Edge 扩展商店安装。首次使用会预置 Google、YouTube、ChatGPT 和百度 4 个网站，并默认使用随机背景。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.addsite.title">添加网站</h2>
+          <p data-i18n="guide.addsite.desc" data-i18n-mode="html">有 3 种方式：<br />1. <strong>手动添加</strong>：在设置中打开「编辑模式」后点击「+ 添加网站」，或在空白处右键选择「添加网站」，填写名称和网址即可，图标会自动获取。<br />2. <strong>从当前标签页添加</strong>：在添加弹窗中直接选择已打开的标签页，详见下文。<br />3. <strong>在网页上右键加入</strong>：浏览网页时随手收藏，详见下文。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.tabs.title">从当前标签页快速添加</h2>
+          <p data-i18n="guide.tabs.desc" data-i18n-mode="html">添加网站或新建文件夹时，弹窗会列出当前浏览器窗口已打开的标签页，并按标签页分组归类。可以单选一个标签页自动填入标题和网址，也可以多选后批量添加；新建文件夹时还能整组勾选一个标签页分组，文件夹名称会自动补全。标签页超过 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">12</code> 个时会出现搜索框，可按标题、网址或分组名称筛选。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.webadd.title">在网页上右键加入</h2>
+          <p data-i18n="guide.webadd.desc" data-i18n-mode="html">在任意网页的空白处右键，选择「加入悠然标签页」即可收藏当前网页，网页标题会作为网站名称。如果已经建有文件夹，菜单会展开为「主列表」和各个文件夹，可以直接放进指定文件夹。加入后网页右上角会短暂提示；已经收藏过的网页会提示「已在悠然标签页中」，不会重复添加。新网站会在下次打开或切回新标签页时出现。浏览器商店等受限页面无法显示提示，但网站仍会正常加入。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.folders.title">文件夹</h2>
+          <p data-i18n="guide.folders.desc" data-i18n-mode="html">文件夹用来收纳同类网站。在添加弹窗中切换到「文件夹」即可新建，可以勾选已有网站或当前标签页加入，并拖动调整顺序。<br />文件夹图标有 4 种：<strong>宫格</strong>（默认，显示前几个网站的图标，超过 4 个时第 4 格显示剩余数量）、<strong>堆叠</strong>（叠放显示前 3 个网站的图标）、<strong>自定义图片</strong>和<strong>粘贴 SVG</strong>。还可以设置图标背景色、是否显示背景、圆角和图标占比。<br />点击文件夹会在原位置附近展开浮层，点击里面的网站即可打开；在浮层中拖动可以调整顺序，拖到浮层外即可移出文件夹。<br /><strong>按分组打开</strong>：右键文件夹可以选择「打开全部标签页」，或「在标签页分组中打开全部」。后者会把文件夹内的网站放进一个以文件夹名称命名的标签页分组。暂时用不到的一组网页，可以先保存成文件夹，再在浏览器中关掉整个分组，释放标签栏和内存；下次需要时一键按分组打开，工作现场原样回来。<br />删除文件夹时，可以选择只删除文件夹并把内部网站放回主列表，或者连同内部网站一起删除。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.organize.title">编辑与整理</h2>
+          <p data-i18n="guide.organize.desc" data-i18n-mode="html">在设置中打开「编辑模式」后，点击网站或文件夹即可编辑或删除，拖动可以调整顺序，拖到文件夹中间即可放进文件夹，完成后点击「完成」退出。删除网站或文件夹后会出现「撤销」提示，误删可以立即恢复。同时打开多个新标签页时，在其中一个页面中的修改会自动同步到其他页面。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.contextmenu.title">右键菜单</h2>
+          <p data-i18n="guide.contextmenu.desc" data-i18n-mode="html">在新标签页中右键（终端主题除外）：<br />1. <strong>右键网站</strong>：在新标签页中打开、编辑、移动到某个文件夹或移出文件夹、删除。<br />2. <strong>右键文件夹</strong>：打开全部标签页、在标签页分组中打开全部（需要浏览器支持标签页分组）、编辑文件夹、删除。<br />3. <strong>右键空白处</strong>：添加网站、换个背景。背景模式为随机时，会立即换一个新的随机背景；不是随机模式时，会从已保存的纯色、渐变、图片和动态背景中随机换一个并保留。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.icons.title">网站图标</h2>
+          <p data-i18n="guide.icons.desc" data-i18n-mode="html">图标默认为「自动」：同时向网站自身、浏览器内置图标、Google、Favicon Extractor 和 icon.horse 等来源请求，跳过占位图，挑出最清晰的一个并保存在本地；都没有时生成首字母图标。编辑网站时也可以手动指定 Google、Extractor 或 icon.horse 作为图标源，或者上传自定义图标，并调整图标圆角。暗色模式下可以单独设置一套图标，适合在深色背景下看不清的线条图标。图标会长期缓存在本地，修改网站或更换图标源后会自动重新获取。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.search.title">搜索功能</h2>
+          <p data-i18n="guide.search.desc" data-i18n-mode="html">搜索框内置 Google、Bing、百度等 10 个搜索引擎和 ChatGPT、Claude、DeepSeek 等 10 个 AI 提问服务，可在设置中勾选启用、点星标设为默认，并选择默认使用搜索还是 AI 提问。点击搜索框前方的图标可以临时切换，只对当前页面生效，不影响浏览器自身的搜索设置。使用 AI 提问会打开对应网站，建议先登录该服务的账号。输入时会列出匹配的已收藏网站（包括文件夹内的），可按名称、域名或文件夹名称查找，方向键选择、回车打开，Ctrl / Cmd + 回车在新标签页中打开。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可按默认项搜索或提问。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.background.title">背景设置</h2>
+          <p data-i18n="guide.background.desc" data-i18n-mode="html">除终端和极简主题外，其他主题都支持背景设置，共 6 种模式：<br />1. <strong>无</strong>：使用浏览器默认的新标签页背景色。便签主题在无背景时显示软木板。<br />2. <strong>纯色</strong>：亮色和暗色各预置 18 种颜色，也可以自定义颜色。<br />3. <strong>渐变</strong>：亮色和暗色各预置 18 种渐变，可以点击「随机渐变」继续生成。<br />4. <strong>图片</strong>：从本地上传，最多 18 张，只保存在本地。<br />5. <strong>动态</strong>：亮色和暗色各预置 18 种动态背景。<br />6. <strong>随机</strong>（新用户默认）：在勾选的纯色、渐变、图片、动态中随机切换，每次打开新标签页或点击「换个背景」时重新选择。随机来源可选「每次生成」，每次都生成全新的背景；也可选「从预设中选」，只在已有预设和上传的图片中选择。<br />纯色、渐变和动态的预设不满意可以删除，新增时会重新生成，也可以一键「重新生成 18 种」。亮色和暗色模式的背景配置相互独立。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.theme.title">主题概览</h2>
@@ -588,20 +617,8 @@
           <p data-i18n="guide.bento.desc" data-i18n-mode="html">提供两种布局模式：<br />1. <strong>动态布局</strong>（默认）：卡片大小由点击次数决定，使用 Treemap 算法自动排列。点击越多的站点占据越大面积，新添加的站点也有初始面积。文件夹卡片会累加内部站点的点击次数，因此常用文件夹也会自动放大。页面加载时快照点击次数，点击后不会立即重排。<br />2. <strong>固定网格</strong>：所有卡片等分，按设定列数排列。<br />可配置项包括：容器宽度、间距（4-32px）、圆角、卡片透明度、毛玻璃模糊度、图标大小、布局模式切换、固定模式列数。</p>
         </section>
         <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.folders.title">文件夹</h2>
-          <p data-i18n="guide.folders.desc" data-i18n-mode="html">从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，除了可在新增弹窗中直接创建文件夹、把已有网站归类进去，也支持直接选择当前打开的标签页组创建文件夹保存下来。很多时候，我们会围绕一类工作打开一组网页，例如项目后台、活动页面、文档索引、临时专题资料，或某段时间集中查阅的内容。这些网页可能只会连续使用几天，不值得长期加入收藏夹，但又需要暂时保留。标签页组本身很好用，不过当组越来越多时，会持续占用浏览器内存，也会让标签栏被一大堆分组挤满，看起来并不轻松。现在可以先用标签页组整理任务，再把它保存为文件夹，随后关闭原来的标签页组；等下次需要继续这项工作时，再从文件夹里一键打开全部标签页，让浏览器保持干净。文件夹样式只作用于图标区域，不会覆盖整块卡片，可单独设置背景色、圆角和图标样式。默认图标会根据背景明暗自动切换黑色或白色描边，也支持替换为自定义图片或 SVG。点击文件夹后，会在原位置附近展开一个轻量浮层，只展示内部站点的图标与名称，便于快速访问。</p>
-        </section>
-        <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.tabs.title">从当前标签页快速添加</h2>
-          <p data-i18n="guide.tabs.desc" data-i18n-mode="html">新增网站或创建文件夹时，弹窗都可以读取当前浏览器窗口已打开的标签页和标签页组。这里既支持单选单个标签页，也支持多选后批量新增，还支持直接按标签页组整组保存。选择 1 个标签页时，会自动填入网站标题和网址；创建文件夹时，则可以把当前工作相关的一整组标签页直接保存下来，后续再一键重新打开。当当前窗口标签页超过 12 个时，会自动显示搜索框，支持按网页标题、网址或分组名称过滤。为了保持列表紧凑，标签页选择器会优先展示图标、标题和分组信息。</p>
-        </section>
-        <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.contextmenu.title">右键菜单</h2>
-          <p data-i18n="guide.contextmenu.desc" data-i18n-mode="html">在非编辑模式下，右键站点或文件夹可直接进入编辑；右键空白区域可快速新增网站。无论当前是否启用随机背景，右键空白区域都可以使用“换个背景”：如果背景模式为随机，下次打开仍会继续变化；如果当前不是随机模式，则会从已有背景里随机挑选一个并固定保留。</p>
-        </section>
-        <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.terminalDetail.title">终端主题</h2>
-          <div data-i18n="guide.terminalDetail.desc" data-i18n-mode="html">完整的命令行交互界面，支持全键盘操作。可用命令如下：<br /><br /><dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5"><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">h</code></dt><dd>显示帮助信息</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">ls</code></dt><dd>列出所有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">数字</code></dt><dd>输入编号跳转到对应站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">add</code></dt><dd>添加新站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">edit</code></dt><dd>编辑已有站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">rm</code></dt><dd>删除站点</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code></dt><dd>搜索</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code></dt><dd>切换主题</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code></dt><dd>切换暗色模式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code></dt><dd>切换语言</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code></dt><dd>切换配色方案</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code></dt><dd>切换光标样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code></dt><dd>切换提示符样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">width</code></dt><dd>设置终端宽度</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">set</code></dt><dd>打开设置面板</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">clear</code></dt><dd>清屏</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code></dt><dd>导出配置</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code></dt><dd>导入配置</dd></dl><br />提供 9 种配色方案（green、amber、blue、cyan、purple、pink、red、orange、mono）和 4 种光标样式（细线、粗线、块状、下划线）。输入命令不带参数后，可用方向键选择选项，Enter 确认，Esc 取消。</div>
+          <div data-i18n="guide.terminalDetail.desc" data-i18n-mode="html">完整的命令行交互界面，支持全键盘操作。可用命令如下：<br /><br /><dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5"><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">h</code></dt><dd>显示帮助信息</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">ls</code></dt><dd>列出所有网站，文件夹内的网站会以「文件夹 / 网站」显示</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">&lt;序号&gt; / 名称 / 网址</code></dt><dd>按序号、名称或网址打开网站</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">add &lt;网址&gt; &lt;名称&gt;</code></dt><dd>添加新网站</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">edit &lt;序号&gt; &lt;网址&gt; &lt;名称&gt;</code></dt><dd>编辑网站</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">rm &lt;序号&gt;</code></dt><dd>删除网站</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s &lt;关键词&gt;</code></dt><dd>按默认项搜索或提问</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code></dt><dd>切换主题</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code></dt><dd>切换显示模式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code></dt><dd>切换语言</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code></dt><dd>设置配色方案</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code></dt><dd>设置光标样式</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code></dt><dd>设置命令提示符</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">width &lt;像素值|full&gt;</code></dt><dd>设置终端宽度</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">set</code></dt><dd>打开设置面板</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export [all|sites|settings]</code></dt><dd>导出数据</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code></dt><dd>导入数据</dd><dt><code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">clear</code></dt><dd>清屏</dd></dl><br />提供 9 种配色（绿色、琥珀、蓝色、青色、紫色、粉色、红色、橙色、黑白）和 4 种光标样式（竖线、粗线、方块、下划线）。<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">theme</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">mode</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">lang</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">color</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">cursor</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">prompt</code> 不带参数输入时，可以用方向键选择选项，回车确认，Esc 取消。<br /><br /><strong>提示：</strong>受浏览器限制，打开新标签页时焦点默认在地址栏，点击页面任意位置即可开始输入命令。</div>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.minimal.title">极简主题</h2>
@@ -621,35 +638,27 @@
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.sticky.title">便签主题</h2>
-          <p data-i18n="guide.sticky.desc" data-i18n-mode="html">便利贴公告板风格，采用 CSS 多列瀑布流布局。每张便签有彩色背景和图钉装饰，角度随机倾斜，底部内边距不一产生高矮不同的效果。<br />亮色模式为软木板背景，暗色模式为深色木板背景。搜索栏以便签卡片形式嵌入，带有手绘虚线输入框。可配置项包括：显示或隐藏站点标题。</p>
-        </section>
-        <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.search.title">搜索功能</h2>
-          <p data-i18n="guide.search.desc" data-i18n-mode="html">搜索框使用浏览器默认搜索引擎进行搜索，尊重用户设置。在终端主题中，使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">s</code> 命令加关键词即可搜索。</p>
-        </section>
-        <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.background.title">背景设置</h2>
-          <p data-i18n="guide.background.desc" data-i18n-mode="html">除终端和极简主题外，其他主题均支持背景设置。提供 5 种背景模式：<br />1. <strong>无背景</strong>：跟随浏览器默认主题背景色，保持视觉一体性。<br />2. <strong>纯色</strong>：最多保存 12 个预设颜色。新增时内置算法会根据当前亮色或暗色模式，自动生成适配的颜色。不满意的预设可随时删除并重新生成。<br />3. <strong>渐变</strong>：与纯色类似，最多 12 个预设渐变方案。新增时同样根据当前模式智能生成，支持删除后重新生成。<br />4. <strong>图片</strong>：最多上传 12 张背景图片，上传时自动压缩。<br />5. <strong>随机</strong>：从以上已保存的纯色、渐变和图片中随机选取。<br />亮色模式和暗色模式的背景配置相互独立。</p>
+          <p data-i18n="guide.sticky.desc" data-i18n-mode="html">便利贴公告板风格，便签带彩色纸张和图钉装饰，角度随机倾斜，按瀑布流排列。未设置背景时，亮色模式显示软木板，暗色模式显示深色木板；也可以像其他主题一样设置背景。搜索框以便签形式嵌入，带手绘虚线输入框。可配置项：显示或隐藏站点标题。</p>
         </section>
         <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.darkmode.title">暗色模式</h2>
           <p data-i18n="guide.darkmode.desc">支持自动跟随系统、手动亮色和手动暗色 3 种模式。暗色模式下可以为站点配置独立的图标。</p>
         </section>
         <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.importexport.title">导入导出</h2>
-          <p data-i18n="guide.importexport.desc" data-i18n-mode="html">在设置面板中可将站点配置导出为 JSON 文件，方便备份或迁移到其他设备。导出数据会包含文件夹结构、文件夹图标、文件夹样式以及内部站点信息。导入时选择之前导出的 JSON 文件即可恢复配置，导入会自动去重。终端主题也可以使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export</code> 和 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code> 命令完成相同操作。</p>
-        </section>
-        <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.browser.title">浏览器权限与构建</h2>
-          <p data-i18n="guide.browser.desc" data-i18n-mode="html">读取当前浏览器标签页和标签页组需要 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code> 与 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code> 权限。从 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">v 0.2.0</code> 开始，项目会在构建阶段按浏览器生成不同的 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">manifest</code>：Chrome 和 Edge 包含 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">favicon</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code>；Firefox 使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code>，并附带 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">browser_specific_settings</code>。扩展版本号也统一从根目录 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">package.json</code> 注入。</p>
-        </section>
-        <section>
           <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.align.title">对齐方式</h2>
           <p data-i18n="guide.align.desc">内容支持顶部、居中、底部 3 种垂直对齐方式。每种主题的对齐方式独立保存，互不影响。</p>
         </section>
         <section>
-          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.reset.title">重置设置</h2>
-          <p data-i18n="guide.reset.desc">可将所有设置重置为默认值。重置后会保留已添加的站点数据和点击计数，仅恢复外观和功能配置到初始状态。</p>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.importexport.title">导入导出</h2>
+          <p data-i18n="guide.importexport.desc" data-i18n-mode="html">在设置中可以导出数据，导出时可选择「仅站点」「仅设置」或「站点 + 设置」，文件名会自动带上扩展版本号。站点数据包含文件夹结构、文件夹图标与样式以及内部网站。导入时，站点会与现有数据合并并跳过重复项；设置会覆盖当前所有设置，导入后页面自动刷新。来自更高版本的文件需要先升级扩展再导入。终端主题中也可以使用 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">export [all|sites|settings]</code> 和 <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">import</code> 命令完成相同操作。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.browser.title">权限说明</h2>
+          <p data-i18n="guide.browser.desc" data-i18n-mode="html">各项浏览器权限的用途如下：<br />1. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabs</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">tabGroups</code>：添加网站或新建文件夹时读取当前窗口标签页的标题、网址和分组名称，以及把文件夹在标签页分组中打开。<br />2. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">contextMenus</code>：在网页右键菜单中提供「加入悠然标签页」。<br />3. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">activeTab</code>、<code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">scripting</code>：加入网页后，在当前网页右上角显示一条提示。<br />4. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">storage</code>：保存站点和设置，并在后台和新标签页之间传递待加入的网页。<br />5. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">unlimitedStorage</code>（仅 Chrome 和 Edge）：解除扩展存储的容量上限，上传的自定义图标较多时也能完整保存。<br />6. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">search</code>：在需要时调用浏览器默认的搜索引擎。<br />7. <code class="px-1.5 py-0.5 rounded bg-neutral-800 text-green-400 text-sm">favicon</code>（仅 Chrome 和 Edge）：读取浏览器内置的网站图标，作为图标来源之一。<br />8. 图标服务的访问权限（Google、gstatic、Favicon Extractor、icon.horse）：获取并缓存网站图标。</p>
+        </section>
+        <section>
+          <h2 class="text-xl font-semibold mb-3 text-white" data-i18n="guide.reset.title">重置设置与清除缓存</h2>
+          <p data-i18n="guide.reset.desc">「重置设置」会把所有设置恢复为默认值，已添加的站点数据和点击计数会保留，只恢复外观和功能配置。「清除图标缓存」会清空所有已缓存的网站图标，下次打开时重新下载。</p>
         </section>
       </div>
     </div>

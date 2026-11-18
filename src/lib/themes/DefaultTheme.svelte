@@ -1,47 +1,27 @@
 <script>
   import { t } from '../i18n.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, defaultConfig, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore } from '../stores.js'
+  import SiteIcon from '../SiteIcon.svelte'
+  import { clickCounts, editMode, showSearchBar, defaultConfig, showSiteTitle, resolvedBgStyle, bgIsLight } from '../stores.js'
   import SearchBar from '../SearchBar.svelte'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
+  import { createSiteDrag } from './siteDrag.svelte.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
-  let dragIndex = $state(-1)
-  let dragOverIndex = $state(-1)
+  // 编辑模式下拖拽排序
+  const drag = createSiteDrag()
 
-  function handleDragStart(e, i) {
-    dragIndex = i
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e, i) {
-    e.preventDefault()
-    dragOverIndex = i
-  }
-
-  function handleDrop(e, i) {
-    e.preventDefault()
-    if (dragIndex >= 0 && dragIndex !== i) {
-      sitesStore.reorder(dragIndex, i)
-    }
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleDragEnd() {
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleSiteClick(e, site) {
+  const handleSiteClick = (e, site) => {
     if ($editMode) {
       e.preventDefault()
+      return
     }
+    // 正常打开时累加点击次数，便当主题据此排布
+    clickCounts.increment(site.id)
   }
 
-  function handleFolderClick(e, folder) {
+  const handleFolderClick = (e, folder) => {
     e.preventDefault()
     onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
@@ -53,21 +33,21 @@
   let textStroke = $derived(textDark
     ? '-1px 0 0 rgba(0,0,0,0.4), 1px 0 0 rgba(0,0,0,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 1px 0 rgba(0,0,0,0.4)'
     : '-1px 0 0 rgba(255,255,255,0.4), 1px 0 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(255,255,255,0.4), 0 1px 0 rgba(255,255,255,0.4)')
-  let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24')
+  let alignClass = $derived(align === 'center' ? 'justify-center-safe py-12' : align === 'bottom' ? 'justify-end-safe pt-12 pb-24' : 'pt-24 pb-12')
   let actualCols = $derived(Math.min(cfg.cols, sites.length + ($editMode ? 1 : 0)))
   let gridMaxWidth = $derived(actualCols < cfg.cols ? `${actualCols * (cfg.width / cfg.cols)}px` : `${cfg.width}px`)
 </script>
 
-<div class="w-full h-full flex flex-col items-center {alignClass}
-  {$resolvedBgStyle ? '' : (dark ? 'bg-neutral-900' : 'bg-neutral-100')}"
+<div class="w-full h-full overflow-x-hidden overflow-y-auto flex flex-col items-center {alignClass}
+  {$resolvedBgStyle ? '' : 'not-dark:bg-neutral-100 dark:bg-neutral-900'}"
   style={$resolvedBgStyle}>
 
   {#if $editMode}
     <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-3 py-2
-      {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm">
+      not-dark:bg-neutral-800/90 not-dark:text-white dark:bg-white/90 dark:text-black text-sm backdrop-blur-sm">
       <span>✏️ {$t('settings.editModeHint')}</span>
       <button
-        class="px-3 py-0.5 rounded text-xs transition-colors {dark ? 'bg-black/15 hover:bg-black/25' : 'bg-white/20 hover:bg-white/30'}"
+        class="px-3 py-0.5 rounded text-xs transition-colors not-dark:bg-white/20 not-dark:hover:bg-white/30 dark:bg-black/15 dark:hover:bg-black/25"
         onclick={() => editMode.set(false)}
       >{$t('settings.editModeDone')}</button>
     </div>
@@ -81,7 +61,7 @@
 
   <div class="grid gap-4 px-8 mx-auto"
     style="max-width: {gridMaxWidth}; grid-template-columns: repeat({actualCols}, 1fr);">
-    {#each sites as site, i}
+    {#each sites as site, i (site.id)}
       {#if isFolderItem(site)}
         <div
           data-context-item="folder"
@@ -89,16 +69,17 @@
           onclick={(e) => handleFolderClick(e, site)}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFolderClick(e, site) }}
           draggable={$editMode}
-          ondragstart={(e) => handleDragStart(e, i)}
-          ondragover={(e) => handleDragOver(e, i)}
-          ondrop={(e) => handleDrop(e, i)}
-          ondragend={handleDragEnd}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
           role="button"
           tabindex="0"
           class="default-card group flex flex-col items-center gap-2 p-4 transition-all
-            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-700' : 'ring-neutral-200') : ''}
-            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white' : 'ring-2 ring-neutral-800') : ''}"
-          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
+            {$editMode ? 'ring-1 cursor-grab ' + 'not-dark:ring-neutral-200 dark:ring-neutral-700' : ''}
+            {$editMode && drag.isTarget(i) ? 'ring-2 not-dark:ring-neutral-800 dark:ring-white' : ''}"
+          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && drag.index === i ? 'opacity:0.4' : ''}"
         >
           <FolderGlyph folder={site} size={cfg.iconSize} className="group-hover:scale-110 transition-transform" />
           {#if $showSiteTitle}
@@ -106,9 +87,9 @@
           {/if}
           {#if $editMode}
             <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-              <button class="text-xs {dark ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+              <button class="text-xs not-dark:text-neutral-400 not-dark:hover:text-blue-500 dark:text-neutral-500 dark:hover:text-white"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-              <button class="text-xs {dark ? 'text-neutral-500 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+              <button class="text-xs not-dark:text-neutral-400 not-dark:hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
             </div>
           {/if}
@@ -119,19 +100,16 @@
           data-item-id={site.id}
           onclick={(e) => handleSiteClick(e, site)}
           draggable={$editMode}
-          ondragstart={(e) => handleDragStart(e, i)}
-          ondragover={(e) => handleDragOver(e, i)}
-          ondrop={(e) => handleDrop(e, i)}
-          ondragend={handleDragEnd}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
           class="default-card group flex flex-col items-center gap-2 p-4 transition-all
-            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-neutral-700' : 'ring-neutral-200') : ''}
-            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white' : 'ring-2 ring-neutral-800') : ''}"
-          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && dragIndex === i ? 'opacity:0.4' : ''}">
-          <img src={resolveSiteIcon(site, $isDark)} alt=""
-            onload={(e) => handleIconLoad(e, site)}
-            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-            class="group-hover:scale-110 transition-transform"
-            style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%" />
+            {$editMode ? 'ring-1 cursor-grab ' + 'not-dark:ring-neutral-200 dark:ring-neutral-700' : ''}
+            {$editMode && drag.isTarget(i) ? 'ring-2 not-dark:ring-neutral-800 dark:ring-white' : ''}"
+          style="--card-bg: {cardBg}; --card-blur: {cfg.cardBlur}px; --card-border-color: {cardBorder}; border-radius: {cfg.radius}px; {$editMode && drag.index === i ? 'opacity:0.4' : ''}">
+          <SiteIcon site={site} class="group-hover:scale-110 transition-transform" style="width: {cfg.iconSize}px; height: {cfg.iconSize}px; border-radius: {site.iconRadius ?? 4}%" />
           {#if $showSiteTitle}
             <span class="text-xs truncate max-w-25
               {textDark ? 'text-white' : 'text-black'}"
@@ -139,9 +117,9 @@
           {/if}
           {#if $editMode}
             <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-              <button class="text-xs {dark ? 'text-neutral-500 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+              <button class="text-xs not-dark:text-neutral-400 not-dark:hover:text-blue-500 dark:text-neutral-500 dark:hover:text-white"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-              <button class="text-xs {dark ? 'text-neutral-500 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+              <button class="text-xs not-dark:text-neutral-400 not-dark:hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
             </div>
           {/if}

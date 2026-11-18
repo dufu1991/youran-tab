@@ -1,50 +1,29 @@
 <script>
   import { t } from '../i18n.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch, searchPlaceholder } from '../stores.js'
+  import SiteIcon from '../SiteIcon.svelte'
+  import { clickCounts, editMode, showSearchBar, showSiteTitle, resolvedBgStyle, bgIsLight, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
   import SearchTargetPicker from '../SearchTargetPicker.svelte'
+  import SiteSuggestions from '../SiteSuggestions.svelte'
+  import { createSiteDrag } from './siteDrag.svelte.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
-  let dragIndex = $state(-1)
-  let dragOverIndex = $state(-1)
+  // 编辑模式下拖拽排序
+  const drag = createSiteDrag()
 
   // 搜索相关状态
   let query = $state('')
+  let searchInputEl = $state(null)
 
-  function handleSearch(e) {
+  const handleSearch = (e) => {
     e.preventDefault()
     if (!query.trim()) return
     doSearch(query.trim())
   }
 
-  function handleDragStart(e, i) {
-    dragIndex = i
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e, i) {
-    e.preventDefault()
-    dragOverIndex = i
-  }
-
-  function handleDrop(e, i) {
-    e.preventDefault()
-    if (dragIndex >= 0 && dragIndex !== i) {
-      sitesStore.reorder(dragIndex, i)
-    }
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleDragEnd() {
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleSiteClick(e, site) {
+  const handleSiteClick = (e, site) => {
     if (isFolderItem(site)) {
       e.preventDefault()
       onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() })
@@ -52,11 +31,15 @@
     }
     if ($editMode) {
       e.preventDefault()
+      return
     }
+    // 正常打开时累加点击次数，便当主题据此排布
+    clickCounts.increment(site.id)
   }
 
   let textDark = $derived(!$bgIsLight)
-  let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24')
+  let alignClass = $derived(align === 'center' ? 'py-6' : align === 'bottom' ? 'pt-6 pb-24' : 'pt-24 pb-6')
+  let boardAlignClass = $derived(align === 'center' ? 'justify-center-safe' : align === 'bottom' ? 'justify-end-safe' : '')
 
   // 便利贴的柔和背景色
   const pastelColors = [
@@ -82,53 +65,83 @@
   ]
 
   // 每张便利贴的旋转角度
-  function getRotation(i) {
+  const getRotation = (i) => {
     const rotations = [-1.8, 1.2, -0.5, 2.0, -1.3, 0.7, -2.0, 1.5, -0.8, 1.8, -1.0, 0.3]
     return rotations[i % rotations.length]
   }
 
-  function getBorderRadius(i) {
+  const getBorderRadius = (i) => {
     return borderRadiusVariants[i % borderRadiusVariants.length]
   }
 
-  function getPastelColor(i) {
+  const getPastelColor = (i) => {
     const c = pastelColors[i % pastelColors.length]
     return dark ? c.dark : c.light
   }
 
-  function getPinColor(i) {
+  const getPinColor = (i) => {
     return pinColors[i % pinColors.length]
   }
 
   // 便利贴的不同内边距，产生高矮不一的效果
-  function getExtraPadding(i) {
+  const getExtraPadding = (i) => {
     const paddings = [24, 36, 18, 42, 28, 50, 20, 32, 44, 26]
     return paddings[i % paddings.length]
   }
 
-  // 根据站点数量动态计算列数，使内容不超出页面高度
-  // 使用 column-fill: auto + 固定高度，浏览器会自动填满一列再换下一列
-  let boardHeight = $derived.by(() => {
-    const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-    const alignPad = align === 'center' ? 0 : 96 // pt-24 或 pb-24
-    const searchH = $showSearchBar ? 120 : 0 // 搜索栏 + mb-10
-    return Math.max(300, vh - alignPad - searchH - 20)
+  // 公告板实际可用区域（扣除搜索栏、对齐留白后的真实尺寸，随窗口缩放更新）
+  let availW = $state(0)
+  let availH = $state(0)
+  let boardEl = $state(null)
+
+  // 实际排版后仍放不下时追加的列数，以及是否放弃单屏铺满、改为滚动
+  let fitExtra = $state(0)
+  let forceScroll = $state(false)
+
+  const MIN_CARD_W = 170
+  const COL_GAP = 16
+  const BOARD_PAD_X = 48
+  const AVG_CARD_H = 170
+
+  let boardHeight = $derived(Math.max(240, availH || 600))
+
+  // 按宽度能容纳的最大列数
+  let maxCols = $derived(Math.min(6, Math.max(2, Math.floor((availW - BOARD_PAD_X + COL_GAP) / (MIN_CARD_W + COL_GAP)))))
+
+  // 按高度估算铺满一屏所需的列数
+  let neededCols = $derived.by(() => {
+    const count = sites.length + ($editMode ? 1 : 0)
+    const maxPerCol = Math.max(1, Math.floor(boardHeight / AVG_CARD_H))
+    return Math.max(2, Math.ceil(count / maxPerCol))
   })
 
-  let sketchCols = $derived.by(() => {
-    const count = sites.length + ($editMode ? 1 : 0)
-    const avgCardH = 160
-    const maxPerCol = Math.max(1, Math.floor(boardHeight / avgCardH))
-    const needed = Math.max(2, Math.ceil(count / maxPerCol))
-    return Math.min(6, needed)
-  })
+  // 一屏放不下时改为等高分列并允许纵向滚动，避免底部内容被裁掉
+  let scrollMode = $derived(forceScroll || neededCols > maxCols)
+
+  let sketchCols = $derived(scrollMode ? maxCols : Math.min(maxCols, neededCols + fitExtra))
 
   let boardMaxWidth = $derived(sketchCols <= 3 ? 700 : sketchCols * 230)
+
+  // 影响排版的条件变化时重新估算
+  $effect(() => {
+    sites.length; availW; availH; $editMode; $showSiteTitle
+    fitExtra = 0
+    forceScroll = false
+  })
+
+  // 估算偏差导致内容溢出到可视区外的列时，逐步加列，加满仍溢出则改为滚动
+  $effect(() => {
+    if (!boardEl || scrollMode) return
+    sketchCols
+    if (boardEl.scrollWidth <= boardEl.clientWidth + 1) return
+    if (sketchCols < maxCols) fitExtra += 1
+    else forceScroll = true
+  })
 </script>
 
-<div class="sketch-theme w-full h-full flex flex-col items-center {alignClass}
-  {$resolvedBgStyle ? '' : (dark ? 'sketch-dark' : 'sketch-light')}"
-  style="overflow: hidden; {$resolvedBgStyle || ''}">
+<div class="sketch-theme w-full h-full flex flex-col items-center overflow-x-hidden overflow-y-auto {alignClass}
+  {$resolvedBgStyle ? '' : 'not-dark:sketch-light dark:sketch-dark'}"
+  style={$resolvedBgStyle || ''}>
 
   {#if $editMode}
     <div class="sketch-edit-bar">
@@ -140,8 +153,8 @@
     </div>
   {/if}
 
-  <div class="mb-10 w-full flex justify-center px-8">
-    {#if $showSearchBar}
+  {#if $showSearchBar}
+    <div class="mb-10 w-full flex justify-center px-8 shrink-0">
       <form class="sketch-note sketch-search-note" onsubmit={handleSearch}
         style="border-radius: {getBorderRadius(0)};
           transform: rotate(-0.5deg);
@@ -149,72 +162,73 @@
           --pin-color: {getPinColor(0)};">
         <div class="sketch-search-row">
           <SearchTargetPicker />
-          <input type="text" bind:value={query}
+          <SiteSuggestions input={searchInputEl} query={query} dark={false} />
+          <input type="text" bind:value={query} bind:this={searchInputEl}
             placeholder={$searchPlaceholder}
             class="sketch-search-input" />
-          <button type="submit" class="shrink-0 ml-1 p-0 border-0 bg-transparent cursor-pointer text-black/40 hover:opacity-80 transition-opacity" aria-label="搜索">
+          <button type="submit" class="shrink-0 ml-1 p-0 border-0 bg-transparent cursor-pointer text-black/40 hover:opacity-80 transition-opacity" aria-label={$t('search.submit')}>
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
             </svg>
           </button>
         </div>
       </form>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
-  <div class="sketch-board"
-    style="columns: {sketchCols}; max-width: {boardMaxWidth}px; max-height: {boardHeight}px; column-fill: auto;">
-    {#each sites as site, i}
-      <a href={site.url}
-        data-context-item={isFolderItem(site) ? 'folder' : 'site'}
-        data-item-id={site.id}
-        onclick={(e) => handleSiteClick(e, site)}
-        draggable={$editMode}
-        ondragstart={(e) => handleDragStart(e, i)}
-        ondragover={(e) => handleDragOver(e, i)}
-        ondrop={(e) => handleDrop(e, i)}
-        ondragend={handleDragEnd}
-        class="sketch-note group
-          {$editMode ? 'sketch-note-edit' : ''}
-          {$editMode && dragOverIndex === i && dragIndex !== i ? 'sketch-note-dragover' : ''}"
-        style="border-radius: {getBorderRadius(i)};
-          transform: rotate({getRotation(i)}deg);
-          background: {getPastelColor(i)};
-          padding-bottom: {getExtraPadding(i)}px;
-          --pin-color: {getPinColor(i)};
-          {$editMode && dragIndex === i ? 'opacity: 0.4;' : ''}">
-        <div class="sketch-icon-wrap">
-          {#if isFolderItem(site)}
-            <FolderGlyph folder={site} size={48} className="sketch-icon" />
-          {:else}
-            <img src={resolveSiteIcon(site, $isDark)} alt=""
-              onload={(e) => handleIconLoad(e, site)}
-              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-              class="sketch-icon"
-              style="border-radius: {site.iconRadius ?? 4}%" />
-          {/if}
-        </div>
-        {#if $showSiteTitle}
-          <span class="sketch-title">{site.name}</span>
-        {/if}
-        {#if $editMode}
-          <div class="sketch-actions">
-            <button class="sketch-action-btn"
-              onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-            <button class="sketch-action-btn sketch-action-delete"
-              onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
+  <div class="w-full flex-1 min-h-0 flex flex-col {boardAlignClass}"
+    bind:clientWidth={availW} bind:clientHeight={availH}>
+    <div class="sketch-board" bind:this={boardEl}
+      style="columns: {sketchCols}; max-width: {boardMaxWidth}px; {scrollMode ? 'column-fill: balance; padding-bottom: 24px;' : `max-height: ${boardHeight}px; column-fill: auto;`}">
+      {#each sites as site, i (site.id)}
+        <a href={site.url}
+          data-context-item={isFolderItem(site) ? 'folder' : 'site'}
+          data-item-id={site.id}
+          onclick={(e) => handleSiteClick(e, site)}
+          draggable={$editMode}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
+          class="sketch-note group
+            {$editMode ? 'sketch-note-edit' : ''}
+            {$editMode && drag.isTarget(i) ? 'sketch-note-dragover' : ''}"
+          style="border-radius: {getBorderRadius(i)};
+            transform: rotate({getRotation(i)}deg);
+            background: {getPastelColor(i)};
+            padding-bottom: {getExtraPadding(i)}px;
+            --pin-color: {getPinColor(i)};
+            {$editMode && drag.index === i ? 'opacity: 0.4;' : ''}">
+          <div class="sketch-icon-wrap">
+            {#if isFolderItem(site)}
+              <FolderGlyph folder={site} size={48} className="sketch-icon" />
+            {:else}
+              <SiteIcon site={site} class="sketch-icon" style="border-radius: {site.iconRadius ?? 4}%" />
+            {/if}
           </div>
-        {/if}
-      </a>
-    {/each}
+          {#if $showSiteTitle}
+            <span class="sketch-title">{site.name}</span>
+          {/if}
+          {#if $editMode}
+            <div class="sketch-actions">
+              <button class="sketch-action-btn"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
+              <button class="sketch-action-btn sketch-action-delete"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
+            </div>
+          {/if}
+        </a>
+      {/each}
 
-    {#if $editMode}
-      <button class="sketch-add-btn"
-        onclick={() => onadd?.()}>
-        <span class="sketch-add-icon">+</span>
-        <span class="sketch-add-text">{$t('site.add')}</span>
-      </button>
-    {/if}
+      {#if $editMode}
+        <button class="sketch-add-btn"
+          onclick={() => onadd?.()}>
+          <span class="sketch-add-icon">+</span>
+          <span class="sketch-add-text">{$t('site.add')}</span>
+        </button>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -476,7 +490,7 @@
     transform: scale(1.1);
   }
 
-  .sketch-icon {
+  .sketch-icon-wrap :global(img.sketch-icon) {
     width: 44px;
     height: 44px;
     object-fit: contain;

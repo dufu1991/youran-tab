@@ -1,15 +1,33 @@
 {
-  "permissions": ["search", "tabs", "tabGroups"],
+  "permissions": [
+    "search",
+    "tabs",
+    "tabGroups",
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
   "host_permissions": [
     "https://www.google.com/s2/favicons*",
     "https://*.gstatic.com/*",
     "https://www.faviconextractor.com/*",
     "https://icon.horse/*"
   ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
   "browser_specific_settings": {
     "gecko": {
       "id": "youran-tab@youran.dev",
-      "strict_min_version": "140.0"
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   }
 }

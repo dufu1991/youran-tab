@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "Una página de nueva pestaña personalizable con múltiples temas, fondos y diseños."
+  },
+  "contextAddPage": {
+    "message": "Añadir a Youran Tab"
+  },
+  "contextPageAdded": {
+    "message": "Añadido a Youran Tab"
+  },
+  "contextPageExists": {
+    "message": "Ya está en Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Lista principal"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Añadido a “$FOLDER$”",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

@@ -1,49 +1,29 @@
 <script>
   import { t } from '../i18n.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, isDark, resolvedBgStyle, bgIsLight, sites as sitesStore, doSearch, searchPlaceholder } from '../stores.js'
+  import SiteIcon from '../SiteIcon.svelte'
+  import { clickCounts, editMode, showSearchBar, resolvedBgStyle, bgIsLight, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
   import SearchTargetPicker from '../SearchTargetPicker.svelte'
+  import SiteSuggestions from '../SiteSuggestions.svelte'
+  import { createSiteDrag } from './siteDrag.svelte.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
-  let dragIndex = $state(-1)
-  let dragOverIndex = $state(-1)
+  // 编辑模式下拖拽排序
+  const drag = createSiteDrag()
 
   let query = $state('')
 
-  function handleSearch(e) {
+  let searchInputEl = $state(null)
+
+  const handleSearch = (e) => {
     e.preventDefault()
     if (!query.trim()) return
     doSearch(query.trim())
   }
 
-  function handleDragStart(e, i) {
-    dragIndex = i
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e, i) {
-    e.preventDefault()
-    dragOverIndex = i
-  }
-
-  function handleDrop(e, i) {
-    e.preventDefault()
-    if (dragIndex >= 0 && dragIndex !== i) {
-      sitesStore.reorder(dragIndex, i)
-    }
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleDragEnd() {
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleSiteClick(e, site) {
+  const handleSiteClick = (e, site) => {
     if (isFolderItem(site)) {
       e.preventDefault()
       onopenfolder?.({ folder: site, rect: e.currentTarget?.getBoundingClientRect?.() })
@@ -51,27 +31,36 @@
     }
     if ($editMode) {
       e.preventDefault()
+      return
     }
+    // 正常打开时累加点击次数，便当主题据此排布
+    clickCounts.increment(site.id)
   }
 
   let textDark = $derived(!$bgIsLight)
-  let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24')
+  let alignClass = $derived(align === 'center' ? 'justify-center-safe py-12' : align === 'bottom' ? 'justify-end-safe pt-12 pb-24' : 'pt-24 pb-12')
 
   // 根据站点数量动态计算列数，使内容不超出页面高度
+  let viewportH = $state(typeof window !== 'undefined' ? window.innerHeight : 800)
+
   let menuHeight = $derived.by(() => {
-    const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+    const vh = viewportH
     const topOffset = $showSearchBar ? 200 : 140
     return Math.max(200, vh - topOffset)
   })
 
-  let pixelCols = $derived.by(() => {
+  let neededCols = $derived.by(() => {
     const count = sites.length + ($editMode ? 1 : 0)
     const itemH = 41
     const chromeH = 60 // 标题栏 + 状态栏
     const maxPerCol = Math.max(1, Math.floor((menuHeight - chromeH) / itemH))
-    const needed = Math.max(1, Math.ceil(count / maxPerCol))
-    return Math.min(4, needed)
+    return Math.max(1, Math.ceil(count / maxPerCol))
   })
+
+  let pixelCols = $derived(Math.min(4, neededCols))
+
+  // 4 列仍放不下时取消限高、改为等高分列，由页面纵向滚动，避免条目溢出到可视区外被裁掉
+  let menuOverflow = $derived(neededCols > 4)
 
   let menuMaxWidth = $derived(pixelCols <= 1 ? 400 : pixelCols * 360)
 
@@ -89,7 +78,9 @@
   let dotColor = $derived(dark ? '#4a4a65' : '#c0b89a')
 </script>
 
-<div class="pixel-page w-full h-full flex flex-col items-center {alignClass}"
+<svelte:window bind:innerHeight={viewportH} />
+
+<div class="pixel-page w-full h-full overflow-x-hidden overflow-y-auto flex flex-col items-center {alignClass}"
   style="{$resolvedBgStyle ? $resolvedBgStyle : `background: ${pageBg}`}">
 
   {#if $editMode}
@@ -125,7 +116,8 @@
             user-select: none;
           ">&gt;</span>
         <SearchTargetPicker {dark} class="mr-2" />
-        <input type="text" bind:value={query}
+        <SiteSuggestions input={searchInputEl} query={query} dark={dark} />
+        <input type="text" bind:value={query} bind:this={searchInputEl}
           placeholder={$searchPlaceholder}
           style="
             flex: 1;
@@ -179,20 +171,21 @@
     </div>
 
     <!-- 站点列表 -->
-    <div class="pixel-menu-list" style="padding: 0; columns: {pixelCols}; column-gap: 0; max-height: {menuHeight - 60}px; column-fill: auto;">
-      {#each sites as site, i}
+    <div class="pixel-menu-list" style="padding: 0; columns: {pixelCols}; column-gap: 0; {menuOverflow ? 'column-fill: balance;' : `max-height: ${menuHeight - 60}px; column-fill: auto;`}">
+      {#each sites as site, i (site.id)}
         <a href={isFolderItem(site) ? '#' : site.url}
           data-context-item={isFolderItem(site) ? 'folder' : 'site'}
           data-item-id={site.id}
           onclick={(e) => handleSiteClick(e, site)}
           draggable={$editMode}
-          ondragstart={(e) => handleDragStart(e, i)}
-          ondragover={(e) => handleDragOver(e, i)}
-          ondrop={(e) => handleDrop(e, i)}
-          ondragend={handleDragEnd}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
           class="pixel-menu-item group"
-          class:pixel-menu-item-dragging={$editMode && dragIndex === i}
-          class:pixel-menu-item-dragover={$editMode && dragOverIndex === i && dragIndex !== i}
+          class:pixel-menu-item-dragging={$editMode && drag.index === i}
+          class:pixel-menu-item-dragover={$editMode && drag.isTarget(i)}
           style="
             display: flex;
             align-items: center;
@@ -203,8 +196,8 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 13px;
             transition: background 0.08s ease;
-            {$editMode && dragIndex === i ? 'opacity: 0.4;' : ''}
-            {$editMode && dragOverIndex === i && dragIndex !== i ? `background: ${selectedBg};` : ''}
+            {$editMode && drag.index === i ? 'opacity: 0.4;' : ''}
+            {$editMode && drag.isTarget(i) ? `background: ${selectedBg};` : ''}
             {$editMode ? 'cursor: grab;' : 'cursor: pointer;'}
           ">
 
@@ -215,11 +208,7 @@
               className="pixel-icon"
             />
           {:else}
-            <img src={resolveSiteIcon(site, $isDark)} alt=""
-              onload={(e) => handleIconLoad(e, site)}
-              onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-              class="pixel-icon"
-              style="
+            <SiteIcon site={site} class="pixel-icon" style="
                 width: 24px;
                 height: 24px;
                 image-rendering: pixelated;
@@ -375,11 +364,11 @@
     background: #3a3a5e;
   }
 
-  .pixel-icon {
+  .pixel-menu-item :global(.pixel-icon) {
     transition: transform 0.1s ease;
   }
 
-  .pixel-menu-item:hover .pixel-icon {
+  .pixel-menu-item:hover :global(.pixel-icon) {
     transform: scale(1.15);
   }
 
@@ -421,6 +410,8 @@
 
   .pixel-menu-container {
     overflow: hidden;
+    /* 页面纵向排列时不允许被压缩，否则 overflow: hidden 会把超出部分裁掉 */
+    flex-shrink: 0;
   }
 
   .pixel-search-form input::placeholder {

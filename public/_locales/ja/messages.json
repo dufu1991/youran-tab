@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "テーマ、背景、レイアウトをカスタマイズできる新しいタブページ。"
+  },
+  "contextAddPage": {
+    "message": "悠然タブに追加"
+  },
+  "contextPageAdded": {
+    "message": "悠然タブに追加しました"
+  },
+  "contextPageExists": {
+    "message": "すでに悠然タブにあります"
+  },
+  "contextAddToMainList": {
+    "message": "メインリスト"
+  },
+  "contextPageAddedToFolder": {
+    "message": "「$FOLDER$」に追加しました",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

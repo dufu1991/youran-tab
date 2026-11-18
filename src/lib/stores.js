@@ -1,15 +1,19 @@
-import { writable, derived, get } from 'svelte/store'
+import { writable, readable, derived, get } from 'svelte/store'
+import { pickDistinctHue, pickFreshItem, pickRandomBackground, pushRecent } from './randomBackground.js'
 import { normalizeSiteTree, removeItemFromTree, updateItemTree } from './folders.js'
 import { SEARCH_ENGINES, AI_PROVIDERS, findTarget } from './searchProviders.js'
 import { t } from './i18n.js'
-import { getInitialBackgroundType, hasExistingNewtabData, migrateAiProviderId, migrateAiProviderIds } from './configMigrations.js'
+import { loadFromStorage, persistedWritable } from './persisted.js'
+import { getItem, hasItem, removeItem, setItem, storageKeys, usesExtensionStorage } from './storage.js'
+import { getInitialBackgroundType, hasExistingNewtabData, migrateAiProviderId, migrateAiProviderIds, migrateFolderIconsToDefault } from './configMigrations.js'
+import { KNOWN_SITE_URLS_KEY, PENDING_SITES_KEY, SITE_FOLDERS_KEY, collectSiteFolders, collectSiteUrls, mergePendingSites } from './pendingSites.js'
 
 const STORAGE_KEY_SITES = 'newtab_sites'
 const STORAGE_KEY_THEME = 'newtab_theme'
 const STORAGE_KEY_MODE = 'newtab_mode'
 export const BACKGROUND_PRESET_LIMIT = 18
 const BACKGROUND_PRESET_STORAGE_VERSION = 5
-const hadExistingNewtabData = hasExistingNewtabData(Object.keys(localStorage))
+const hadExistingNewtabData = hasExistingNewtabData(storageKeys())
 
 const defaultSites = [
   { id: '1', name: 'Google', url: 'https://google.com', iconSource: 'custom', customIcon: 'logos/google.svg' },
@@ -18,22 +22,25 @@ const defaultSites = [
   { id: '4', name: '百度', url: 'https://baidu.com', iconSource: 'custom', customIcon: 'logos/baidu.svg' },
 ]
 
-function loadFromStorage(key, fallback) {
-  try {
-    const data = localStorage.getItem(key)
-    return data ? JSON.parse(data) : fallback
-  } catch {
-    return fallback
-  }
+// 文件夹图标迁移只执行一次，记录迁移版本：
+// - 没有记录：从 0.4.x 及更早升级，把公文包图标改为宫格
+// - '0.5.0'：0.5.0 开发期间的数据，当时自动改成了堆叠，这次一并改为宫格
+const STORAGE_KEY_FOLDER_ICON_MIGRATION = 'newtab_folder_icon_migration'
+const FOLDER_ICON_MIGRATION_DONE = '0.5.0-grid'
+
+const loadInitialSites = () => {
+  const stored = loadFromStorage(STORAGE_KEY_SITES, defaultSites)
+  const migrated = getItem(STORAGE_KEY_FOLDER_ICON_MIGRATION)
+  if (migrated === FOLDER_ICON_MIGRATION_DONE) return stored
+  setItem(STORAGE_KEY_FOLDER_ICON_MIGRATION, FOLDER_ICON_MIGRATION_DONE)
+  removeItem('newtab_folder_stack_migrated')
+  return migrateFolderIconsToDefault(stored, { includeStack: migrated === '0.5.0' })
 }
 
-function createSitesStore() {
-  const initial = normalizeSiteTree(loadFromStorage(STORAGE_KEY_SITES, defaultSites))
-  const { subscribe, set, update } = writable(initial)
-
-  subscribe((value) => {
-    localStorage.setItem(STORAGE_KEY_SITES, JSON.stringify(value))
-  })
+const createSitesStore = () => {
+  const initial = normalizeSiteTree(loadInitialSites())
+  // 其他新标签页修改了站点数据时同步过来，避免旧页面在之后保存时覆盖新数据
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_SITES, initial, normalizeSiteTree)
 
   return {
     subscribe,
@@ -67,35 +74,79 @@ function createSitesStore() {
   }
 }
 
-function createThemeStore() {
+const createThemeStore = () => {
   const initial = loadFromStorage(STORAGE_KEY_THEME, 'default')
-  const { subscribe, set } = writable(initial)
-
-  subscribe((value) => {
-    localStorage.setItem(STORAGE_KEY_THEME, JSON.stringify(value))
-  })
+  const { subscribe, set } = persistedWritable(STORAGE_KEY_THEME, initial)
 
   return { subscribe, set }
 }
 
 export const sites = createSitesStore()
+
+// 网页右键「加入悠然标签页」：后台把网页放进扩展存储的待加入队列，这里负责取出合并。
+// 后台直接读取扩展存储中的站点数据来判断网页是否已经加入、生成文件夹子菜单。开发环境没有扩展存储时跳过
+const extensionStorage = (globalThis.browser ?? globalThis.chrome)?.storage
+
+const drainPendingSites = async () => {
+  // 只由当前可见的新标签页处理，避免多个页面同时合并出重复网站
+  if (document.visibilityState !== 'visible') return
+  const { [PENDING_SITES_KEY]: pending } = await extensionStorage.local.get(PENDING_SITES_KEY)
+  if (!pending?.length) return
+  await extensionStorage.local.set({ [PENDING_SITES_KEY]: [] })
+  const current = get(sites)
+  const next = mergePendingSites(current, pending)
+  if (next !== current) sites.setAll(next)
+}
+
+// 扩展存储搬迁失败、本次退回 localStorage 时，后台读不到站点数据，需要单独同步网址和文件夹列表
+const syncSiteSummaryForBackground = () => {
+  // 只在内容变化时写入：文件夹列表变化会让后台重建右键菜单
+  let lastSyncedUrls = ''
+  let lastSyncedFolders = ''
+  sites.subscribe((value) => {
+    const urls = JSON.stringify(collectSiteUrls(value))
+    const folders = JSON.stringify(collectSiteFolders(value))
+    if (urls !== lastSyncedUrls) {
+      lastSyncedUrls = urls
+      extensionStorage.local.set({ [KNOWN_SITE_URLS_KEY]: JSON.parse(urls) })
+    }
+    if (folders !== lastSyncedFolders) {
+      lastSyncedFolders = folders
+      extensionStorage.local.set({ [SITE_FOLDERS_KEY]: JSON.parse(folders) })
+    }
+  })
+}
+
+if (extensionStorage?.local) {
+  if (!usesExtensionStorage()) syncSiteSummaryForBackground()
+  extensionStorage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[PENDING_SITES_KEY]?.newValue?.length) drainPendingSites()
+  })
+  document.addEventListener('visibilitychange', drainPendingSites)
+  drainPendingSites()
+}
 export const theme = createThemeStore()
 
-function createModeStore() {
+const createModeStore = () => {
   const initial = loadFromStorage(STORAGE_KEY_MODE, 'auto')
-  const { subscribe, set } = writable(initial)
-  subscribe((value) => {
-    localStorage.setItem(STORAGE_KEY_MODE, JSON.stringify(value))
-  })
+  const { subscribe, set } = persistedWritable(STORAGE_KEY_MODE, initial)
   return { subscribe, set }
 }
 
 export const mode = createModeStore()
 
-export const isDark = derived(mode, ($mode) => {
+// 系统明暗偏好，系统切换（例如日落自动切换）时实时更新
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+const systemDark = readable(darkQuery.matches, (set) => {
+  const handleChange = (event) => set(event.matches)
+  darkQuery.addEventListener('change', handleChange)
+  return () => darkQuery.removeEventListener('change', handleChange)
+})
+
+export const isDark = derived([mode, systemDark], ([$mode, $systemDark]) => {
   if ($mode === 'dark') return true
   if ($mode === 'light') return false
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return $systemDark
 })
 
 export const showSettings = writable(false)
@@ -104,10 +155,9 @@ export const editMode = writable(false)
 // 经典主题搜索框显示
 const STORAGE_KEY_SEARCH_BAR = 'newtab_show_search'
 
-function createShowSearchBarStore() {
+const createShowSearchBarStore = () => {
   const initial = loadFromStorage(STORAGE_KEY_SEARCH_BAR, true)
-  const { subscribe, set } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_SEARCH_BAR, JSON.stringify(v)))
+  const { subscribe, set } = persistedWritable(STORAGE_KEY_SEARCH_BAR, initial)
   return { subscribe, set }
 }
 
@@ -116,10 +166,9 @@ export const showSearchBar = createShowSearchBarStore()
 // 显示站点标题
 const STORAGE_KEY_SITE_TITLE = 'newtab_show_title'
 
-function createShowSiteTitleStore() {
+const createShowSiteTitleStore = () => {
   const initial = loadFromStorage(STORAGE_KEY_SITE_TITLE, true)
-  const { subscribe, set } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_SITE_TITLE, JSON.stringify(v)))
+  const { subscribe, set } = persistedWritable(STORAGE_KEY_SITE_TITLE, initial)
   return { subscribe, set }
 }
 
@@ -128,11 +177,10 @@ export const showSiteTitle = createShowSiteTitleStore()
 // 各主题垂直对齐
 const STORAGE_KEY_ALIGN = 'newtab_align'
 
-function createThemeAlignStore() {
+const createThemeAlignStore = () => {
   const defaults = { default: 'top', bento: 'center', terminal: 'top', minimal: 'center', glass: 'center', bubble: 'center', pixel: 'top', sketch: 'top' }
   const initial = loadFromStorage(STORAGE_KEY_ALIGN, defaults)
-  const { subscribe, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_ALIGN, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_ALIGN, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     set(theme, val) { update((c) => ({ ...c, [theme]: val })) },
@@ -144,11 +192,10 @@ export const themeAlign = createThemeAlignStore()
 // 经典主题配置
 const STORAGE_KEY_DEFAULT = 'newtab_default'
 
-function createDefaultConfigStore() {
+const createDefaultConfigStore = () => {
   const defaults = { width: 800, cols: 6, radius: 12, cardOpacity: 50, cardBlur: 12, iconSize: 40 }
   const initial = loadFromStorage(STORAGE_KEY_DEFAULT, defaults)
-  const { subscribe, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_DEFAULT, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_DEFAULT, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     set(key, val) { update((c) => ({ ...c, [key]: val })) },
@@ -160,11 +207,10 @@ export const defaultConfig = createDefaultConfigStore()
 // 玻璃主题配置
 const STORAGE_KEY_GLASS = 'newtab_glass'
 
-function createGlassConfigStore() {
+const createGlassConfigStore = () => {
   const defaults = { cols: 2 }
   const initial = loadFromStorage(STORAGE_KEY_GLASS, defaults)
-  const { subscribe, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_GLASS, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_GLASS, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     set(key, val) { update((c) => ({ ...c, [key]: val })) },
@@ -176,11 +222,10 @@ export const glassConfig = createGlassConfigStore()
 // 气泡主题配置
 const STORAGE_KEY_BUBBLE = 'newtab_bubble'
 
-function createBubbleConfigStore() {
+const createBubbleConfigStore = () => {
   const defaults = { layout: 'fixed', size: 80 }
   const initial = loadFromStorage(STORAGE_KEY_BUBBLE, defaults)
-  const { subscribe, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_BUBBLE, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_BUBBLE, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     set(key, val) { update((c) => ({ ...c, [key]: val })) },
@@ -192,11 +237,10 @@ export const bubbleConfig = createBubbleConfigStore()
 // 终端自定义设置
 const STORAGE_KEY_TERM = 'newtab_terminal'
 
-function createTerminalConfigStore() {
+const createTerminalConfigStore = () => {
   const defaults = { prompt: '$', color: 'green', width: 1000, cursor: 'bar' }
   const initial = loadFromStorage(STORAGE_KEY_TERM, defaults)
-  const { subscribe, set, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_TERM, JSON.stringify(v)))
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_TERM, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     setPrompt(p) { update((c) => ({ ...c, prompt: p })) },
@@ -248,8 +292,7 @@ const normalizeSearchConfig = (value) => {
 
 const createSearchConfigStore = () => {
   const initial = normalizeSearchConfig(loadFromStorage(STORAGE_KEY_SEARCH, null))
-  const { subscribe, set, update } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_SEARCH, JSON.stringify(v)))
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_SEARCH, initial, normalizeSearchConfig)
   return {
     subscribe,
     set: (key, val) => update((c) => normalizeSearchConfig({ ...c, [key]: val })),
@@ -299,7 +342,7 @@ export const searchPlaceholder = derived(
 )
 
 // 搜索
-export function doSearch(query) {
+export const doSearch = (query) => {
   // 自定义搜索引擎 / AI 提问
   const provider = findTarget(get(activeSearchTarget))
   if (provider && provider.makeUrl) {
@@ -323,10 +366,9 @@ export function doSearch(query) {
 // 点击计数
 const STORAGE_KEY_CLICKS = 'newtab_clicks'
 
-function createClickCountStore() {
+const createClickCountStore = () => {
   const initial = loadFromStorage(STORAGE_KEY_CLICKS, {})
-  const { subscribe, update } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_CLICKS, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_CLICKS, initial)
   return {
     subscribe,
     increment(siteId) {
@@ -343,11 +385,10 @@ export const clickCounts = createClickCountStore()
 // Bento 主题配置
 const STORAGE_KEY_BENTO = 'newtab_bento'
 
-function createBentoConfigStore() {
+const createBentoConfigStore = () => {
   const defaults = { width: 800, gap: 12, radius: 12, cols: 4, fixed: false, cardOpacity: 50, cardBlur: 12, iconSize: 40 }
   const initial = loadFromStorage(STORAGE_KEY_BENTO, defaults)
-  const { subscribe, update } = writable({ ...defaults, ...initial })
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_BENTO, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_BENTO, { ...defaults, ...initial }, (value) => ({ ...defaults, ...value }))
   return {
     subscribe,
     set(key, val) { update((c) => ({ ...c, [key]: val })) },
@@ -356,15 +397,16 @@ function createBentoConfigStore() {
 
 export const bentoConfig = createBentoConfigStore()
 
-function getPresetKey(item) {
+const getPresetKey = (item) => {
   return typeof item === 'string' ? item : JSON.stringify(item)
 }
 
-function appendGeneratedItem(list, keys, generator, index, getKey = getPresetKey) {
+// hueBase 是每组随机的色相起点，避免每次重置后同一位置总落在同一段色相
+const appendGeneratedItem = (list, keys, generator, index, getKey = getPresetKey, hueBase = rand(0, 360)) => {
   let lastItem
 
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    const item = generator(index, attempt)
+    const item = generator(index, attempt, hueBase)
     lastItem = item
     const key = getKey(item)
     if (!keys.has(key)) {
@@ -377,50 +419,46 @@ function appendGeneratedItem(list, keys, generator, index, getKey = getPresetKey
   list.push(lastItem)
 }
 
-function completeGeneratedGroup(list, generator, getKey = getPresetKey) {
+const completeGeneratedGroup = (list, generator, getKey = getPresetKey) => {
   const keys = new Set(list.map(getKey))
+  const hueBase = rand(0, 360)
 
   while (list.length < BACKGROUND_PRESET_LIMIT) {
-    appendGeneratedItem(list, keys, generator, list.length, getKey)
+    appendGeneratedItem(list, keys, generator, list.length, getKey, hueBase)
   }
 
   return list
 }
 
-function addGeneratedItem(list, generator, getKey = getPresetKey) {
+const addGeneratedItem = (list, generator, getKey = getPresetKey) => {
   const next = [...list]
   const keys = new Set(next.map(getKey))
   appendGeneratedItem(next, keys, generator, next.length, getKey)
   return next
 }
 
-function createGeneratedGroup(generator, getKey = getPresetKey) {
+const createGeneratedGroup = (generator, getKey = getPresetKey) => {
   return completeGeneratedGroup([], generator, getKey)
 }
 
-function normalizeGeneratedGroup(source, generator, fillToLimit, normalizeItem = (item) => item) {
-  const list = Array.isArray(source)
+// 读取已保存的预设：截断到上限并逐项规范化（版本不一致时调用方会直接重新生成）
+const normalizeStoredGroup = (source, normalizeItem = (item) => item) => {
+  return Array.isArray(source)
     ? source.slice(0, BACKGROUND_PRESET_LIMIT).map(normalizeItem)
     : []
-
-  if (fillToLimit && list.length > 0 && list.length < BACKGROUND_PRESET_LIMIT) {
-    return completeGeneratedGroup([...list], generator)
-  }
-
-  return list
 }
 
 // 纯色预设（暗色和亮色分开存储，各 18 个）
 const STORAGE_KEY_SOLIDS = 'newtab_solids'
-function createDefaultSolids() {
+const createDefaultSolids = () => {
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
-    dark: createGeneratedGroup((index, attempt) => randomSolidColor(true, index, attempt)),
-    light: createGeneratedGroup((index, attempt) => randomSolidColor(false, index, attempt)),
+    dark: createGeneratedGroup((index, attempt, hueBase) => randomSolidColor(true, index, attempt, hueBase)),
+    light: createGeneratedGroup((index, attempt, hueBase) => randomSolidColor(false, index, attempt, hueBase)),
   }
 }
 
-function randomUnit() {
+const randomUnit = () => {
   if (globalThis.crypto?.getRandomValues) {
     const values = new Uint32Array(1)
     globalThis.crypto.getRandomValues(values)
@@ -430,55 +468,61 @@ function randomUnit() {
   return Math.random()
 }
 
-function rand(min, max) { return randomUnit() * (max - min) + min }
-function randInt(min, max) { return Math.floor(rand(min, max + 1)) }
+const rand = (min, max) => randomUnit() * (max - min) + min
+const randInt = (min, max) => Math.floor(rand(min, max + 1))
 
-function spreadHue(index = randInt(0, BACKGROUND_PRESET_LIMIT - 1), attempt = 0) {
-  return (index * 137.508 + attempt * 23 + rand(0, 48)) % 360
+const spreadHue = (index = 0, attempt = 0, hueBase = rand(0, 360)) => {
+  return normalizeHue(hueBase + index * 137.508 + attempt * 23 + rand(0, 48))
 }
 
-function normalizeHue(hue) {
+const randomSign = () => {
+  return randomUnit() < 0.5 ? -1 : 1
+}
+
+const normalizeHue = (hue) => {
   return (hue % 360 + 360) % 360
 }
 
-function randomSeed(index = 0, attempt = 0) {
+const randomSeed = (index = 0, attempt = 0) => {
   const prefix = globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${randInt(1000000, 999999999)}`
   return `${prefix}-${index}-${attempt}-${randInt(1000000, 999999999)}`
 }
 
-function randomSolidColor(isDark, index = 0, attempt = 0) {
-  const h = Math.round(spreadHue(index, attempt))
-  if (isDark) {
-    const l = randInt(12, 25), c = randInt(5, 15)
-    return `oklch(0.${l} 0.${String(c).padStart(2, '0')} ${h})`
-  }
-  const l = randInt(90, 96), c = randInt(2, 6)
-  return `oklch(0.${l} 0.0${c} ${h})`
+const oklch = (l, c, h) => {
+  return `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${normalizeHue(h).toFixed(1)})`
 }
 
-function normalizeSolids(value) {
+export const solidColorFromHue = (isDark, hue) => {
+  return isDark
+    ? oklch(rand(0.12, 0.26), rand(0.03, 0.15), hue)
+    : oklch(rand(0.89, 0.965), rand(0.015, 0.07), hue)
+}
+
+const randomSolidColor = (isDark, index = 0, attempt = 0, hueBase) => {
+  return solidColorFromHue(isDark, spreadHue(index, attempt, hueBase))
+}
+
+const normalizeSolids = (value) => {
   if (Array.isArray(value) || !Array.isArray(value?.dark) || !Array.isArray(value?.light)) return createDefaultSolids()
   if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultSolids()
-  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
-    dark: normalizeGeneratedGroup(value.dark, (index, attempt) => randomSolidColor(true, index, attempt), fillToLimit),
-    light: normalizeGeneratedGroup(value.light, (index, attempt) => randomSolidColor(false, index, attempt), fillToLimit),
+    dark: normalizeStoredGroup(value.dark),
+    light: normalizeStoredGroup(value.light),
   }
 }
 
-function createSolidsStore() {
+const createSolidsStore = () => {
   const initial = normalizeSolids(loadFromStorage(STORAGE_KEY_SOLIDS, null))
-  const { subscribe, set, update } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_SOLIDS, JSON.stringify(v)))
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_SOLIDS, initial, normalizeSolids)
   return {
     subscribe,
-    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => randomSolidColor(true, index, attempt)) }) },
-    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => randomSolidColor(false, index, attempt)) }) },
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt, hueBase) => randomSolidColor(true, index, attempt, hueBase)) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt, hueBase) => randomSolidColor(false, index, attempt, hueBase)) }) },
     removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
     removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
-    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt) => randomSolidColor(true, index, attempt)) })) },
-    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt) => randomSolidColor(false, index, attempt)) })) },
+    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt, hueBase) => randomSolidColor(true, index, attempt, hueBase)) })) },
+    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt, hueBase) => randomSolidColor(false, index, attempt, hueBase)) })) },
     reset() { set(createDefaultSolids()) },
   }
 }
@@ -487,48 +531,58 @@ export const solidPresets = createSolidsStore()
 
 // 渐变预设（暗色和亮色分开存储，各 18 个）
 const STORAGE_KEY_GRADIENTS = 'newtab_gradients'
-function createDefaultGradients() {
+const createDefaultGradients = () => {
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
-    dark: createGeneratedGroup((index, attempt) => generateRandomGradient(true, index, attempt)),
-    light: createGeneratedGroup((index, attempt) => generateRandomGradient(false, index, attempt)),
+    dark: createGeneratedGroup((index, attempt, hueBase) => generateRandomGradient(true, index, attempt, hueBase)),
+    light: createGeneratedGroup((index, attempt, hueBase) => generateRandomGradient(false, index, attempt, hueBase)),
   }
 }
 
-// 随机生成渐变（OKLCH）
-export function generateRandomGradient(isDark, index = 0, attempt = 0) {
-  const h1 = spreadHue(index, attempt)
-  const h2 = (h1 + rand(56, 148) + attempt * 11) % 360
-  const angle = Math.round((115 + index * 17 + attempt * 7 + rand(0, 34)) % 180)
-  if (isDark) {
-    return `linear-gradient(${angle}deg, oklch(${rand(0.20, 0.32).toFixed(2)} ${rand(0.10, 0.20).toFixed(2)} ${h1.toFixed(0)}) 0%, oklch(${rand(0.20, 0.35).toFixed(2)} ${rand(0.10, 0.18).toFixed(2)} ${h2.toFixed(0)}) 100%)`
-  }
-  return `linear-gradient(${angle}deg, oklch(${rand(0.90, 0.96).toFixed(2)} ${rand(0.08, 0.15).toFixed(2)} ${h1.toFixed(0)}) 0%, oklch(${rand(0.82, 0.88).toFixed(2)} ${rand(0.10, 0.18).toFixed(2)} ${h2.toFixed(0)}) 100%)`
+// 随机生成渐变（OKLCH），在线性、三色、径向、角向、叠加光斑几种形态中随机
+export const gradientFromHue = (isDark, hue) => {
+  const stop = (h) => isDark
+    ? oklch(rand(0.18, 0.36), rand(0.08, 0.2), h)
+    : oklch(rand(0.82, 0.96), rand(0.06, 0.17), h)
+  const h2 = hue + randomSign() * rand(40, 160)
+  const h3 = h2 + randomSign() * rand(30, 120)
+  const angle = randInt(0, 359)
+  const x = randInt(0, 100)
+  const y = randInt(0, 100)
+  const kind = randInt(0, 4)
+
+  if (kind === 1) return `linear-gradient(${angle}deg, ${stop(hue)} 0%, ${stop(h2)} ${randInt(35, 65)}%, ${stop(h3)} 100%)`
+  if (kind === 2) return `radial-gradient(circle at ${x}% ${y}%, ${stop(hue)} 0%, ${stop(h2)} 100%)`
+  if (kind === 3) return `conic-gradient(from ${angle}deg at ${x}% ${y}%, ${stop(hue)}, ${stop(h2)}, ${stop(h3)}, ${stop(hue)})`
+  if (kind === 4) return `radial-gradient(circle at ${x}% ${y}%, ${stop(h3)} 0%, transparent ${randInt(45, 75)}%), linear-gradient(${angle}deg, ${stop(hue)} 0%, ${stop(h2)} 100%)`
+  return `linear-gradient(${angle}deg, ${stop(hue)} 0%, ${stop(h2)} 100%)`
 }
 
-function normalizeGradients(value) {
+export const generateRandomGradient = (isDark, index = 0, attempt = 0, hueBase) => {
+  return gradientFromHue(isDark, spreadHue(index, attempt, hueBase))
+}
+
+const normalizeGradients = (value) => {
   if (Array.isArray(value) || !Array.isArray(value?.dark) || !Array.isArray(value?.light)) return createDefaultGradients()
   if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultGradients()
-  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
-    dark: normalizeGeneratedGroup(value.dark, (index, attempt) => generateRandomGradient(true, index, attempt), fillToLimit),
-    light: normalizeGeneratedGroup(value.light, (index, attempt) => generateRandomGradient(false, index, attempt), fillToLimit),
+    dark: normalizeStoredGroup(value.dark),
+    light: normalizeStoredGroup(value.light),
   }
 }
 
-function createGradientsStore() {
+const createGradientsStore = () => {
   const initial = normalizeGradients(loadFromStorage(STORAGE_KEY_GRADIENTS, null))
-  const { subscribe, set, update } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_GRADIENTS, JSON.stringify(v)))
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_GRADIENTS, initial, normalizeGradients)
   return {
     subscribe,
-    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => generateRandomGradient(true, index, attempt)) }) },
-    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => generateRandomGradient(false, index, attempt)) }) },
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt, hueBase) => generateRandomGradient(true, index, attempt, hueBase)) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt, hueBase) => generateRandomGradient(false, index, attempt, hueBase)) }) },
     removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
     removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
-    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt) => generateRandomGradient(true, index, attempt)) })) },
-    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt) => generateRandomGradient(false, index, attempt)) })) },
+    resetDark() { update((s) => ({ ...s, dark: createGeneratedGroup((index, attempt, hueBase) => generateRandomGradient(true, index, attempt, hueBase)) })) },
+    resetLight() { update((s) => ({ ...s, light: createGeneratedGroup((index, attempt, hueBase) => generateRandomGradient(false, index, attempt, hueBase)) })) },
     reset() { set(createDefaultGradients()) },
   }
 }
@@ -556,11 +610,11 @@ export const dynamicStyleKeys = [
 
 const fallbackDynamicColors = ['#f8fafc', '#dbeafe', '#c7d2fe', '#fbcfe8', '#fed7aa', '#dcfce7']
 
-function getDynamicPresetKey(preset) {
+const getDynamicPresetKey = (preset) => {
   return [preset.style, preset.colors.join(','), preset.seed, preset.loop ? 1 : 0, JSON.stringify(preset.variant || {})].join('|')
 }
 
-function normalizeDynamicPreset(preset, isDark) {
+const normalizeDynamicPreset = (preset, isDark) => {
   const fallback = generateRandomDynamic(isDark)
   if (!preset || typeof preset !== 'object') return fallback
   const style = dynamicStyleKeys.includes(preset.style) ? preset.style : fallback.style
@@ -575,20 +629,19 @@ function normalizeDynamicPreset(preset, isDark) {
   return { style, colors, seed, loop, variant }
 }
 
-function normalizeDynamics(value) {
+const normalizeDynamics = (value) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return createDefaultDynamics()
   if (value.version !== BACKGROUND_PRESET_STORAGE_VERSION) return createDefaultDynamics()
   const darkSource = Array.isArray(value.dark) ? value.dark : []
   const lightSource = Array.isArray(value.light) ? value.light : []
-  const fillToLimit = value.version !== BACKGROUND_PRESET_STORAGE_VERSION
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
-    dark: normalizeGeneratedGroup(darkSource, (index, attempt) => generateRandomDynamic(true, index, attempt), fillToLimit, (preset) => normalizeDynamicPreset(preset, true)),
-    light: normalizeGeneratedGroup(lightSource, (index, attempt) => generateRandomDynamic(false, index, attempt), fillToLimit, (preset) => normalizeDynamicPreset(preset, false)),
+    dark: normalizeStoredGroup(darkSource, (preset) => normalizeDynamicPreset(preset, true)),
+    light: normalizeStoredGroup(lightSource, (preset) => normalizeDynamicPreset(preset, false)),
   }
 }
 
-function hslToHex(h, s, l) {
+const hslToHex = (h, s, l) => {
   const hue = normalizeHue(h)
   const a = s * Math.min(l, 1 - l)
   const toHex = (n) => {
@@ -599,7 +652,7 @@ function hslToHex(h, s, l) {
   return `#${toHex(0)}${toHex(8)}${toHex(4)}`
 }
 
-function getHexBrightness(hex) {
+const getHexBrightness = (hex) => {
   const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
   if (!match) return null
 
@@ -609,7 +662,7 @@ function getHexBrightness(hex) {
   return 0.299 * r + 0.587 * g + 0.114 * b
 }
 
-function normalizeDynamicColors(colors, isDark, fallback) {
+const normalizeDynamicColors = (colors, isDark, fallback) => {
   const list = Array.isArray(colors) && colors.length > 0 ? colors.slice(0, 6) : fallback
   const brightness = list.map(getHexBrightness).filter((value) => value !== null)
   if (brightness.length === 0) return list
@@ -623,13 +676,12 @@ function normalizeDynamicColors(colors, isDark, fallback) {
   return list
 }
 
-function generateDynamicColors(isDark, index = 0, attempt = 0) {
-  const hue = spreadHue(index, attempt)
+const generateDynamicColors = (isDark, hue) => {
   const hueStep = rand(24, 172)
   const lightnessShift = isDark ? rand(-0.12, 0.12) : rand(-0.08, 0.06)
 
   return Array.from({ length: 6 }, (_, colorIndex) => {
-    const nextHue = hue + colorIndex * hueStep + rand(-45, 45) + attempt * 17
+    const nextHue = hue + colorIndex * hueStep + rand(-45, 45)
     const saturation = isDark ? rand(0.34, 1) : rand(0.46, 0.98)
     const lightRange = isDark
       ? [0.10, 0.68]
@@ -643,11 +695,11 @@ function generateDynamicColors(isDark, index = 0, attempt = 0) {
   })
 }
 
-function roundNumber(value, precision = 3) {
+const roundNumber = (value, precision = 3) => {
   return Number(value.toFixed(precision))
 }
 
-function dynamicUpdate(option, min, max, precision = 3) {
+const dynamicUpdate = (option, min, max, precision = 3) => {
   return [option, roundNumber(rand(min, max), precision)]
 }
 
@@ -663,7 +715,7 @@ const dynamicUpdateOptionsByStyle = {
   'abstract-shape': new Set(['wavy']),
 }
 
-function normalizeDynamicUpdates(updates, style) {
+const normalizeDynamicUpdates = (updates, style) => {
   const allowedOptions = dynamicUpdateOptionsByStyle[style]
   if (!allowedOptions || !Array.isArray(updates)) return []
 
@@ -673,7 +725,7 @@ function normalizeDynamicUpdates(updates, style) {
     .filter(([option]) => allowedOptions.has(option))
 }
 
-function createDynamicViewVariant() {
+const createDynamicViewVariant = () => {
   return {
     frame: randInt(0, 420),
     rotate: 0,
@@ -687,7 +739,7 @@ function createDynamicViewVariant() {
   }
 }
 
-function createDynamicVariant(style) {
+const createDynamicVariant = (style) => {
   const variant = {
     view: createDynamicViewVariant(),
     params: {},
@@ -757,7 +809,7 @@ function createDynamicVariant(style) {
   return variant
 }
 
-function normalizeDynamicViewVariant(view) {
+const normalizeDynamicViewVariant = (view) => {
   if (!view || typeof view !== 'object') return createDynamicViewVariant()
   return {
     frame: Number.isFinite(Number(view.frame)) ? Number(view.frame) : randInt(0, 420),
@@ -772,7 +824,7 @@ function normalizeDynamicViewVariant(view) {
   }
 }
 
-function normalizeDynamicVariant(variant, style) {
+const normalizeDynamicVariant = (variant, style) => {
   const fallback = createDynamicVariant(style)
   if (!variant || typeof variant !== 'object') return fallback
 
@@ -788,7 +840,7 @@ function normalizeDynamicVariant(variant, style) {
   }
 }
 
-function shuffleItems(items) {
+const shuffleItems = (items) => {
   const list = [...items]
   for (let i = list.length - 1; i > 0; i -= 1) {
     const nextIndex = randInt(0, i)
@@ -799,7 +851,7 @@ function shuffleItems(items) {
   return list
 }
 
-function createDynamicStyleSequence() {
+const createDynamicStyleSequence = () => {
   const styles = []
   while (styles.length < BACKGROUND_PRESET_LIMIT) {
     styles.push(...shuffleItems(dynamicStyleKeys))
@@ -807,15 +859,15 @@ function createDynamicStyleSequence() {
   return styles.slice(0, BACKGROUND_PRESET_LIMIT)
 }
 
-function createDynamicGroup(isDark) {
+const createDynamicGroup = (isDark) => {
   const styles = createDynamicStyleSequence()
   return createGeneratedGroup(
-    (index, attempt) => generateRandomDynamic(isDark, index, attempt, styles[index]),
+    (index, attempt, hueBase) => generateRandomDynamic(isDark, index, attempt, styles[index], hueBase),
     getDynamicPresetKey,
   )
 }
 
-function pickLeastUsedDynamicStyle(list) {
+const pickLeastUsedDynamicStyle = (list) => {
   const counts = new Map(dynamicStyleKeys.map((style) => [style, 0]))
   list.forEach((item) => {
     if (counts.has(item.style)) counts.set(item.style, counts.get(item.style) + 1)
@@ -825,18 +877,22 @@ function pickLeastUsedDynamicStyle(list) {
   return options[randInt(0, options.length - 1)]
 }
 
-export function generateRandomDynamic(isDark, index = 0, attempt = 0, style = '') {
+export const dynamicFromHue = (isDark, hue, style = '', index = 0, attempt = 0) => {
   const nextStyle = style || dynamicStyleKeys[randInt(0, dynamicStyleKeys.length - 1)]
   return {
     style: nextStyle,
-    colors: generateDynamicColors(isDark, index, attempt),
+    colors: generateDynamicColors(isDark, hue),
     seed: randomSeed(index, attempt),
     loop: true,
     variant: createDynamicVariant(nextStyle),
   }
 }
 
-function createDefaultDynamics() {
+export const generateRandomDynamic = (isDark, index = 0, attempt = 0, style = '', hueBase) => {
+  return dynamicFromHue(isDark, spreadHue(index, attempt, hueBase), style, index, attempt)
+}
+
+const createDefaultDynamics = () => {
   return {
     version: BACKGROUND_PRESET_STORAGE_VERSION,
     dark: createDynamicGroup(true),
@@ -844,20 +900,19 @@ function createDefaultDynamics() {
   }
 }
 
-export function getDynamicPreviewStyle(preset) {
+export const getDynamicPreviewStyle = (preset) => {
   const colors = preset?.colors?.length ? preset.colors : fallbackDynamicColors
   const angle = preset?.style?.length ? 120 + (preset.style.length % 7) * 10 : 135
   return `background:linear-gradient(${angle}deg, ${colors.join(', ')})`
 }
 
-function createDynamicsStore() {
+const createDynamicsStore = () => {
   const initial = normalizeDynamics(loadFromStorage(STORAGE_KEY_DYNAMICS, null))
-  const { subscribe, set, update } = writable(initial)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_DYNAMICS, JSON.stringify(v)))
+  const { subscribe, set, update } = persistedWritable(STORAGE_KEY_DYNAMICS, initial, normalizeDynamics)
   return {
     subscribe,
-    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt) => generateRandomDynamic(true, index, attempt, pickLeastUsedDynamicStyle(s.dark)), getDynamicPresetKey) }) },
-    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt) => generateRandomDynamic(false, index, attempt, pickLeastUsedDynamicStyle(s.light)), getDynamicPresetKey) }) },
+    addDark() { update((s) => s.dark.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, dark: addGeneratedItem(s.dark, (index, attempt, hueBase) => generateRandomDynamic(true, index, attempt, pickLeastUsedDynamicStyle(s.dark), hueBase), getDynamicPresetKey) }) },
+    addLight() { update((s) => s.light.length >= BACKGROUND_PRESET_LIMIT ? s : { ...s, light: addGeneratedItem(s.light, (index, attempt, hueBase) => generateRandomDynamic(false, index, attempt, pickLeastUsedDynamicStyle(s.light), hueBase), getDynamicPresetKey) }) },
     removeDark(idx) { update((s) => ({ ...s, dark: s.dark.filter((_, i) => i !== idx) })) },
     removeLight(idx) { update((s) => ({ ...s, light: s.light.filter((_, i) => i !== idx) })) },
     resetDark() { update((s) => ({ ...s, dark: createDynamicGroup(true) })) },
@@ -874,7 +929,7 @@ const BG_CONFIG_STORAGE_VERSION = 2
 const randomScopeKeys = ['solid', 'gradient', 'image', 'dynamic']
 const defaultRandomScopeKeys = ['solid', 'gradient', 'dynamic']
 
-function normalizeRandomScopes(value) {
+const normalizeRandomScopes = (value) => {
   if (Array.isArray(value)) {
     const scopes = value.filter((scope) => randomScopeKeys.includes(scope))
     return scopes.length > 0 ? scopes : defaultRandomScopeKeys
@@ -884,16 +939,23 @@ function normalizeRandomScopes(value) {
   return defaultRandomScopeKeys
 }
 
-function isAllRandomScopes(value) {
+// 随机来源：generate 每次现场生成，presets 只在已有预设里抽
+export const randomSourceKeys = ['generate', 'presets']
+
+const normalizeRandomSource = (value) => {
+  return randomSourceKeys.includes(value) ? value : 'generate'
+}
+
+const isAllRandomScopes = (value) => {
   return Array.isArray(value)
     && value.length === randomScopeKeys.length
     && randomScopeKeys.every((scope) => value.includes(scope))
 }
 
-function createBgConfigStore() {
-  const hasStoredBackground = localStorage.getItem(STORAGE_KEY_BG) !== null
+const createBgConfigStore = () => {
+  const hasStoredBackground = hasItem(STORAGE_KEY_BG)
   const initialBackgroundType = getInitialBackgroundType({ hasStoredBackground, hasExistingData: hadExistingNewtabData })
-  const defaults = { version: BG_CONFIG_STORAGE_VERSION, type: initialBackgroundType || 'random', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, dynamicDarkId: 0, dynamicLightId: 0, randomScopes: defaultRandomScopeKeys }
+  const defaults = { version: BG_CONFIG_STORAGE_VERSION, type: initialBackgroundType || 'random', solidDarkId: 0, solidLightId: 0, gradientDarkId: 0, gradientLightId: 0, imageId: 0, dynamicDarkId: 0, dynamicLightId: 0, randomScopes: defaultRandomScopeKeys, randomSource: 'generate' }
   const initial = loadFromStorage(STORAGE_KEY_BG, defaults)
   // 旧字段迁移
   const { images, solid, solidId, gradientId, randomScope, ...rest } = { ...defaults, ...initial }
@@ -901,6 +963,7 @@ function createBgConfigStore() {
   const isLegacyConfig = initial?.version !== BG_CONFIG_STORAGE_VERSION
   const randomScopeValue = initial?.randomScopes !== undefined ? clean.randomScopes : randomScope
   clean.randomScopes = normalizeRandomScopes(randomScopeValue)
+  clean.randomSource = normalizeRandomSource(clean.randomSource)
   if (isLegacyConfig && (randomScopeValue === 'all' || isAllRandomScopes(randomScopeValue))) {
     clean.randomScopes = defaultRandomScopeKeys
   }
@@ -913,8 +976,7 @@ function createBgConfigStore() {
     clean.gradientDarkId = gradientId
     clean.gradientLightId = gradientId
   }
-  const { subscribe, update } = writable(clean)
-  subscribe((v) => localStorage.setItem(STORAGE_KEY_BG, JSON.stringify(v)))
+  const { subscribe, update } = persistedWritable(STORAGE_KEY_BG, clean)
   return {
     subscribe,
     set(key, val) { update((c) => ({ ...c, [key]: val })) },
@@ -928,11 +990,29 @@ import { getImages, saveImages } from './bgImages.js'
 
 export const bgImages = writable([])
 export const bgImageUrls = writable([])
+// 背景图是否已从 IndexedDB 读出（读取失败也视为完成）
+const bgImagesReady = writable(false)
 
-export async function saveBgImages(blobs) {
+// 每个 Blob 只创建一次对象 URL：保留的图片沿用原地址，背景不会闪；被删除的图片释放地址，避免内存泄漏
+const bgImageUrlByBlob = new Map()
+
+const setBgImageBlobs = (blobs) => {
+  const nextUrls = blobs.map((blob) => {
+    if (!bgImageUrlByBlob.has(blob)) bgImageUrlByBlob.set(blob, URL.createObjectURL(blob))
+    return bgImageUrlByBlob.get(blob)
+  })
+  bgImages.set(blobs)
+  bgImageUrls.set(nextUrls)
+  for (const [blob, url] of bgImageUrlByBlob) {
+    if (blobs.includes(blob)) continue
+    URL.revokeObjectURL(url)
+    bgImageUrlByBlob.delete(blob)
+  }
+}
+
+export const saveBgImages = async (blobs) => {
   const nextBlobs = blobs.slice(0, BACKGROUND_PRESET_LIMIT)
-  bgImages.set(nextBlobs)
-  bgImageUrls.set(nextBlobs.map((b) => URL.createObjectURL(b)))
+  setBgImageBlobs(nextBlobs)
   await saveImages(nextBlobs)
 }
 
@@ -945,19 +1025,94 @@ getImages().then(async (raw) => {
   } else if (blobs.length !== raw.length) {
     await saveImages(blobs)
   }
-  bgImages.set(blobs)
-  bgImageUrls.set(blobs.map((b) => URL.createObjectURL(b)))
-})
+  setBgImageBlobs(blobs)
+}).finally(() => bgImagesReady.set(true))
 
 const randomBgTrigger = writable(0)
-let lastRandomBgKey = ''
+let randomBgCache = null
 
-export function refreshRandomBackground() {
+// 随机背景历史跨标签页保存，避免新开标签页时又抽到相近的颜色或同一种动态样式
+const STORAGE_KEY_RANDOM_BG_HISTORY = 'newtab_random_bg_history'
+const RANDOM_HUE_HISTORY_LIMIT = 6
+const RANDOM_STYLE_HISTORY_LIMIT = Math.ceil(dynamicStyleKeys.length / 2)
+
+const loadRandomBgHistory = () => {
+  const value = loadFromStorage(STORAGE_KEY_RANDOM_BG_HISTORY, null)
+  return {
+    hues: Array.isArray(value?.hues) ? value.hues.filter(Number.isFinite) : [],
+    styles: Array.isArray(value?.styles) ? value.styles.filter((style) => dynamicStyleKeys.includes(style)) : [],
+    imageKey: typeof value?.imageKey === 'string' ? value.imageKey : '',
+    presetKeys: Array.isArray(value?.presetKeys) ? value.presetKeys.filter((key) => typeof key === 'string') : [],
+  }
+}
+
+const getImageBackground = (url, index) => ({ key: `image:${index}`, style: `background-image:url(${url});background-size:cover;background-position:center`, light: false, dynamic: null })
+
+// 从已有预设（以及上传的图片）里抽，并避开最近出现过的几个
+const pickPresetBackground = (scopes, isDark, urls, presets) => {
+  const history = loadRandomBgHistory()
+  const tone = isDark ? 'dark' : 'light'
+  const light = !isDark
+  const candidates = []
+  if (scopes.includes('solid')) {
+    presets.solids[tone].forEach((color, index) => candidates.push({ key: `solid:${tone}:${index}`, style: `background:${color}`, light, dynamic: null }))
+  }
+  if (scopes.includes('gradient')) {
+    presets.gradients[tone].forEach((css, index) => candidates.push({ key: `gradient:${tone}:${index}`, style: `background:${css}`, light, dynamic: null }))
+  }
+  if (scopes.includes('image')) {
+    urls.forEach((url, index) => candidates.push(getImageBackground(url, index)))
+  }
+  if (scopes.includes('dynamic')) {
+    presets.dynamics[tone].forEach((dynamic, index) => candidates.push({ key: `dynamic:${tone}:${index}`, style: 'background:transparent', light, dynamic }))
+  }
+  if (candidates.length === 0) return null
+
+  const recentLimit = Math.min(8, Math.floor(candidates.length / 2))
+  const key = pickFreshItem(candidates.map((candidate) => candidate.key), history.presetKeys.slice(0, recentLimit), randomUnit)
+  history.presetKeys = pushRecent(history.presetKeys, key, 8)
+  setItem(STORAGE_KEY_RANDOM_BG_HISTORY, history)
+  return candidates.find((candidate) => candidate.key === key)
+}
+
+// 打开页面时现生成一个全新的背景，和预设无关
+const createRandomBackground = (scopes, isDark, urls) => {
+  const history = loadRandomBgHistory()
+  const types = scopes.filter((scope) => scope !== 'image' || urls.length > 0)
+  if (types.length === 0) return null
+
+  const type = types[randInt(0, types.length - 1)]
+  const light = !isDark
+  let result
+
+  if (type === 'image') {
+    const candidates = urls.map(getImageBackground)
+    result = pickRandomBackground(candidates, history.imageKey, true, randomUnit)
+    history.imageKey = result.key
+  } else {
+    const hue = pickDistinctHue(history.hues, randomUnit)
+    history.hues = pushRecent(history.hues, Math.round(hue), RANDOM_HUE_HISTORY_LIMIT)
+    if (type === 'solid') {
+      result = { key: `random:solid:${randomSeed()}`, style: `background:${solidColorFromHue(isDark, hue)}`, light, dynamic: null }
+    } else if (type === 'gradient') {
+      result = { key: `random:gradient:${randomSeed()}`, style: `background:${gradientFromHue(isDark, hue)}`, light, dynamic: null }
+    } else {
+      const style = pickFreshItem(dynamicStyleKeys, history.styles, randomUnit)
+      history.styles = pushRecent(history.styles, style, RANDOM_STYLE_HISTORY_LIMIT)
+      result = { key: `random:dynamic:${randomSeed()}`, style: 'background:transparent', light, dynamic: dynamicFromHue(isDark, hue, style) }
+    }
+  }
+
+  setItem(STORAGE_KEY_RANDOM_BG_HISTORY, history)
+  return result
+}
+
+export const refreshRandomBackground = () => {
   randomBgTrigger.update((value) => value + 1)
 }
 
 // 检测浏览器，获取默认新标签页背景色
-function detectBrowserBg() {
+const detectBrowserBg = () => {
   const ua = navigator.userAgent
   // 按优先级检测，特定浏览器在前，Chrome 兜底
   if (/Edg\//.test(ua))       return { light: '#ffffff', dark: '#2b2b2b' }   // Edge
@@ -971,14 +1126,14 @@ function detectBrowserBg() {
 }
 const browserDefaultBg = detectBrowserBg()
 
-function isLightHex(hex) {
+const isLightHex = (hex) => {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   return (0.299 * r + 0.587 * g + 0.114 * b) > 128
 }
 
-const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets, dynamicPresets, randomBgTrigger], ([$bg, $dark, $urls, $solids, $grads, $dynamics]) => {
+const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradientPresets, dynamicPresets, randomBgTrigger, bgImagesReady], ([$bg, $dark, $urls, $solids, $grads, $dynamics, $trigger, $imagesReady]) => {
   if ($bg.type === 'none') {
     const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
     return { key: 'none', style: `background:${color}`, light: !$dark, dynamic: null }
@@ -1014,33 +1169,28 @@ const resolvedBg = derived([bgConfig, isDark, bgImageUrls, solidPresets, gradien
   }
 
   if ($bg.type === 'random') {
-    const candidates = []
     const randomScopes = normalizeRandomScopes($bg.randomScopes || $bg.randomScope)
-    if (randomScopes.includes('solid')) {
-      const list = $dark ? $solids.dark : $solids.light
-      list.forEach((c, index) => candidates.push({ key: `solid:${index}`, style: `background:${c}`, light: !$dark, dynamic: null }))
+    // 背景图还没从 IndexedDB 读出时先不抽，否则图片永远抽不到，或读出后背景又跳一次
+    if (randomScopes.includes('image') && !$imagesReady) {
+      const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
+      return { key: 'random:pending', style: `background:${color}`, light: !$dark, dynamic: null }
     }
-    if (randomScopes.includes('gradient')) {
-      const list = $dark ? $grads.dark : $grads.light
-      list.forEach((css, index) => candidates.push({ key: `gradient:${index}`, style: `background:${css}`, light: !$dark, dynamic: null }))
+    // 同一页面内沿用上次结果，只有手动刷新、切换亮暗或随机范围变化时才重新生成
+    const randomSource = normalizeRandomSource($bg.randomSource)
+    const usePresets = randomSource === 'presets'
+    // 抽预设时预设被删除或重置也要重新抽，所以把预设本身也算进依赖
+    const deps = [$trigger, $dark, randomSource, randomScopes.join(','), randomScopes.includes('image') ? $urls.join(',') : '', ...(usePresets ? [$solids, $grads, $dynamics] : [])]
+    if (!randomBgCache || randomBgCache.deps.length !== deps.length || deps.some((dep, index) => dep !== randomBgCache.deps[index])) {
+      const result = usePresets
+        ? pickPresetBackground(randomScopes, $dark, $urls, { solids: $solids, gradients: $grads, dynamics: $dynamics })
+        : createRandomBackground(randomScopes, $dark, $urls)
+      randomBgCache = { deps, result }
     }
-    if (randomScopes.includes('image') && $urls.length > 0) {
-      $urls.forEach((url, index) => candidates.push({ key: `image:${index}`, style: `background-image:url(${url});background-size:cover;background-position:center`, light: false, dynamic: null }))
-    }
-    if (randomScopes.includes('dynamic')) {
-      const list = $dark ? $dynamics.dark : $dynamics.light
-      list.forEach((dynamic, index) => candidates.push({ key: `dynamic:${index}`, style: 'background:transparent', light: !$dark, dynamic }))
-    }
-    if (candidates.length === 0) {
+    if (!randomBgCache.result) {
       const color = $dark ? browserDefaultBg.dark : browserDefaultBg.light
       return { key: 'random:none', style: `background:${color}`, light: !$dark, dynamic: null }
     }
-    const pool = candidates.length > 1
-      ? candidates.filter((candidate) => candidate.key !== lastRandomBgKey)
-      : candidates
-    const next = pool[randInt(0, pool.length - 1)] || candidates[0]
-    lastRandomBgKey = next.key
-    return next
+    return randomBgCache.result
   }
 
   const fallbackColor = $dark ? browserDefaultBg.dark : browserDefaultBg.light
@@ -1052,11 +1202,12 @@ export const bgIsLight = derived(resolvedBg, ($bg) => $bg.light)
 export const activeDynamicBg = derived(resolvedBg, ($bg) => $bg.dynamic)
 
 // 重置所有设置（保留站点数据、点击计数和背景图片）
-export function resetAllSettings() {
+export const resetAllSettings = async () => {
   const keepKeys = [STORAGE_KEY_SITES, STORAGE_KEY_CLICKS]
-  const allKeys = Object.keys(localStorage).filter(
+  const allKeys = storageKeys().filter(
     (k) => k.startsWith('newtab_') && !keepKeys.includes(k)
   )
-  allKeys.forEach((k) => localStorage.removeItem(k))
+  // 扩展存储是异步写入，删除完成后再刷新，避免刷新后读到旧设置
+  await Promise.all(allKeys.map((k) => removeItem(k)))
   location.reload()
 }

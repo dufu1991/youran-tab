@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { sites, theme, mode, showSettings, terminalConfig, doSearch, clickCounts } from '../stores.js'
   import { t, localeSetting, supportedLocales, localeNames } from '../i18n.js'
-  import { buildExportData, downloadJson, getExportFilename, detectImportData, checkVersionMatch, getCurrentVersion, importSitesData, importSettingsData } from '../dataTransfer.js'
+  import { buildExportData, downloadJson, getExportFilename, detectImportData, isImportVersionSupported, getCurrentVersion, getImportSiteItems, importSitesData, importSettingsData } from '../dataTransfer.js'
   import { flattenSites } from '../folders.js'
 
   let { dark = false, align = 'top' } = $props()
@@ -51,7 +51,7 @@
   onMount(() => {
     inputEl?.focus()
 
-    function onKey(e) {
+    const onKey = (e) => {
       if (e.target === inputEl || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key.length === 1 || e.key === 'Backspace') inputEl?.focus()
     }
@@ -59,8 +59,8 @@
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  function push(...lines) { history = [...history, ...lines] }
-  function getTime() { return new Date().toLocaleTimeString('zh-CN', { hour12: false }) }
+  const push = (...lines) => { history = [...history, ...lines] }
+  const getTime = () => new Date().toLocaleTimeString('zh-CN', { hour12: false })
 
   let activeColor = $derived(selectMode?.cmd === 'color' ? selectMode.options[selectMode.index] : $terminalConfig.color)
   let preset = $derived(colorPresets[activeColor] || colorPresets.green)
@@ -70,14 +70,14 @@
   let border = $derived(colors[2])
   let caret = $derived(colors[3])
   let linkHover = $derived(colors[4])
-  let bg = $derived(dark ? 'bg-neutral-900' : 'bg-stone-50')
+  const bg = 'not-dark:bg-stone-50 dark:bg-neutral-900'
   let promptChar = $derived($terminalConfig.prompt)
   let termWidth = $derived($terminalConfig.width)
   let cursorStyle = $derived(selectMode?.cmd === 'cursor' ? selectMode.options[selectMode.index] : ($terminalConfig.cursor || 'bar'))
 
   const cursorTypes = ['bar', 'wide', 'block', 'underline']
 
-  function isFullWidth(ch) {
+  const isFullWidth = (ch) => {
     if (!ch) return false
     const c = ch.codePointAt(0)
     return (c >= 0x1100 && c <= 0x115F) || (c >= 0x2E80 && c <= 0x303E) ||
@@ -88,7 +88,7 @@
       (c >= 0x20000 && c <= 0x2FA1F)
   }
 
-  function getVisualOffset(text, pos) {
+  const getVisualOffset = (text, pos) => {
     let offset = 0
     for (let i = 0; i < pos; i++) offset += isFullWidth(text[i]) ? 2 : 1
     return offset
@@ -116,7 +116,7 @@
   }
 
   // 获取命令当前值
-  function getCurrentValue(cmd) {
+  const getCurrentValue = (cmd) => {
     if (cmd === 'theme') return $theme
     if (cmd === 'mode') return $mode
     if (cmd === 'color') return $terminalConfig.color
@@ -127,7 +127,7 @@
   }
 
   // 获取选项的显示文本
-  function getOptionLabel(cmd, val) {
+  const getOptionLabel = (cmd, val) => {
     if (cmd === 'theme') return $t('theme.' + val) || val
     if (cmd === 'mode') return $t('mode.' + val) || val
     if (cmd === 'cursor') return $t('cursor.' + val) || val
@@ -137,7 +137,7 @@
   }
 
   // 执行选择
-  function applySelect(cmd, val) {
+  const applySelect = (cmd, val) => {
     if (cmd === 'theme') { theme.set(val); push($t('terminal.themeSet', val)) }
     else if (cmd === 'mode') { mode.set(val); push($t('terminal.modeSet', val)) }
     else if (cmd === 'color') { terminalConfig.setColor(val); push($t('terminal.colorSet', val)) }
@@ -146,9 +146,15 @@
     else if (cmd === 'cursor') { terminalConfig.setCursor(val); push($t('terminal.cursorSet', val)) }
   }
 
+  // 在当前标签页打开网站，并累加点击次数，便当主题据此排布
+  const openSite = (site) => {
+    clickCounts.increment(site.id)
+    window.open(site.url, '_self')
+  }
+
   const reserved = ['h','ls','add','edit','rm','theme','mode','lang','set','clear','prompt','color','s','width','cursor','export','import']
 
-  function handleCommand() {
+  const handleCommand = () => {
     const raw = input.trim()
     const cmd = raw.toLowerCase()
     const args = raw.split(/\s+/)
@@ -160,7 +166,7 @@
     if (/^\d+$/.test(cmd)) {
       const idx = parseInt(cmd)
       const s = flatSites
-      if (s[idx]) window.open(s[idx].url, '_self')
+      if (s[idx]) openSite(s[idx])
       else push($t('terminal.notFound', idx))
       return
     }
@@ -169,7 +175,7 @@
       s.name.toLowerCase() === cmd || s.url.toLowerCase().includes(cmd)
     )
     if (matchedSite && !reserved.includes(args[0].toLowerCase())) {
-      window.open(matchedSite.url, '_self')
+      openSite(matchedSite)
       return
     }
 
@@ -216,7 +222,7 @@
     } else if (cmd.startsWith('open ')) {
       const idx = parseInt(args[1])
       const s = flatSites
-      if (s[idx]) window.open(s[idx].url, '_self')
+      if (s[idx]) openSite(s[idx])
       else push($t('terminal.notFound', idx))
 
     } else if (args[0].toLowerCase() === 'add') {
@@ -364,12 +370,12 @@
         }
         const detected = detectImportData(parsed)
         if (!detected) { push($t('terminal.importError')); return }
-        if (detected.type !== 'legacy' && !checkVersionMatch(detected.version)) {
+        if (detected.type !== 'legacy' && !isImportVersionSupported(detected.version)) {
           push($t('terminal.versionMismatch', detected.version, getCurrentVersion()))
           return
         }
         if (detected.hasSites) {
-          const siteItems = detected.type === 'legacy' ? detected.data : detected.data.sites
+          const siteItems = getImportSiteItems(detected)
           const count = importSitesData(siteItems, sites, $sites, clickCounts)
           push($t('terminal.importedSites', count))
         }
@@ -387,7 +393,7 @@
     }
   }
 
-  function handleKeydown(e) {
+  const handleKeydown = (e) => {
     if (e.isComposing) return
     if (selectMode) {
       e.preventDefault()
@@ -422,7 +428,7 @@
     if (e.key.length === 1) inputEl?.focus()
   }}
   role="application" tabindex="-1">
-<div class="{fg} font-mono p-8 flex flex-col {align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end' : ''} w-full h-full overflow-y-auto"
+<div class="{fg} font-mono p-8 flex flex-col {align === 'center' ? 'justify-center-safe' : align === 'bottom' ? 'justify-end-safe' : ''} w-full h-full overflow-y-auto"
   style="{termWidth > 0 ? `max-width: ${termWidth}px;` : ''}" bind:this={historyEl}>
 
   <div class="flex flex-wrap gap-x-8 gap-y-2 mb-6 text-sm">
@@ -470,7 +476,7 @@
   {#if selectMode}
     <div class="text-sm -mt-3 mb-4 flex flex-wrap gap-x-1">
       {#each selectMode.options as opt, i}
-        <span class="px-2 py-0.5 rounded {i === selectMode.index ? fg + ' ' + (dark ? 'bg-white/15' : 'bg-black/10') : fgDim + ' opacity-40'}"
+        <span class="px-2 py-0.5 rounded {i === selectMode.index ? fg + ' ' + 'not-dark:bg-black/10 dark:bg-white/15' : fgDim + ' opacity-40'}"
           >{getOptionLabel(selectMode.cmd, opt)}</span>
       {/each}
     </div>

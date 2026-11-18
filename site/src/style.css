@@ -92,6 +92,120 @@ html[data-theme='light'] .shadow-black\/50 {
     --tw-shadow-color: rgb(24 24 27 / 0.14);
 }
 
+/* 首屏产品预览 */
+.hero-frame {
+    box-shadow:
+        0 40px 120px -20px rgb(79 70 229 / 0.35),
+        0 24px 60px rgb(0 0 0 / 0.45);
+}
+
+html[data-theme='light'] .hero-frame {
+    background-color: rgb(255 255 255 / 0.6);
+    box-shadow:
+        0 40px 120px -20px rgb(79 70 229 / 0.25),
+        0 24px 60px rgb(24 24 27 / 0.12);
+}
+
+/* 模拟窗口左上角的红绿灯 */
+.traffic-light {
+    box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.18);
+}
+
+.traffic-light-close {
+    background-color: #ff5f57;
+}
+
+.traffic-light-min {
+    background-color: #febc2e;
+}
+
+.traffic-light-max {
+    background-color: #28c840;
+}
+
+.hero-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 700ms ease;
+}
+
+.hero-slide.is-active {
+    opacity: 1;
+}
+
+.hero-tab[aria-selected='true'] {
+    background-color: rgb(255 255 255 / 0.1);
+    color: var(--color-white);
+}
+
+html[data-theme='light'] .hero-tab[aria-selected='true'] {
+    background-color: rgb(24 24 27 / 0.06);
+}
+
+/* 当前标签底部的进度条，走完自动切到下一个主题；悬停时暂停 */
+.hero-tab[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background-color: currentColor;
+    opacity: 0.45;
+    transform-origin: left;
+    animation: hero-progress 5s linear forwards;
+}
+
+#hero-carousel.is-paused .hero-tab::after {
+    animation-play-state: paused;
+}
+
+@keyframes hero-progress {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-tab[aria-selected='true']::after {
+        animation: none;
+    }
+}
+
+.hero-desc {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity 500ms ease,
+        visibility 500ms;
+}
+
+.hero-desc.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 手机端三个安装按钮等宽并排 */
+@media (max-width: 639px) {
+    .store-group {
+        max-width: 20rem;
+        margin-inline: auto;
+    }
+
+    .store-btn {
+        flex: 1 1 0;
+        justify-content: center;
+    }
+}
+
 @media (prefers-reduced-motion: no-preference) {
     body {
         transition:

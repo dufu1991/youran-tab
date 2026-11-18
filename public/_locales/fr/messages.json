@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "Une page de nouvel onglet personnalisable avec plusieurs thèmes, arrière-plans et mises en page."
+  },
+  "contextAddPage": {
+    "message": "Ajouter à Youran Tab"
+  },
+  "contextPageAdded": {
+    "message": "Ajouté à Youran Tab"
+  },
+  "contextPageExists": {
+    "message": "Déjà dans Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Liste principale"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Ajouté à « $FOLDER$ »",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

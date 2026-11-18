@@ -4,5 +4,25 @@
   },
   "extDescription": {
     "message": "Настраиваемая страница новой вкладки с множеством тем, фонов и макетов."
+  },
+  "contextAddPage": {
+    "message": "Добавить в Youran Tab"
+  },
+  "contextPageAdded": {
+    "message": "Добавлено в Youran Tab"
+  },
+  "contextPageExists": {
+    "message": "Уже есть в Youran Tab"
+  },
+  "contextAddToMainList": {
+    "message": "Основной список"
+  },
+  "contextPageAddedToFolder": {
+    "message": "Добавлено в «$FOLDER$»",
+    "placeholders": {
+      "folder": {
+        "content": "$1"
+      }
+    }
   }
 }

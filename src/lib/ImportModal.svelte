@@ -1,7 +1,7 @@
 <script>
   import { t } from './i18n.js'
   import { sites, clickCounts } from './stores.js'
-  import { detectImportData, checkVersionMatch, getCurrentVersion, importSitesData, importSettingsData } from './dataTransfer.js'
+  import { detectImportData, isImportVersionSupported, getCurrentVersion, getImportSiteItems, importSitesData, importSettingsData } from './dataTransfer.js'
 
   let { dark = false, onclose } = $props()
 
@@ -12,7 +12,7 @@
   let resultMessage = $state('')
   let errorMessage = $state('')
 
-  function handleFileSelect() {
+  const handleFileSelect = () => {
     const fileInput = document.createElement('input')
     fileInput.type = 'file'
     fileInput.accept = '.json'
@@ -34,7 +34,7 @@
         step = 'error'
         return
       }
-      if (detected.type !== 'legacy' && !checkVersionMatch(detected.version)) {
+      if (detected.type !== 'legacy' && !isImportVersionSupported(detected.version)) {
         errorMessage = $t('dataTransfer.versionMismatch', detected.version, getCurrentVersion())
         step = 'error'
         return
@@ -46,17 +46,18 @@
     fileInput.click()
   }
 
-  function handleImport() {
+  const handleImport = async () => {
     let sitesCount = 0
     let settingsImported = false
+    let settingsSaved = Promise.resolve()
 
     if (importSitesChecked && detected.hasSites) {
-      const siteItems = detected.type === 'legacy' ? detected.data : detected.data.sites
+      const siteItems = getImportSiteItems(detected)
       sitesCount = importSitesData(siteItems, sites, $sites, clickCounts)
     }
 
     if (importSettingsChecked && detected.hasSettings) {
-      importSettingsData(detected.data.settings)
+      settingsSaved = importSettingsData(detected.data.settings)
       settingsImported = true
     }
 
@@ -67,7 +68,9 @@
     step = 'done'
 
     if (settingsImported) {
-      setTimeout(() => location.reload(), 1500)
+      // 设置写入完成并让结果提示停留一会儿后再刷新
+      await Promise.all([settingsSaved, new Promise((resolve) => setTimeout(resolve, 1500))])
+      location.reload()
     }
   }
 
@@ -86,8 +89,8 @@
   onkeydown={(e) => { if (e.key === 'Escape') onclose?.() }}
   role="dialog" aria-modal="true" tabindex="-1"
 >
-  <div class="rounded-xl p-6 w-88 shadow-2xl {dark ? 'bg-neutral-800' : 'bg-white'}">
-    <h2 class="text-base font-semibold mb-4 {dark ? 'text-neutral-100' : 'text-neutral-800'}">
+  <div class="rounded-xl p-6 w-88 shadow-2xl not-dark:bg-white dark:bg-neutral-800">
+    <h2 class="text-base font-semibold mb-4 not-dark:text-neutral-800 dark:text-neutral-100">
       {$t('dataTransfer.importTitle')}
     </h2>
 
@@ -106,15 +109,15 @@
         {#if detected.hasSites}
           <label class="flex items-start gap-3 cursor-pointer px-3 py-2 rounded-lg transition-all
             {importSitesChecked
-              ? (dark ? 'bg-white/10' : 'bg-neutral-100')
-              : (dark ? 'hover:bg-white/5' : 'hover:bg-neutral-50')}">
+              ? 'not-dark:bg-neutral-100 dark:bg-white/10'
+              : 'not-dark:hover:bg-neutral-50 dark:hover:bg-white/5'}">
             <input type="checkbox" bind:checked={importSitesChecked}
               class="accent-neutral-600 mt-0.5" />
             <div>
-              <div class="text-sm {dark ? 'text-neutral-200' : 'text-neutral-700'}">
+              <div class="text-sm not-dark:text-neutral-700 dark:text-neutral-200">
                 {$t('dataTransfer.containsSites')}
               </div>
-              <div class="text-xs mt-1 {dark ? 'text-neutral-400' : 'text-neutral-500'}">
+              <div class="text-xs mt-1 not-dark:text-neutral-500 dark:text-neutral-400">
                 {$t('dataTransfer.sitesHint')}
               </div>
             </div>
@@ -123,15 +126,15 @@
         {#if detected.hasSettings}
           <label class="flex items-start gap-3 cursor-pointer px-3 py-2 rounded-lg transition-all
             {importSettingsChecked
-              ? (dark ? 'bg-white/10' : 'bg-neutral-100')
-              : (dark ? 'hover:bg-white/5' : 'hover:bg-neutral-50')}">
+              ? 'not-dark:bg-neutral-100 dark:bg-white/10'
+              : 'not-dark:hover:bg-neutral-50 dark:hover:bg-white/5'}">
             <input type="checkbox" bind:checked={importSettingsChecked}
               class="accent-neutral-600 mt-0.5" />
             <div>
-              <div class="text-sm {dark ? 'text-neutral-200' : 'text-neutral-700'}">
+              <div class="text-sm not-dark:text-neutral-700 dark:text-neutral-200">
                 {$t('dataTransfer.containsSettings')}
               </div>
-              <div class="text-xs mt-1 {dark ? 'text-amber-400' : 'text-amber-600'}">
+              <div class="text-xs mt-1 not-dark:text-amber-600 dark:text-amber-400">
                 {$t('dataTransfer.settingsWarn')}
               </div>
             </div>
@@ -150,7 +153,7 @@
       </div>
 
     {:else if step === 'error'}
-      <p class="text-sm mb-4 {dark ? 'text-red-400' : 'text-red-600'}">{errorMessage}</p>
+      <p class="text-sm mb-4 not-dark:text-red-600 dark:text-red-400">{errorMessage}</p>
       <div class="flex justify-end">
         <button class="px-4 py-2 rounded-lg text-sm {btnClass}"
           onclick={() => onclose?.()}
@@ -158,7 +161,7 @@
       </div>
 
     {:else if step === 'done'}
-      <p class="text-sm mb-4 whitespace-pre-line {dark ? 'text-neutral-200' : 'text-neutral-700'}">{resultMessage}</p>
+      <p class="text-sm mb-4 whitespace-pre-line not-dark:text-neutral-700 dark:text-neutral-200">{resultMessage}</p>
       <div class="flex justify-end">
         <button class="px-4 py-2 rounded-lg text-sm {primaryBtnClass}"
           onclick={() => onclose?.()}

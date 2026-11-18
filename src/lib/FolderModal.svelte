@@ -2,9 +2,9 @@
   import { onDestroy } from 'svelte'
   import { tick } from 'svelte'
   import { t } from './i18n.js'
-  import { clickCounts } from './stores.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from './favicon.js'
-  import { getFolderSites } from './folders.js'
+  import { clickCounts, sites } from './stores.js'
+  import SiteIcon from './SiteIcon.svelte'
+  import { getFolderSites, moveSiteToFolder, reorderFolderSites } from './folders.js'
 
   let { folder = null, anchorRect = null, panelRadius = 18, dark = false, editMode = false, onclose, oneditfolder, oneditsite, ondeletesite } = $props()
 
@@ -45,7 +45,7 @@
     }
   })
   let panelAnimationStyle = $derived(
-    `transform-origin:${panelMeta.origin};transform:scale(${isExpanded ? 1 : collapsedScale.x}, ${isExpanded ? 1 : collapsedScale.y});opacity:${isExpanded ? 1 : 0};filter:blur(${isExpanded ? 0 : 8}px);transition:transform 340ms cubic-bezier(0.2, 0.9, 0.2, 1),opacity 220ms ease,filter 240ms ease;`
+    `transform-origin:${panelMeta.origin};transform:scale(${isExpanded ? 1 : collapsedScale.x}, ${isExpanded ? 1 : collapsedScale.y});opacity:${isExpanded ? 1 : 0};transition:transform 340ms cubic-bezier(0.2, 0.9, 0.2, 1),opacity 220ms ease;`
   )
 
   $effect(() => {
@@ -66,6 +66,8 @@
       const handleGlobalPointerDown = (event) => {
         if (!panelEl) return
         if (panelEl.contains(event.target)) return
+        // 右键菜单、撤销提示等浮层上的操作不收起文件夹
+        if (event.target.closest?.('[data-keep-folder-open]')) return
         requestClose()
       }
 
@@ -87,12 +89,12 @@
     clearTimeout(closeTimer)
   })
 
-  function handleWindowResize() {
+  const handleWindowResize = () => {
     viewportWidth = window.innerWidth
     viewportHeight = window.innerHeight
   }
 
-  function handleSiteClick(event, site) {
+  const handleSiteClick = (event, site) => {
     if (editMode) {
       event.preventDefault()
       return
@@ -101,7 +103,51 @@
     requestClose()
   }
 
-  function requestClose() {
+  // 编辑模式下拖拽：在面板内调整顺序，拖到面板外（遮罩上）移出文件夹，回到主列表
+  let dragIndex = $state(-1)
+  let dragOverIndex = $state(-1)
+  let draggingOut = $state(false)
+
+  const resetDrag = () => {
+    dragIndex = -1
+    dragOverIndex = -1
+    draggingOut = false
+  }
+
+  const handleItemDragStart = (event, index) => {
+    dragIndex = index
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleItemDragOver = (event, index) => {
+    if (dragIndex < 0) return
+    event.preventDefault()
+    dragOverIndex = index
+    draggingOut = false
+  }
+
+  const handleItemDrop = (event, index) => {
+    event.preventDefault()
+    if (dragIndex >= 0) sites.setAll(reorderFolderSites($sites, folder.id, dragIndex, index))
+    resetDrag()
+  }
+
+  const handleBackdropDragOver = (event) => {
+    if (dragIndex < 0 || event.target !== event.currentTarget) return
+    event.preventDefault()
+    draggingOut = true
+    dragOverIndex = -1
+  }
+
+  const handleBackdropDrop = (event) => {
+    if (dragIndex < 0 || event.target !== event.currentTarget) return
+    event.preventDefault()
+    const site = folderSites[dragIndex]
+    if (site) sites.setAll(moveSiteToFolder($sites, site.id, ''))
+    resetDrag()
+  }
+
+  const requestClose = () => {
     clearTimeout(closeTimer)
     isExpanded = false
     closeTimer = setTimeout(() => {
@@ -116,42 +162,51 @@
 />
 
 {#if folder}
-  <div class="fixed inset-0" style="z-index: 999;" role="presentation">
+  <div
+    class="fixed inset-0"
+    style="z-index: 999;"
+    role="presentation"
+    ondragover={handleBackdropDragOver}
+    ondragleave={(event) => { if (event.target === event.currentTarget) draggingOut = false }}
+    ondrop={handleBackdropDrop}
+  >
     <div
       bind:this={panelEl}
-      class="fixed overflow-hidden border shadow-2xl backdrop-blur-xl {dark ? 'bg-neutral-900/96 text-neutral-100 border-white/10' : 'bg-white/96 text-neutral-900 border-black/8'}"
-      style="{panelMeta.style}z-index: 1000;border-radius:{panelRadius}px;{panelAnimationStyle}"
+      class="fixed overflow-hidden border shadow-2xl not-dark:bg-white/96 not-dark:text-neutral-900 not-dark:border-black/8 dark:bg-neutral-900/96 dark:text-neutral-100 dark:border-white/10"
+      style="{panelMeta.style}z-index: 1000;border-radius:{panelRadius}px;{panelAnimationStyle}{draggingOut ? 'opacity:0.55;' : ''}"
       onpointerdown={(event) => event.stopPropagation()}
       role="dialog"
       aria-modal="false"
       aria-label={folder.name}
       tabindex="-1"
     >
-      <div class="p-2 overflow-y-auto max-h-[360px]">
+      <div class="p-2 overflow-y-auto max-h-90">
         {#if folderSites.length === 0}
           <div
-            class="border border-dashed px-4 py-8 text-center text-sm {dark ? 'border-white/10 text-neutral-400' : 'border-black/10 text-neutral-500'}"
+            class="border border-dashed px-4 py-8 text-center text-sm not-dark:border-black/10 not-dark:text-neutral-500 dark:border-white/10 dark:text-neutral-400"
             style="border-radius:{itemRadius}px;"
           >
             {$t('folder.empty')}
           </div>
         {:else}
           <div class="space-y-1">
-            {#each folderSites as site, index}
+            {#each folderSites as site, index (site.id)}
               <a
                 href={site.url}
+                data-context-item="site"
+                data-item-id={site.id}
                 onclick={(event) => handleSiteClick(event, site)}
-                class="group px-3 py-2.5 flex items-center gap-3 transition-all {dark ? 'hover:bg-white/8' : 'hover:bg-black/[0.04]'}"
-                style="border-radius:{itemRadius}px;"
+                draggable={editMode}
+                ondragstart={(event) => handleItemDragStart(event, index)}
+                ondragover={(event) => handleItemDragOver(event, index)}
+                ondrop={(event) => handleItemDrop(event, index)}
+                ondragend={resetDrag}
+                class="group px-3 py-2.5 flex items-center gap-3 transition-all not-dark:hover:bg-black/4 dark:hover:bg-white/8
+                  {editMode ? 'cursor-grab' : ''}
+                  {dragOverIndex === index && dragIndex !== index ? 'ring-2 not-dark:ring-neutral-800/60 dark:ring-white/60' : ''}"
+                style="border-radius:{itemRadius}px;{dragIndex === index ? 'opacity:0.4;' : ''}"
               >
-                <img
-                  src={resolveSiteIcon(site, dark)}
-                  alt=""
-                  onload={(event) => handleIconLoad(event, site)}
-                  onerror={(event) => { if (site.iconSource !== 'custom') event.target.src = getFaviconFallback(site.url) }}
-                  class="shrink-0"
-                  style="width: 28px; height: 28px; border-radius: {site.iconRadius ?? 4}%"
-                />
+                <SiteIcon site={site} class="shrink-0" style="width: 28px; height: 28px; border-radius: {site.iconRadius ?? 4}%" />
                 <div class="min-w-0 flex-1">
                   <div class="text-sm font-medium truncate">{site.name}</div>
                 </div>
@@ -159,7 +214,7 @@
                   <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                     <button
                       type="button"
-                      class="text-xs {dark ? 'text-neutral-300 hover:text-white' : 'text-neutral-500 hover:text-black'}"
+                      class="text-xs not-dark:text-neutral-500 not-dark:hover:text-black dark:text-neutral-300 dark:hover:text-white"
                       onclick={(event) => { event.preventDefault(); event.stopPropagation(); oneditsite?.(site) }}
                     >{$t('site.editBtn')}</button>
                     <button
@@ -172,6 +227,9 @@
               </a>
             {/each}
           </div>
+        {/if}
+        {#if editMode && folderSites.length > 0}
+          <p class="px-3 pt-2 pb-1 text-xs not-dark:text-neutral-500 dark:text-neutral-400">{$t('folder.dragOutHint')}</p>
         {/if}
       </div>
     </div>

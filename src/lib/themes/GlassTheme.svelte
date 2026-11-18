@@ -1,53 +1,36 @@
 <script>
   import { t } from '../i18n.js'
-  import { resolveSiteIcon, getFaviconFallback, handleIconLoad } from '../favicon.js'
-  import { editMode, showSearchBar, showSiteTitle, isDark, resolvedBgStyle, bgIsLight, glassConfig, doSearch, sites as sitesStore, searchPlaceholder } from '../stores.js'
+  import SiteIcon from '../SiteIcon.svelte'
+  import { clickCounts, editMode, showSearchBar, showSiteTitle, resolvedBgStyle, bgIsLight, glassConfig, doSearch, searchPlaceholder } from '../stores.js'
   import FolderGlyph from '../FolderGlyph.svelte'
   import { isFolderItem } from '../folders.js'
   import SearchTargetPicker from '../SearchTargetPicker.svelte'
+  import SiteSuggestions from '../SiteSuggestions.svelte'
+  import { createSiteDrag } from './siteDrag.svelte.js'
 
   let { sites = [], dark = false, align = 'top', onadd, onedit, ondelete, onopenfolder } = $props()
 
-  let dragIndex = $state(-1)
-  let dragOverIndex = $state(-1)
+  // 编辑模式下拖拽排序
+  const drag = createSiteDrag()
 
-  function handleDragStart(e, i) {
-    dragIndex = i
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e, i) {
-    e.preventDefault()
-    dragOverIndex = i
-  }
-
-  function handleDrop(e, i) {
-    e.preventDefault()
-    if (dragIndex >= 0 && dragIndex !== i) {
-      sitesStore.reorder(dragIndex, i)
-    }
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleDragEnd() {
-    dragIndex = -1
-    dragOverIndex = -1
-  }
-
-  function handleSiteClick(e, site) {
+  const handleSiteClick = (e, site) => {
     if ($editMode) {
       e.preventDefault()
+      return
     }
+    // 正常打开时累加点击次数，便当主题据此排布
+    clickCounts.increment(site.id)
   }
 
-  function handleFolderClick(e, folder) {
+  const handleFolderClick = (e, folder) => {
     e.preventDefault()
     onopenfolder?.({ folder, rect: e.currentTarget?.getBoundingClientRect?.() })
   }
 
   let searchQuery = $state('')
-  function handleSearch(e) {
+
+  let searchInputEl = $state(null)
+  const handleSearch = (e) => {
     e.preventDefault()
     if (!searchQuery.trim()) return
     doSearch(searchQuery.trim())
@@ -60,19 +43,19 @@
   let textStroke = $derived(textDark
     ? '-1px 0 0 rgba(0,0,0,0.4), 1px 0 0 rgba(0,0,0,0.4), 0 -1px 0 rgba(0,0,0,0.4), 0 1px 0 rgba(0,0,0,0.4)'
     : '-1px 0 0 rgba(255,255,255,0.4), 1px 0 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(255,255,255,0.4), 0 1px 0 rgba(255,255,255,0.4)')
-  let alignClass = $derived(align === 'center' ? 'justify-center' : align === 'bottom' ? 'justify-end pb-24' : 'pt-24')
+  let alignClass = $derived(align === 'center' ? 'justify-center-safe py-12' : align === 'bottom' ? 'justify-end-safe pt-12 pb-24' : 'pt-24 pb-12')
 </script>
 
-<div class="w-full h-full flex flex-col items-center {alignClass}
-  {$resolvedBgStyle ? '' : (dark ? 'bg-neutral-900' : 'bg-neutral-100')}"
+<div class="w-full h-full overflow-x-hidden overflow-y-auto flex flex-col items-center {alignClass}
+  {$resolvedBgStyle ? '' : 'not-dark:bg-neutral-100 dark:bg-neutral-900'}"
   style={$resolvedBgStyle}>
 
   {#if $editMode}
     <div class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-3 py-2
-      {dark ? 'bg-white/90 text-black' : 'bg-neutral-800/90 text-white'} text-sm backdrop-blur-sm">
+      not-dark:bg-neutral-800/90 not-dark:text-white dark:bg-white/90 dark:text-black text-sm backdrop-blur-sm">
       <span>✏️ {$t('settings.editModeHint')}</span>
       <button
-        class="px-3 py-0.5 rounded text-xs transition-colors {dark ? 'bg-black/15 hover:bg-black/25' : 'bg-white/20 hover:bg-white/30'}"
+        class="px-3 py-0.5 rounded text-xs transition-colors not-dark:bg-white/20 not-dark:hover:bg-white/30 dark:bg-black/15 dark:hover:bg-black/25"
         onclick={() => editMode.set(false)}
       >{$t('settings.editModeDone')}</button>
     </div>
@@ -82,13 +65,14 @@
     {#if $showSearchBar}
       <form onsubmit={handleSearch}
         class="glass-pill flex items-center gap-3 w-full max-w-lg
-          {dark ? 'glass-pill--dark' : 'glass-pill--light'}">
+          not-dark:glass-pill--light dark:glass-pill--dark">
         <SearchTargetPicker dark={textDark} />
-        <input type="text" bind:value={searchQuery}
+        <SiteSuggestions input={searchInputEl} query={searchQuery} dark={textDark} />
+        <input type="text" bind:value={searchQuery} bind:this={searchInputEl}
           placeholder={$searchPlaceholder}
           class="flex-1 bg-transparent outline-none text-sm {textDark ? 'text-white placeholder:text-white/40' : 'text-black placeholder:text-black/40'}" />
         <button type="submit" class="shrink-0 ml-2 p-0 border-0 bg-transparent cursor-pointer transition-opacity
-          {textDark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label="搜索">
+          {textDark ? 'text-white/40' : 'text-black/40'} hover:opacity-80" aria-label={$t('search.submit')}>
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>
           </svg>
@@ -99,7 +83,7 @@
 
   <div class="glass-grid px-4 mx-auto"
     style="max-width: {gridMaxWidth}; grid-template-columns: repeat({actualCols}, 1fr);">
-    {#each sites as site, i}
+    {#each sites as site, i (site.id)}
       {#if isFolderItem(site)}
         <div
           data-context-item="folder"
@@ -107,25 +91,26 @@
           onclick={(e) => handleFolderClick(e, site)}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFolderClick(e, site) }}
           draggable={$editMode}
-          ondragstart={(e) => handleDragStart(e, i)}
-          ondragover={(e) => handleDragOver(e, i)}
-          ondrop={(e) => handleDrop(e, i)}
-          ondragend={handleDragEnd}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
           role="button"
           tabindex="0"
           class="glass-pill group flex flex-row items-center gap-4 transition-all
-            {dark ? 'glass-pill--dark' : 'glass-pill--light'}
-            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-white/20' : 'ring-black/10') : ''}
-            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white/60' : 'ring-2 ring-neutral-800/60') : ''}"
-          style="{$editMode && dragIndex === i ? 'opacity:0.4' : ''}"
+            not-dark:glass-pill--light dark:glass-pill--dark
+            {$editMode ? 'ring-1 cursor-grab ' + 'not-dark:ring-black/10 dark:ring-white/20' : ''}
+            {$editMode && drag.isTarget(i) ? 'ring-2 not-dark:ring-neutral-800/60 dark:ring-white/60' : ''}"
+          style="{$editMode && drag.index === i ? 'opacity:0.4' : ''}"
         >
           <FolderGlyph folder={site} size={32} className="glass-pill-icon shrink-0 transition-transform" />
           <span class="text-sm font-medium truncate flex-1 {textDark ? 'text-white' : 'text-black'}" style="text-shadow: {textStroke}">{site.name}</span>
           {#if $editMode}
             <div class="opacity-0 group-hover:opacity-100 flex gap-1.5 shrink-0 ml-auto transition-opacity">
-              <button class="text-xs {dark ? 'text-neutral-400 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+              <button class="text-xs text-neutral-400 not-dark:hover:text-blue-500 dark:hover:text-white"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-              <button class="text-xs {dark ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+              <button class="text-xs text-neutral-400 not-dark:hover:text-red-500 dark:hover:text-red-400"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
             </div>
           {/if}
@@ -136,28 +121,25 @@
           data-item-id={site.id}
           onclick={(e) => handleSiteClick(e, site)}
           draggable={$editMode}
-          ondragstart={(e) => handleDragStart(e, i)}
-          ondragover={(e) => handleDragOver(e, i)}
-          ondrop={(e) => handleDrop(e, i)}
-          ondragend={handleDragEnd}
+          ondragstart={(e) => drag.start(e, i)}
+          ondragover={(e) => drag.over(e, i)}
+          ondrop={(e) => drag.drop(e, i)}
+          ondragend={drag.end}
+          data-drop-into={drag.isInto(i)}
           class="glass-pill group flex flex-row items-center gap-4 transition-all
-            {dark ? 'glass-pill--dark' : 'glass-pill--light'}
-            {$editMode ? 'ring-1 cursor-grab ' + (dark ? 'ring-white/20' : 'ring-black/10') : ''}
-            {$editMode && dragOverIndex === i && dragIndex !== i ? (dark ? 'ring-2 ring-white/60' : 'ring-2 ring-neutral-800/60') : ''}"
-          style="{$editMode && dragIndex === i ? 'opacity:0.4' : ''}">
-          <img src={resolveSiteIcon(site, $isDark)} alt=""
-            onload={(e) => handleIconLoad(e, site)}
-            onerror={(e) => { if (site.iconSource !== 'custom') e.target.src = getFaviconFallback(site.url) }}
-            class="glass-pill-icon shrink-0 transition-transform"
-            style="width: 32px; height: 32px; border-radius: {site.iconRadius ?? 4}%" />
+            not-dark:glass-pill--light dark:glass-pill--dark
+            {$editMode ? 'ring-1 cursor-grab ' + 'not-dark:ring-black/10 dark:ring-white/20' : ''}
+            {$editMode && drag.isTarget(i) ? 'ring-2 not-dark:ring-neutral-800/60 dark:ring-white/60' : ''}"
+          style="{$editMode && drag.index === i ? 'opacity:0.4' : ''}">
+          <SiteIcon site={site} class="glass-pill-icon shrink-0 transition-transform" style="width: 32px; height: 32px; border-radius: {site.iconRadius ?? 4}%" />
           <span class="text-sm font-medium truncate flex-1
             {textDark ? 'text-white' : 'text-black'}"
             style="text-shadow: {textStroke}">{site.name}</span>
           {#if $editMode}
             <div class="opacity-0 group-hover:opacity-100 flex gap-1.5 shrink-0 ml-auto transition-opacity">
-              <button class="text-xs {dark ? 'text-neutral-400 hover:text-white' : 'text-neutral-400 hover:text-blue-500'}"
+              <button class="text-xs text-neutral-400 not-dark:hover:text-blue-500 dark:hover:text-white"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); onedit?.(site) }}>{$t('site.editBtn')}</button>
-              <button class="text-xs {dark ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-400 hover:text-red-500'}"
+              <button class="text-xs text-neutral-400 not-dark:hover:text-red-500 dark:hover:text-red-400"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); ondelete?.(site.id) }}>{$t('site.delete')}</button>
             </div>
           {/if}
@@ -167,7 +149,7 @@
 
     {#if $editMode}
       <button class="glass-pill flex flex-row items-center gap-4 transition-all
-        {dark ? 'glass-pill--dark' : 'glass-pill--light'}"
+        not-dark:glass-pill--light dark:glass-pill--dark"
         onclick={() => onadd?.()}>
         <div class="flex items-center justify-center text-xl shrink-0
           {textDark ? 'text-neutral-400' : 'text-neutral-400'}"
@@ -235,11 +217,11 @@
   }
 
   /* 图标悬停微缩放 */
-  .glass-pill-icon {
+  .glass-pill :global(.glass-pill-icon) {
     transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  .glass-pill:hover .glass-pill-icon {
+  .glass-pill:hover :global(.glass-pill-icon) {
     transform: scale(1.1);
   }
 </style>

@@ -1,4 +1,5 @@
 import { getCachedIconUrl, fetchAndCacheIcon } from './iconCache.js'
+import { getResolvedAutoIcon, resolveAutoIcon } from './autoIcon.js'
 
 // 检测浏览器类型
 const isEdge = /\bEdg\//.test(navigator.userAgent)
@@ -15,7 +16,7 @@ export const iconSources = {
 // 可选的在线源 key 列表
 export const pickableSourceKeys = Object.keys(iconSources)
 
-function getBrowserFavicon(url, hostname) {
+const getBrowserFavicon = (url, hostname) => {
   if (isFirefox) {
     return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
   }
@@ -26,7 +27,7 @@ function getBrowserFavicon(url, hostname) {
   return chrome.runtime.getURL(`_favicon/?pageUrl=${encodeURIComponent(url)}&size=128`)
 }
 
-export function getFaviconBySource(url, source = 'auto') {
+export const getFaviconBySource = (url, source = 'auto') => {
   try {
     const u = new URL(url)
     const hostname = u.hostname
@@ -46,7 +47,7 @@ export function getFaviconBySource(url, source = 'auto') {
   }
 }
 
-export function getFaviconFallback(url) {
+export const getFaviconFallback = (url) => {
   try {
     const hostname = new URL(url).hostname
     return `https://www.faviconextractor.com/favicon/${hostname}`
@@ -55,28 +56,38 @@ export function getFaviconFallback(url) {
   }
 }
 
+const isAutoSource = (site) => !site.iconSource || site.iconSource === 'auto'
+
+// 站点当前应使用的远程图标地址：「自动」优先用已探测出的结果，还没探测时先用浏览器内置图标
+const getSiteRemoteIcon = (site) => {
+  if (isAutoSource(site)) return getResolvedAutoIcon(site.url) || getFaviconBySource(site.url, 'auto')
+  return getFaviconBySource(site.url, site.iconSource)
+}
+
 // 根据站点配置解析最终图标 URL，优先使用缓存
-export function resolveSiteIcon(site, dark = false) {
+export const resolveSiteIcon = (site, dark = false) => {
   if (site.iconSource === 'custom') {
     if (dark && site.customIconDark) return site.customIconDark
     return site.customIcon || ''
   }
-  const remoteUrl = getFaviconBySource(site.url, site.iconSource || 'auto')
+  const remoteUrl = getSiteRemoteIcon(site)
   if (!remoteUrl.startsWith('http')) return remoteUrl
   return getCachedIconUrl(remoteUrl) || remoteUrl
 }
 
-// img onload 回调：如果当前 src 是远程 URL 则后台缓存
+// img onload 回调：「自动」图标还没探测过时开始探测，探测完替换成更合适的图标；远程图标在后台缓存
 const _caching = new Set()
-export function handleIconLoad(e, site) {
+export const handleIconLoad = (e, site) => {
   if (site.iconSource === 'custom') return
-  const remoteUrl = getFaviconBySource(site.url, site.iconSource || 'auto')
+  const img = e.currentTarget
+  if (isAutoSource(site) && !getResolvedAutoIcon(site.url)) {
+    resolveAutoIcon(site.url, site.name).then((resolved) => {
+      if (resolved && img.isConnected) img.src = getCachedIconUrl(resolved) || resolved
+    })
+    return
+  }
+  const remoteUrl = getSiteRemoteIcon(site)
   if (!remoteUrl || !remoteUrl.startsWith('http') || getCachedIconUrl(remoteUrl) || _caching.has(remoteUrl)) return
   _caching.add(remoteUrl)
   fetchAndCacheIcon(remoteUrl).catch(() => {}).finally(() => _caching.delete(remoteUrl))
-}
-
-// 兼容旧接口
-export function getFavicon(url) {
-  return getFaviconBySource(url, 'auto')
 }

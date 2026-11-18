@@ -3,7 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Youran Tab</title>
+    <!-- 脚本加载完成前先按系统明暗铺底色，避免暗色模式下打开新标签页时闪白 -->
+    <style>
+      html { background: #ffffff; }
+      @media (prefers-color-scheme: dark) {
+        html { background: #202124; }
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

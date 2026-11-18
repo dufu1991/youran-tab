@@ -1,34 +1,16 @@
 <script>
-  import { sites, theme, mode, isDark, showSettings, editMode, showSearchBar, showSiteTitle, bentoConfig, defaultConfig, resetAllSettings, bgConfig, solidPresets, gradientPresets, dynamicPresets, getDynamicPreviewStyle, activeDynamicBg, bgImages, bgImageUrls, saveBgImages, themeAlign, refreshRandomBackground, searchConfig, BACKGROUND_PRESET_LIMIT } from './lib/stores.js'
-  import { SEARCH_ENGINES, AI_PROVIDERS } from './lib/searchProviders.js'
-  import { t, localeSetting, currentLocale, supportedLocales, localeNames } from './lib/i18n.js'
-  import AddSiteModal from './lib/AddSiteModal.svelte'
+  import { sites, theme, isDark, showSettings, editMode, bentoConfig, defaultConfig, bgConfig, solidPresets, gradientPresets, dynamicPresets, activeDynamicBg, bgImageUrls, themeAlign, refreshRandomBackground } from './lib/stores.js'
+  import { t } from './lib/i18n.js'
   import ContextMenu from './lib/ContextMenu.svelte'
+  import ConfirmDialog from './lib/ConfirmDialog.svelte'
   import FolderModal from './lib/FolderModal.svelte'
-  import ExportModal from './lib/ExportModal.svelte'
-  import ImportModal from './lib/ImportModal.svelte'
   import DynamicBackground from './lib/DynamicBackground.svelte'
-  import ThemeSettings from './lib/ThemeSettings.svelte'
-  import { getCachedDynamicThumbnail, getDynamicThumbnailKey, requestDynamicThumbnail } from './lib/dynamicBackgroundRuntime.js'
-  import { CHANGELOG_URL, getAppVersion } from './lib/appInfo.js'
-  import { clearIconCache } from './lib/iconCache.js'
-  import TerminalTheme from './lib/themes/TerminalTheme.svelte'
-  import DefaultTheme from './lib/themes/DefaultTheme.svelte'
-  import MinimalTheme from './lib/themes/MinimalTheme.svelte'
-  import BentoTheme from './lib/themes/BentoTheme.svelte'
-  import GlassTheme from './lib/themes/GlassTheme.svelte'
-  import BubbleTheme from './lib/themes/BubbleTheme.svelte'
-  import PixelTheme from './lib/themes/PixelTheme.svelte'
-  import SketchTheme from './lib/themes/SketchTheme.svelte'
-  import { collectFolderCandidates, createFolderEntry, findFolderByChildId, findItemById, getFolderSites, isFolderItem } from './lib/folders.js'
+  import { getLoadedTheme, loadTheme, resolveThemeKey } from './lib/themes/index.js'
+  import { canOpenInTabGroup, openUrlsInTabGroup } from './lib/browserTabs.js'
+  import UndoToast from './lib/UndoToast.svelte'
+  import { findFolderByChildId, findItemById, getFolderSites, isFolderItem, moveSiteToFolder, upsertFolderInTree } from './lib/folders.js'
 
-  const themeKeys = ['default', 'bento', 'terminal', 'minimal', 'glass', 'bubble', 'pixel', 'sketch']
-  const themeComponents = { terminal: TerminalTheme, default: DefaultTheme, minimal: MinimalTheme, bento: BentoTheme, glass: GlassTheme, bubble: BubbleTheme, pixel: PixelTheme, sketch: SketchTheme }
-  const modes = ['auto', 'light', 'dark']
-  const bgTypes = ['none', 'solid', 'gradient', 'image', 'dynamic', 'random']
-  const randomScopes = ['solid', 'gradient', 'image', 'dynamic']
-  const defaultRandomScopes = ['solid', 'gradient', 'dynamic']
-  const appVersion = getAppVersion()
+  const supportsTabGroup = canOpenInTabGroup()
 
   let showModal = $state(false)
   let editingSite = $state(null)
@@ -39,6 +21,12 @@
   let showExportModal = $state(false)
   let showImportModal = $state(false)
   let pendingFolderDelete = $state(null)
+  // 待确认的操作：{ message, danger, onconfirm }，替代浏览器原生 confirm
+  let pendingConfirm = $state(null)
+  let settingsButtonEl = $state(null)
+  // 最近一次删除的撤销信息：snapshot 为删除前的站点树，after 为删除后的站点树
+  // 用 raw 保持原始引用，才能与 $sites 做引用比较
+  let undoState = $state.raw(null)
   let contextMenu = $state({
     open: false,
     x: 0,
@@ -48,7 +36,25 @@
     itemType: '',
   })
 
-  let ThemeComponent = $derived(themeComponents[$theme] || DefaultTheme)
+  // 当前渲染的主题；切换到未加载过的主题时，加载完成前继续显示原主题
+  // 首屏的主题已在 main.js 中预先加载，这里能同步拿到
+  let activeTheme = $state.raw({ key: resolveThemeKey($theme), component: getLoadedTheme($theme) })
+
+  $effect(() => {
+    const key = resolveThemeKey($theme)
+    const loaded = getLoadedTheme(key)
+    if (loaded) {
+      activeTheme = { key, component: loaded }
+      return
+    }
+    let active = true
+    loadTheme(key).then((component) => {
+      if (active) activeTheme = { key, component }
+    })
+    return () => {
+      active = false
+    }
+  })
   let activeFolder = $derived(activeFolderId ? findItemById($sites, activeFolderId) : null)
   let folderMenuRadius = $derived.by(() => {
     if ($theme === 'bento') return $bentoConfig.radius
@@ -60,212 +66,87 @@
     if ($theme === 'minimal') return 14
     return 18
   })
-  let folderCandidates = $derived(
-    showModal ? collectFolderCandidates($sites, isFolderItem(editingSite) ? editingSite.id : null) : []
-  )
   let allowFolder = $derived(!editingSite || isFolderItem(editingSite) || !findFolderByChildId($sites, editingSite.id))
-  let currentDynamicPresets = $derived($isDark ? $dynamicPresets.dark : $dynamicPresets.light)
-  let currentDynamicId = $derived($isDark ? $bgConfig.dynamicDarkId : $bgConfig.dynamicLightId)
   let showDynamicBackground = $derived($theme !== 'terminal' && $theme !== 'minimal' && !!$activeDynamicBg)
-  let dynamicThumbnailUrls = $state({})
-
-  const toggleSearchEngine = (id) => {
-    const current = $searchConfig.enabledEngines
-    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    if (next.length === 0) return
-    searchConfig.set('enabledEngines', next)
-  }
-
-  const toggleAiProvider = (id) => {
-    const current = $searchConfig.enabledAi
-    const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    searchConfig.set('enabledAi', next)
-  }
-
-  const setDefaultEngine = (id) => {
-    searchConfig.set('defaultEngine', id)
-  }
-
-  const setDefaultAi = (id) => {
-    searchConfig.set('defaultAi', id)
-  }
-
-  function resizeBgBlob(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          const scale = Math.min(1920 / img.width, 1920 / img.height, 1)
-          canvas.width = img.width * scale
-          canvas.height = img.height * scale
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-          canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.92)
-        }
-        img.src = e.target.result
-      }
-      reader.readAsDataURL(file)
-    })
-  }
-
-  async function handleBgUpload(e) {
-    const files = Array.from(e.target.files || [])
-    const current = $bgImages
-    const remaining = BACKGROUND_PRESET_LIMIT - current.length
-    if (remaining <= 0) return
-    const newBlobs = await Promise.all(files.slice(0, remaining).map(resizeBgBlob))
-    const allBlobs = [...current, ...newBlobs]
-    await saveBgImages(allBlobs)
-    if ($bgConfig.type !== 'image') bgConfig.set('type', 'image')
-    e.target.value = ''
-  }
-
-  async function removeBgImage(idx) {
-    const allBlobs = $bgImages.filter((_, i) => i !== idx)
-    await saveBgImages(allBlobs)
-  }
-
-  function regenerateSolidPresets() {
-    if ($isDark) {
-      solidPresets.resetDark()
-      bgConfig.set('solidDarkId', 0)
-    } else {
-      solidPresets.resetLight()
-      bgConfig.set('solidLightId', 0)
-    }
-  }
-
-  function regenerateGradientPresets() {
-    if ($isDark) {
-      gradientPresets.resetDark()
-      bgConfig.set('gradientDarkId', 0)
-    } else {
-      gradientPresets.resetLight()
-      bgConfig.set('gradientLightId', 0)
-    }
-  }
-
-  function regenerateDynamicPresets() {
-    if ($isDark) {
-      dynamicPresets.resetDark()
-      bgConfig.set('dynamicDarkId', 0)
-    } else {
-      dynamicPresets.resetLight()
-      bgConfig.set('dynamicLightId', 0)
-    }
-  }
-
-  function getDynamicThumbnailStyle(preset) {
-    const thumbnail = dynamicThumbnailUrls[getDynamicThumbnailKey(preset)] || getCachedDynamicThumbnail(preset)
-    const fallback = getDynamicPreviewStyle(preset)
-    if (!thumbnail) return `${fallback};background-size:cover;background-position:center`
-    return `${fallback};background-image:url("${thumbnail}");background-size:cover;background-position:center`
-  }
-
-  function isRandomScopeSelected(scope) {
-    return ($bgConfig.randomScopes || []).includes(scope)
-  }
-
-  function toggleRandomScope(scope) {
-    const current = Array.isArray($bgConfig.randomScopes) && $bgConfig.randomScopes.length > 0
-      ? $bgConfig.randomScopes
-      : defaultRandomScopes
-    const next = current.includes(scope)
-      ? current.filter((item) => item !== scope)
-      : [...current, scope]
-    bgConfig.set('randomScopes', next.length > 0 ? next : current)
-  }
 
   $effect(() => {
     document.documentElement.classList.toggle('dark', $isDark)
   })
 
+  // 删除后站点又发生了其他变化，旧快照已不可靠，放弃撤销
   $effect(() => {
-    if (!$showSettings || $bgConfig.type !== 'dynamic') {
-      dynamicThumbnailUrls = {}
-      return
-    }
-
-    const presets = currentDynamicPresets
-    const cachedUrls = {}
-    let active = true
-
-    presets.forEach((preset) => {
-      const key = getDynamicThumbnailKey(preset)
-      const cached = getCachedDynamicThumbnail(preset)
-      if (cached) cachedUrls[key] = cached
-    })
-
-    dynamicThumbnailUrls = cachedUrls
-
-    presets.forEach((preset) => {
-      const key = getDynamicThumbnailKey(preset)
-      if (cachedUrls[key]) return
-
-      requestDynamicThumbnail(preset).then((url) => {
-        if (!active || !url) return
-        dynamicThumbnailUrls = { ...dynamicThumbnailUrls, [key]: url }
-      })
-    })
-
-    return () => {
-      active = false
-    }
+    if (undoState && $sites !== undoState.after) undoState = null
   })
 
-  function closeEditor() {
+  const withUndo = (message, mutate) => {
+    const snapshot = $sites
+    mutate()
+    undoState = { id: crypto.randomUUID(), message, snapshot, after: $sites }
+  }
+
+  const undoDelete = () => {
+    if (!undoState) return
+    const { snapshot } = undoState
+    undoState = null
+    sites.setAll(snapshot)
+  }
+
+  const closeEditor = () => {
     closeContextMenu()
     showModal = false
     editingSite = null
   }
 
-  function closeFolderDeleteDialog() {
+  const closeFolderDeleteDialog = () => {
     pendingFolderDelete = null
   }
 
-  function handleAdd() {
+  // 这两个操作都会刷新页面且无法撤销，按危险操作处理
+  const askConfirm = (message, onconfirm) => {
+    pendingConfirm = { message, onconfirm }
+  }
+
+  const runPendingConfirm = () => {
+    const { onconfirm } = pendingConfirm
+    pendingConfirm = null
+    onconfirm()
+  }
+
+  // 弹窗打开时把焦点放进去，键盘用户可以直接操作
+  const focusOnMount = (element) => {
+    element.focus()
+  }
+
+  // Esc 依次关闭最上层的浮层；右键菜单、确认弹窗等自己处理过的按键会标记 defaultPrevented
+  const handleWindowKeydown = (event) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return
+    if (pendingFolderDelete) {
+      closeFolderDeleteDialog()
+      return
+    }
+    if (!$showSettings || showModal || showExportModal || showImportModal || pendingConfirm || contextMenu.open || activeFolderId) return
+    $showSettings = false
+    settingsButtonEl?.focus()
+  }
+
+  const handleAdd = () => {
     closeContextMenu()
     editingSite = null
     showModal = true
   }
 
-  function handleEdit(site) {
+  const handleEdit = (site) => {
     closeContextMenu()
     editingSite = site
     showModal = true
   }
 
-  function upsertFolder(data) {
-    const selectedItems = (data.items || []).map((item) => ({ ...item }))
-    if (editingSite && isFolderItem(editingSite)) {
-      const selectedIds = new Set(selectedItems.map((item) => item.id))
-      const updatedFolder = createFolderEntry(data, editingSite.id)
-      const nextItems = []
-
-      for (const item of $sites) {
-        if (item.id === editingSite.id) {
-          nextItems.push(updatedFolder)
-          const releasedSites = getFolderSites(editingSite).filter((site) => !selectedIds.has(site.id))
-          nextItems.push(...releasedSites)
-          continue
-        }
-        if (!isFolderItem(item) && selectedIds.has(item.id)) continue
-        nextItems.push(item)
-      }
-
-      sites.setAll(nextItems)
-      activeFolderId = editingSite.id
-      return
-    }
-
-    const selectedIds = new Set(selectedItems.map((item) => item.id))
-    const nextItems = $sites.filter((item) => isFolderItem(item) || !selectedIds.has(item.id))
-    nextItems.push(createFolderEntry(data))
-    sites.setAll(nextItems)
+  const upsertFolder = (data) => {
+    const folderId = isFolderItem(editingSite) ? editingSite.id : data.id
+    sites.setAll(upsertFolderInTree($sites, data, folderId))
   }
 
-  function handleSave(data) {
+  const handleSave = (data) => {
     if (data.type === 'folder') {
       upsertFolder(data)
       closeEditor()
@@ -286,7 +167,7 @@
     closeEditor()
   }
 
-  function handleOpenFolder(payload) {
+  const handleOpenFolder = (payload) => {
     closeContextMenu()
     const folder = payload?.folder || payload
     const rect = payload?.rect || null
@@ -296,8 +177,8 @@
     activeFolderAnchor = rect
   }
 
-  function closeActiveFolder() {
-    closeContextMenu()
+  // 不在这里关闭右键菜单：浮层打开时右键页面上的站点，会先触发浮层收起，再弹出新菜单
+  const closeActiveFolder = () => {
     lastClosedFolderId = activeFolderId
     suppressFolderOpen = true
     activeFolderId = ''
@@ -308,7 +189,7 @@
     }, 400)
   }
 
-  function releaseFolderSites(folderId) {
+  const releaseFolderSites = (folderId) => {
     const nextItems = []
     for (const item of $sites) {
       if (item.id === folderId) {
@@ -324,7 +205,7 @@
     }
   }
 
-  function deleteFolderWithSites(folderId) {
+  const deleteFolderWithSites = (folderId) => {
     sites.remove(folderId)
     if (activeFolderId === folderId) {
       activeFolderId = ''
@@ -332,19 +213,20 @@
     }
   }
 
-  function confirmFolderDelete(mode) {
+  const confirmFolderDelete = (mode) => {
     if (!pendingFolderDelete) return
 
+    const { id, name } = pendingFolderDelete
     if (mode === 'release') {
-      releaseFolderSites(pendingFolderDelete.id)
+      withUndo($t('folder.deletedToast', name), () => releaseFolderSites(id))
     } else if (mode === 'all') {
-      deleteFolderWithSites(pendingFolderDelete.id)
+      withUndo($t('folder.deletedToast', name), () => deleteFolderWithSites(id))
     }
 
     closeFolderDeleteDialog()
   }
 
-  function handleDelete(id) {
+  const handleDelete = (id) => {
     closeContextMenu()
     const target = findItemById($sites, id)
     if (!target) return
@@ -358,10 +240,59 @@
       return
     }
 
-    sites.remove(id)
+    withUndo($t('site.deletedToast', target.name), () => sites.remove(id))
   }
 
-  function shuffleBackground() {
+  const handleMoveSite = (siteId, folderId) => {
+    sites.setAll(moveSiteToFolder($sites, siteId, folderId))
+  }
+
+  // 站点「移动到」子菜单：所在文件夹时可移出，另列出其他文件夹
+  const buildMoveChildren = (siteId) => {
+    const currentFolder = findFolderByChildId($sites, siteId)
+    const children = []
+    if (currentFolder) children.push({ id: 'move:', label: $t('site.moveOut'), icon: 'out' })
+    const folders = $sites.filter((item) => isFolderItem(item) && item.id !== currentFolder?.id)
+    if (children.length > 0 && folders.length > 0) children.push({ separator: true })
+    children.push(...folders.map((folder) => ({ id: `move:${folder.id}`, label: folder.name, icon: 'folder' })))
+    return children
+  }
+
+  const buildContextMenuItems = () => {
+    if (contextMenu.scope !== 'item') {
+      return [
+        { id: 'page-add', label: $t('site.add'), icon: 'add' },
+        { id: 'page-refresh-bg', label: $t('settings.bgRefresh'), icon: 'refresh' },
+      ]
+    }
+
+    const target = findItemById($sites, contextMenu.itemId)
+    if (!target) return []
+
+    if (isFolderItem(target)) {
+      const isEmpty = getFolderSites(target).length === 0
+      return [
+        { id: 'item-open-all', label: $t('folder.openAll'), icon: 'tabs', disabled: isEmpty },
+        ...(supportsTabGroup ? [{ id: 'item-open-group', label: $t('folder.openAllInGroup'), icon: 'group', disabled: isEmpty }] : []),
+        { separator: true },
+        { id: 'item-edit', label: $t('folder.editFolder'), icon: 'edit' },
+        { separator: true },
+        { id: 'item-delete', label: $t('site.delete'), icon: 'delete', danger: true },
+      ]
+    }
+
+    const moveChildren = buildMoveChildren(target.id)
+    return [
+      { id: 'item-open-new-tab', label: $t('site.openInNewTab'), icon: 'external' },
+      { separator: true },
+      { id: 'item-edit', label: $t('site.editBtn'), icon: 'edit' },
+      ...(moveChildren.length > 0 ? [{ id: 'item-move', label: $t('site.moveTo'), icon: 'move', children: moveChildren }] : []),
+      { separator: true },
+      { id: 'item-delete', label: $t('site.delete'), icon: 'delete', danger: true },
+    ]
+  }
+
+  const shuffleBackground = () => {
     if ($bgConfig.type === 'random') {
       refreshRandomBackground()
       return
@@ -419,7 +350,7 @@
     bgConfig.set('imageId', next.id)
   }
 
-  function closeContextMenu() {
+  const closeContextMenu = () => {
     contextMenu = {
       open: false,
       x: 0,
@@ -430,17 +361,13 @@
     }
   }
 
-  function openChangelog() {
-    window.open(CHANGELOG_URL, '_blank', 'noopener,noreferrer')
-  }
-
-  function getTabsApi() {
+  const getTabsApi = () => {
     if (typeof browser !== 'undefined' && browser.tabs?.create) return browser.tabs
     if (typeof chrome !== 'undefined' && chrome.tabs?.create) return chrome.tabs
     return null
   }
 
-  async function openUrlsInNewTabs(urls) {
+  const openUrlsInNewTabs = async (urls) => {
     const validUrls = urls.filter((url) => typeof url === 'string' && /^https?:\/\//.test(url))
     if (validUrls.length === 0) return
 
@@ -470,18 +397,17 @@
     })
   }
 
-  function isContextMenuSuppressed() {
+  const isContextMenuSuppressed = () => {
     return $theme === 'terminal'
-      || $editMode
       || showModal
       || showExportModal
       || showImportModal
       || !!pendingFolderDelete
+      || !!pendingConfirm
       || $showSettings
-      || !!activeFolderId
   }
 
-  function handlePageContextMenu(event) {
+  const handlePageContextMenu = (event) => {
     if (isContextMenuSuppressed()) return
     if (event.target.closest('[data-no-context-menu]')) return
     if (event.target.closest('input, textarea, select, button, form, [contenteditable="true"]')) return
@@ -510,7 +436,7 @@
     }
   }
 
-  function handleContextMenuSelect(actionId) {
+  const handleContextMenuSelect = (actionId) => {
     const itemId = contextMenu.itemId
     const itemType = contextMenu.itemType
     closeContextMenu()
@@ -527,7 +453,26 @@
 
     if (actionId === 'item-edit') {
       const target = findItemById($sites, itemId)
-      if (target) handleEdit(target)
+      if (!target) return
+      // 编辑弹窗层级低于文件夹浮层，先收起浮层
+      if (activeFolderId) closeActiveFolder()
+      handleEdit(target)
+      return
+    }
+
+    if (actionId === 'item-delete') {
+      handleDelete(itemId)
+      return
+    }
+
+    if (actionId === 'item-open-new-tab') {
+      const target = findItemById($sites, itemId)
+      if (target && !isFolderItem(target)) openUrlsInNewTabs([target.url])
+      return
+    }
+
+    if (actionId.startsWith('move:')) {
+      handleMoveSite(itemId, actionId.slice('move:'.length))
       return
     }
 
@@ -535,10 +480,19 @@
       const target = findItemById($sites, itemId)
       if (!isFolderItem(target)) return
       openUrlsInNewTabs(getFolderSites(target).map((site) => site.url))
+      return
+    }
+
+    if (actionId === 'item-open-group' && itemType === 'folder') {
+      const target = findItemById($sites, itemId)
+      if (!isFolderItem(target)) return
+      openUrlsInTabGroup(getFolderSites(target).map((site) => site.url), target.name)
     }
   }
 
 </script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 <div class="w-full h-full relative overflow-hidden" oncontextmenu={handlePageContextMenu} role="presentation">
   {#if showDynamicBackground}
@@ -546,13 +500,13 @@
   {/if}
 
   <div class="relative z-10 w-full h-full">
-    {#if $theme === 'terminal'}
-      <TerminalTheme dark={$isDark} align={$themeAlign.terminal} />
-    {:else}
-      <ThemeComponent
+    {#if activeTheme.key === 'terminal'}
+      <activeTheme.component dark={$isDark} align={$themeAlign.terminal} />
+    {:else if activeTheme.component}
+      <activeTheme.component
         sites={$sites}
         dark={$isDark}
-        align={$themeAlign[$theme]}
+        align={$themeAlign[activeTheme.key]}
         onadd={handleAdd}
         onedit={handleEdit}
         ondelete={handleDelete}
@@ -566,549 +520,79 @@
       x={contextMenu.x}
       y={contextMenu.y}
       dark={$isDark}
-      items={contextMenu.scope === 'item'
-        ? [
-            ...(contextMenu.itemType === 'folder'
-              ? [{
-                  id: 'item-open-all',
-                  label: $t('folder.openAll'),
-                  disabled: !isFolderItem(findItemById($sites, contextMenu.itemId)) || getFolderSites(findItemById($sites, contextMenu.itemId)).length === 0,
-                }]
-              : []),
-            { id: 'item-edit', label: $t('site.editBtn') },
-          ]
-        : [
-            { id: 'page-add', label: $t('site.add') },
-            { id: 'page-refresh-bg', label: $t('settings.bgRefresh') },
-          ]}
+      items={buildContextMenuItems()}
       onselect={handleContextMenuSelect}
       onclose={closeContextMenu}
     />
+  {/if}
+
+  {#if undoState}
+    {#key undoState.id}
+      <UndoToast
+        message={undoState.message}
+        actionLabel={$t('site.undo')}
+        closeLabel={$t('folder.close')}
+        dark={$isDark}
+        onaction={undoDelete}
+        onclose={() => undoState = null}
+      />
+    {/key}
   {/if}
 
   <!-- 设置按钮（终端模式隐藏） -->
   {#if $theme !== 'terminal'}
     <button
       class="fixed bottom-4 right-4 z-50 w-9 h-9 rounded-full flex items-center justify-center text-lg
-        shadow-lg transition-all {$isDark ? 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600' : 'bg-white text-neutral-500 hover:bg-neutral-100'}"
+        shadow-lg transition-all not-dark:bg-white not-dark:text-neutral-500 not-dark:hover:bg-neutral-100 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
+      bind:this={settingsButtonEl}
       onclick={() => {
         closeContextMenu()
         $showSettings = !$showSettings
       }}
-      aria-label="Settings"
+      aria-label={$t('settings.open')}
+      aria-expanded={$showSettings}
     >
-      ⚙
+      <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
     </button>
   {/if}
 
-  <!-- 设置面板 -->
+  <!-- 设置面板只在打开时加载 -->
   {#if $showSettings}
-    <div class="fixed inset-0 z-90" onclick={(e) => { if (e.target === e.currentTarget) $showSettings = false }} role="presentation">
-      <div class="settings-panel fixed bottom-14 right-4 z-91 rounded-xl shadow-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto
-        {$isDark ? 'bg-neutral-800 text-neutral-200' : 'bg-white text-neutral-700'}" data-no-context-menu>
-
-        <!-- 主题 + 当前主题参数 + 模式 + 语言 -->
-        <div class="settings-separated">
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.theme')}
-            </div>
-            <div class="settings-segmented settings-segmented-grid settings-segmented-cols-4">
-              {#each themeKeys as key}
-                <button
-                  class="settings-segmented-button transition-all
-                    {$theme === key
-                      ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : 'settings-segmented-button-inactive'}"
-                  aria-pressed={$theme === key}
-                  onclick={() => theme.set(key)}
-                >{$t('theme.' + key)}</button>
-              {/each}
-            </div>
-          </div>
-          <ThemeSettings dark={$isDark} />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.mode')}
-            </div>
-            <div class="settings-segmented settings-segmented-row">
-              {#each modes as m}
-                <button
-                  class="settings-segmented-button transition-all
-                    {$mode === m
-                      ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                      : 'settings-segmented-button-inactive'}"
-                  aria-pressed={$mode === m}
-                  onclick={() => mode.set(m)}
-                >{$t('mode.' + m)}</button>
-              {/each}
-            </div>
-          </div>
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.language')}
-            </div>
-            <select
-              class="w-full px-2 py-1.5 rounded text-sm border
-                {$isDark ? 'bg-neutral-700 border-neutral-600 text-neutral-200' : 'bg-white border-neutral-200'}"
-              value={$localeSetting}
-              onchange={(e) => localeSetting.set(e.target.value)}
-            >
-              <option value="auto">{$t('settings.langAuto')}</option>
-              {#each supportedLocales as loc}
-                <option value={loc}>{localeNames[loc]}</option>
-              {/each}
-            </select>
-          </div>
-        </div>
-
-        <!-- 搜索 -->
-        {#if $theme !== 'terminal'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.search')}
-            </div>
-            <label class="flex items-center justify-between cursor-pointer mb-1">
-              <span class="text-sm">{$t('settings.showSearch')}</span>
-              <button
-                class="relative w-9 h-5 rounded-full transition-colors {$showSearchBar ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                onclick={() => showSearchBar.set(!$showSearchBar)}
-                role="switch"
-                aria-checked={$showSearchBar}
-                aria-label={$t('settings.showSearch')}
-              >
-                <span
-                  class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$showSearchBar ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                ></span>
-              </button>
-            </label>
-
-            {#if $showSearchBar}
-              <div class="settings-separated mt-2">
-                <!-- 默认使用 -->
-                <div>
-                  <div class="text-xs mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('settings.searchDefault')}</div>
-                  <div class="settings-segmented settings-segmented-row">
-                    {#each ['search', 'ai'] as sm}
-                      <button
-                        class="settings-segmented-button transition-all
-                          {$searchConfig.defaultMode === sm
-                            ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                            : 'settings-segmented-button-inactive'}"
-                        aria-pressed={$searchConfig.defaultMode === sm}
-                        onclick={() => searchConfig.set('defaultMode', sm)}
-                      >{$t(sm === 'search' ? 'search.groupSearch' : 'search.groupAi')}</button>
-                    {/each}
-                  </div>
-                </div>
-
-                <div>
-                <details class="settings-disclosure">
-                  <summary class="settings-disclosure-summary">
-                    <span>{$t('settings.searchEngines')}</span>
-                    <svg class="settings-disclosure-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </summary>
-                  <div class="pt-1">
-                    <div class="space-y-1.5">
-                      {#each SEARCH_ENGINES as engine}
-                        {@const enabled = $searchConfig.enabledEngines.includes(engine.id)}
-                        {@const isDefault = $searchConfig.defaultEngine === engine.id}
-                        <div
-                          class="flex items-center rounded-md text-xs transition-all
-                            {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
-                            {enabled
-                              ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
-                              : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
-                        >
-                          <button
-                            class="flex items-center gap-1.5 px-2 py-1.5 flex-1 min-w-0 text-left"
-                            aria-pressed={enabled}
-                            onclick={() => toggleSearchEngine(engine.id)}
-                          >
-                            <span
-                              class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
-                                {enabled
-                                  ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
-                                  : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
-                            >
-                              {#if enabled}
-                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                              {/if}
-                            </span>
-                            {#if engine.logo}
-                              <img src={engine.logo} alt="" class="w-3.5 h-3.5 object-contain rounded-sm bg-white shrink-0" />
-                            {/if}
-                            <span class="truncate">{engine.name || $t(engine.nameKey)}</span>
-                          </button>
-                          {#if enabled}
-                            <button
-                              class="px-2 py-1.5 shrink-0 transition-colors {isDefault ? 'text-amber-500' : ($isDark ? 'text-neutral-500 hover:text-amber-400' : 'text-neutral-400 hover:text-amber-500')}"
-                              title={$t('settings.searchSetDefault')}
-                              aria-label={$t('settings.searchSetDefault')}
-                              onclick={() => setDefaultEngine(engine.id)}
-                            >
-                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill={isDefault ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                            </button>
-                          {/if}
-                        </div>
-                      {/each}
-                    </div>
-                  </div>
-                </details>
-                </div>
-
-                <div>
-                <details class="settings-disclosure">
-                  <summary class="settings-disclosure-summary">
-                    <span>{$t('settings.searchAi')}</span>
-                    <svg class="settings-disclosure-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </summary>
-                  <div class="pt-1">
-                    <div class="space-y-1.5">
-                      {#each AI_PROVIDERS as provider}
-                        {@const enabled = $searchConfig.enabledAi.includes(provider.id)}
-                        {@const isDefault = $searchConfig.defaultAi === provider.id}
-                        <div
-                          class="flex items-center rounded-md text-xs transition-all
-                            {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
-                            {enabled
-                              ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
-                              : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
-                        >
-                          <button
-                            class="flex items-center gap-1.5 px-2 py-1.5 flex-1 min-w-0 text-left"
-                            aria-pressed={enabled}
-                            onclick={() => toggleAiProvider(provider.id)}
-                          >
-                            <span
-                              class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
-                                {enabled
-                                  ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
-                                  : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
-                            >
-                              {#if enabled}
-                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                              {/if}
-                            </span>
-                            <img src={provider.logo} alt="" class="w-3.5 h-3.5 object-contain rounded-sm bg-white shrink-0" />
-                            <span class="truncate">{provider.name}</span>
-                          </button>
-                          {#if enabled}
-                            <button
-                              class="px-2 py-1.5 shrink-0 transition-colors {isDefault ? 'text-amber-500' : ($isDark ? 'text-neutral-500 hover:text-amber-400' : 'text-neutral-400 hover:text-amber-500')}"
-                              title={$t('settings.searchSetDefault')}
-                              aria-label={$t('settings.searchSetDefault')}
-                              onclick={() => setDefaultAi(provider.id)}
-                            >
-                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill={isDefault ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                              </svg>
-                            </button>
-                          {/if}
-                        </div>
-                      {/each}
-                    </div>
-                    <p class="text-xs leading-4 whitespace-normal mt-2 {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                      {$t('settings.searchAiHint')}
-                    </p>
-                  </div>
-                </details>
-                </div>
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- 背景 -->
-        {#if $theme !== 'terminal' && $theme !== 'minimal'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.background')}
-            </div>
-            <div class="settings-separated">
-              <div class="settings-segmented settings-segmented-grid">
-                {#each bgTypes as bt}
-                  <button
-                    class="settings-segmented-button transition-all
-                      {$bgConfig.type === bt
-                        ? ($isDark ? 'bg-white text-black' : 'bg-neutral-800 text-white')
-                        : 'settings-segmented-button-inactive'}"
-                    aria-pressed={$bgConfig.type === bt}
-                    onclick={() => bgConfig.set('type', bt)}
-                  >{$t('settings.bg' + bt.charAt(0).toUpperCase() + bt.slice(1))}</button>
-                {/each}
-              </div>
-
-              {#if $bgConfig.type === 'solid'}
-                <div class="space-y-2">
-                  <div class="grid grid-cols-6 gap-1.5">
-                    {#each ($isDark ? $solidPresets.dark : $solidPresets.light) as color, i}
-                      <div class="relative group">
-                        <button
-                          class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.solidDarkId : $bgConfig.solidLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                          style="background:{color}"
-                          onclick={() => bgConfig.set($isDark ? 'solidDarkId' : 'solidLightId', i)}
-                          aria-label="{$t('settings.bgSolid')} {i + 1}"
-                        ></button>
-                        <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          onclick={() => $isDark ? solidPresets.removeDark(i) : solidPresets.removeLight(i)}>×</button>
-                      </div>
-                    {/each}
-                    {#if ($isDark ? $solidPresets.dark : $solidPresets.light).length < BACKGROUND_PRESET_LIMIT}
-                      <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                        onclick={() => $isDark ? solidPresets.addDark() : solidPresets.addLight()}>+</button>
-                    {/if}
-                  </div>
-                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                    {$t('settings.bgGeneratedHint')}
-                  </p>
-                  <button
-                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                    onclick={regenerateSolidPresets}
-                  >{$t('settings.bgRegenerate')}</button>
-                </div>
-              {/if}
-
-              {#if $bgConfig.type === 'gradient'}
-                <div class="space-y-2">
-                  <div class="grid grid-cols-6 gap-1.5">
-                    {#each ($isDark ? $gradientPresets.dark : $gradientPresets.light) as g, i}
-                      <div class="relative group">
-                        <button
-                          class="w-full aspect-video rounded transition-all {($isDark ? $bgConfig.gradientDarkId : $bgConfig.gradientLightId) === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                          style="background:{g}"
-                          onclick={() => bgConfig.set($isDark ? 'gradientDarkId' : 'gradientLightId', i)}
-                          aria-label="{$t('settings.bgGradient')} {i + 1}"
-                        ></button>
-                        <button class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          onclick={() => $isDark ? gradientPresets.removeDark(i) : gradientPresets.removeLight(i)}>×</button>
-                      </div>
-                    {/each}
-                    {#if ($isDark ? $gradientPresets.dark : $gradientPresets.light).length < BACKGROUND_PRESET_LIMIT}
-                      <button class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                        onclick={() => $isDark ? gradientPresets.addDark() : gradientPresets.addLight()}>+</button>
-                    {/if}
-                  </div>
-                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                    {$t('settings.bgGeneratedHint')}
-                  </p>
-                  <button
-                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                    onclick={regenerateGradientPresets}
-                  >{$t('settings.bgRegenerate')}</button>
-                </div>
-              {/if}
-
-              {#if $bgConfig.type === 'image'}
-                <div class="space-y-2">
-                  <div class="grid grid-cols-6 gap-1.5">
-                    {#each $bgImageUrls as url, i}
-                      <div class="relative group">
-                        <button class="w-full aspect-video rounded overflow-hidden transition-all
-                          {$bgConfig.imageId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                          onclick={() => bgConfig.set('imageId', i)}>
-                          <img src={url} alt="" class="w-full h-full object-cover" />
-                        </button>
-                        <button
-                          class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          onclick={() => removeBgImage(i)}>×</button>
-                      </div>
-                    {/each}
-                    {#if $bgImageUrls.length < BACKGROUND_PRESET_LIMIT}
-                      <label class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm cursor-pointer
-                        {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}">
-                        +
-                        <input type="file" accept="image/*" multiple class="hidden" onchange={handleBgUpload} />
-                      </label>
-                    {/if}
-                  </div>
-                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                    {$t('settings.bgImageHint')}
-                  </p>
-                </div>
-              {/if}
-
-              {#if $bgConfig.type === 'dynamic'}
-                <div class="space-y-2">
-                  <div class="grid grid-cols-6 gap-1.5">
-                    {#each currentDynamicPresets as dynamicBg, i}
-                      <div class="relative group">
-                        <button
-                          class="w-full aspect-video rounded transition-all {currentDynamicId === i ? 'ring-2 ring-offset-1 ' + ($isDark ? 'ring-white ring-offset-neutral-800' : 'ring-neutral-800 ring-offset-white') : ''}"
-                          style={getDynamicThumbnailStyle(dynamicBg)}
-                          onclick={() => bgConfig.set($isDark ? 'dynamicDarkId' : 'dynamicLightId', i)}
-                          aria-label="{$t('settings.bgDynamic')} {i + 1}"
-                        ></button>
-                        <button
-                          class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[9px] leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          onclick={() => $isDark ? dynamicPresets.removeDark(i) : dynamicPresets.removeLight(i)}>×</button>
-                      </div>
-                    {/each}
-                    {#if currentDynamicPresets.length < BACKGROUND_PRESET_LIMIT}
-                      <button
-                        class="aspect-video rounded border-2 border-dashed flex items-center justify-center text-sm
-                          {$isDark ? 'border-neutral-600 text-neutral-500 hover:border-neutral-400' : 'border-neutral-300 text-neutral-400 hover:border-neutral-500'}"
-                        onclick={() => $isDark ? dynamicPresets.addDark() : dynamicPresets.addLight()}>+</button>
-                    {/if}
-                  </div>
-                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                    {$t('settings.bgGeneratedHint')}
-                  </p>
-                  <button
-                    class="w-full py-1.5 rounded text-xs transition-all whitespace-normal {$isDark ? 'bg-neutral-700 hover:bg-neutral-600 text-neutral-200' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}"
-                    onclick={regenerateDynamicPresets}
-                  >{$t('settings.bgRegenerate')}</button>
-                </div>
-              {/if}
-
-              {#if $bgConfig.type === 'random'}
-                <div class="space-y-1.5">
-                  <div class="grid grid-cols-2 gap-1.5">
-                    {#each randomScopes as rs}
-                      {@const selected = isRandomScopeSelected(rs)}
-                      <button
-                        class="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-all
-                          {$isDark ? 'bg-neutral-700/60 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}
-                          {selected
-                            ? ($isDark ? 'text-neutral-200' : 'text-neutral-700')
-                            : ($isDark ? 'text-neutral-500' : 'text-neutral-400')}"
-                        onclick={() => toggleRandomScope(rs)}
-                        aria-pressed={selected}
-                      >
-                        <span
-                          class="w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0
-                            {selected
-                              ? ($isDark ? 'bg-white border-white text-black' : 'bg-neutral-800 border-neutral-800 text-white')
-                              : ($isDark ? 'border-neutral-500' : 'border-neutral-400')}"
-                        >
-                          {#if selected}
-                            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                          {/if}
-                        </span>
-                        <span>{$t('settings.bgRandom' + rs.charAt(0).toUpperCase() + rs.slice(1))}</span>
-                      </button>
-                    {/each}
-                  </div>
-                  <p class="text-xs leading-4 whitespace-normal {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">
-                    {$t('settings.bgRandomHint')}
-                  </p>
-                </div>
-              {/if}
-            </div>
-          </div>
-        {/if}
-
-        <!-- 选项（极简/经典/便当通用） -->
-        {#if $theme !== 'terminal'}
-          <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-          <div>
-            <div class="text-xs uppercase tracking-wider mb-1 {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-              {$t('settings.options')}
-            </div>
-            <div class="settings-separated">
-              {#if $theme === 'default' || $theme === 'bento' || $theme === 'sketch'}
-                <!-- 显示站点标题 -->
-                <label class="flex items-center justify-between cursor-pointer">
-                  <span class="text-sm">{$t('settings.showTitle')}</span>
-                  <button
-                    class="relative w-9 h-5 rounded-full transition-colors {$showSiteTitle ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                    onclick={() => showSiteTitle.set(!$showSiteTitle)}
-                    role="switch"
-                    aria-checked={$showSiteTitle}
-                    aria-label={$t('settings.showTitle')}
-                  >
-                    <span
-                      class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$showSiteTitle ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                    ></span>
-                  </button>
-                </label>
-              {/if}
-              <!-- 编辑模式 -->
-              <label class="flex items-center justify-between cursor-pointer">
-                <span class="text-sm">{$t('settings.editMode')}</span>
-                <button
-                  class="relative w-9 h-5 rounded-full transition-colors {$editMode ? ($isDark ? 'bg-neutral-300' : 'bg-neutral-800') : ($isDark ? 'bg-neutral-600' : 'bg-neutral-300')}"
-                  onclick={() => editMode.set(!$editMode)}
-                  role="switch"
-                  aria-checked={$editMode}
-                  aria-label={$t('settings.editMode')}
-                >
-                  <span
-                    class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform {$editMode ? 'translate-x-4 ' + ($isDark ? 'bg-neutral-900' : 'bg-white') : 'bg-white'}"
-                  ></span>
-                </button>
-              </label>
-            </div>
-          </div>
-        {/if}
-
-        <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-        <div class="space-y-2">
-          <div class="text-xs uppercase tracking-wider {$isDark ? 'text-neutral-400' : 'text-neutral-400'}">
-            {$t('settings.update')}
-          </div>
-          <div class="rounded-lg px-3 py-2 flex items-center justify-between gap-3 {$isDark ? 'bg-neutral-700/50' : 'bg-neutral-50'}">
-            <p class="min-w-0 flex-1 text-xs leading-5 whitespace-normal {$isDark ? 'text-neutral-300' : 'text-neutral-600'}">
-              {$t('settings.updateCurrent', appVersion)}
-            </p>
-            <button
-              class="shrink-0 text-xs underline underline-offset-3 decoration-dotted transition-colors {$isDark ? 'text-neutral-400 hover:text-neutral-100' : 'text-neutral-500 hover:text-neutral-800'}"
-              onclick={openChangelog}
-            >{$t('settings.updateChangelog')} ↗</button>
-          </div>
-        </div>
-
-        <hr class="{$isDark ? 'border-neutral-600' : 'border-neutral-200'}" />
-        <div class="settings-separated">
-          <div class="flex gap-2">
-            <button
-              class="flex-1 py-1.5 rounded text-xs transition-all
-                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-              onclick={() => showExportModal = true}
-            >{$t('settings.exportSites')}</button>
-            <button
-              class="flex-1 py-1.5 rounded text-xs transition-all
-                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-              onclick={() => showImportModal = true}
-            >{$t('settings.importSites')}</button>
-          </div>
-
-          <!-- 清除图标缓存 / 重置设置 -->
-          <div class="flex gap-2">
-            <button
-              class="flex-1 py-1.5 rounded text-xs transition-all
-                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-              onclick={() => { if (confirm($t('settings.clearIconCacheConfirm'))) clearIconCache().finally(() => location.reload()) }}
-            >{$t('settings.clearIconCache')}</button>
-            <button
-              class="flex-1 py-1.5 rounded text-xs transition-all
-                {$isDark ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600'}"
-              onclick={() => { if (confirm($t('settings.resetConfirm'))) resetAllSettings() }}
-            >{$t('settings.resetSettings')}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    {#await import('./lib/settings/SettingsPanel.svelte') then { default: SettingsPanel }}
+      <SettingsPanel
+        onexport={() => showExportModal = true}
+        onimport={() => showImportModal = true}
+        onconfirm={askConfirm}
+      />
+    {/await}
   {/if}
 
+  <!-- 弹窗只在用户操作时出现，按需加载 -->
   {#if showModal}
-    <AddSiteModal
-      site={editingSite}
-      availableSites={folderCandidates}
-      allowFolder={allowFolder}
+    {#await import('./lib/AddSiteModal.svelte') then { default: AddSiteModal }}
+      <AddSiteModal
+        site={editingSite}
+        siteTree={$sites}
+        allowFolder={allowFolder}
+        dark={$isDark}
+        onsave={handleSave}
+        onclose={closeEditor}
+      />
+    {/await}
+  {/if}
+
+  {#if pendingConfirm}
+    <ConfirmDialog
+      message={pendingConfirm.message}
+      confirmLabel={$t('site.confirm')}
+      cancelLabel={$t('site.cancel')}
+      danger
       dark={$isDark}
-      onsave={handleSave}
-      onclose={closeEditor}
+      onconfirm={runPendingConfirm}
+      oncancel={() => pendingConfirm = null}
     />
   {/if}
 
@@ -1116,16 +600,18 @@
     <div
       class="fixed inset-0 z-120 bg-black/55 flex items-center justify-center p-4"
       onclick={(event) => { if (event.target === event.currentTarget) closeFolderDeleteDialog() }}
-      onkeydown={(event) => { if (event.key === 'Escape') closeFolderDeleteDialog() }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="folder-delete-title"
-      tabindex="-1"
+      role="presentation"
     >
-      <div class="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4 {$isDark ? 'bg-neutral-900 border-white/10 text-neutral-100' : 'bg-white border-black/8 text-neutral-900'}">
+      <!-- 遮罩只负责点击空白处关闭；Esc 由全局按键处理 -->
+      <div
+        class="w-full max-w-md rounded-2xl border shadow-2xl p-6 space-y-4 not-dark:bg-white not-dark:border-black/8 not-dark:text-neutral-900 dark:bg-neutral-900 dark:border-white/10 dark:text-neutral-100"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="folder-delete-title"
+      >
         <div class="space-y-2">
           <h3 id="folder-delete-title" class="text-lg font-semibold">{$t('folder.deleteConfirmTitle', pendingFolderDelete.name)}</h3>
-          <p class="text-sm leading-6 {$isDark ? 'text-neutral-300' : 'text-neutral-600'}">
+          <p class="text-sm leading-6 not-dark:text-neutral-600 dark:text-neutral-300">
             {$t('folder.deleteConfirmBody', getFolderSites(pendingFolderDelete).length)}
           </p>
         </div>
@@ -1133,27 +619,28 @@
         <div class="space-y-2">
           <button
             type="button"
-            class="w-full rounded-xl px-4 py-3 text-left transition-colors {$isDark ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'}"
+            class="w-full rounded-xl px-4 py-3 text-left transition-colors not-dark:bg-neutral-100 not-dark:hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+            {@attach focusOnMount}
             onclick={() => confirmFolderDelete('release')}
           >
             <span class="block font-medium">{$t('folder.deleteReleaseAction')}</span>
-            <span class="block mt-1 text-xs {$isDark ? 'text-neutral-400' : 'text-neutral-500'}">{$t('folder.deleteReleaseHint')}</span>
+            <span class="block mt-1 text-xs not-dark:text-neutral-500 dark:text-neutral-400">{$t('folder.deleteReleaseHint')}</span>
           </button>
 
           <button
             type="button"
-            class="w-full rounded-xl px-4 py-3 text-left transition-colors {$isDark ? 'bg-red-500/16 text-red-100 hover:bg-red-500/24' : 'bg-red-50 text-red-700 hover:bg-red-100'}"
+            class="w-full rounded-xl px-4 py-3 text-left transition-colors not-dark:bg-red-50 not-dark:text-red-700 not-dark:hover:bg-red-100 dark:bg-red-500/16 dark:text-red-100 dark:hover:bg-red-500/24"
             onclick={() => confirmFolderDelete('all')}
           >
             <span class="block font-medium">{$t('folder.deleteAllAction')}</span>
-            <span class="block mt-1 text-xs {$isDark ? 'text-red-200/75' : 'text-red-500'}">{$t('folder.deleteAllHint')}</span>
+            <span class="block mt-1 text-xs not-dark:text-red-500 dark:text-red-200/75">{$t('folder.deleteAllHint')}</span>
           </button>
         </div>
 
         <div class="flex justify-end">
           <button
             type="button"
-            class="px-4 py-2 rounded-lg {$isDark ? 'text-neutral-200 hover:bg-neutral-800' : 'text-neutral-600 hover:bg-neutral-100'}"
+            class="px-4 py-2 rounded-lg not-dark:text-neutral-600 not-dark:hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
             onclick={closeFolderDeleteDialog}
           >{$t('site.cancel')}</button>
         </div>
@@ -1176,10 +663,14 @@
   {/if}
 
   {#if showExportModal}
-    <ExportModal dark={$isDark} onclose={() => showExportModal = false} />
+    {#await import('./lib/ExportModal.svelte') then { default: ExportModal }}
+      <ExportModal dark={$isDark} onclose={() => showExportModal = false} />
+    {/await}
   {/if}
 
   {#if showImportModal}
-    <ImportModal dark={$isDark} onclose={() => showImportModal = false} />
+    {#await import('./lib/ImportModal.svelte') then { default: ImportModal }}
+      <ImportModal dark={$isDark} onclose={() => showImportModal = false} />
+    {/await}
   {/if}
 </div>

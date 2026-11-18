@@ -1,39 +1,27 @@
-import {
-  AbstractShapeBg,
-  AestheticFluidBg,
-  AmbientLightBg,
-  BigBlobBg,
-  BlurDotBg,
-  BlurGradientBg,
-  ChaosWavesBg,
-  CurveGradientBg,
-  GridArrayBg,
-  RandomCubesBg,
-  StepGradientBg,
-  SwirlingCurvesBg,
-  TrianglesMosaicBg,
-  WavyWavesBg,
-} from 'color4bg'
-
 export const DYNAMIC_THUMBNAIL_SIZE = { width: 240, height: 135 }
 
 const DYNAMIC_THUMBNAIL_CACHE_LIMIT = 96
 
-const dynamicBgClasses = {
-  'abstract-shape': AbstractShapeBg,
-  'aesthetic-fluid': AestheticFluidBg,
-  'ambient-light': AmbientLightBg,
-  'big-blob': BigBlobBg,
-  'blur-dot': BlurDotBg,
-  'blur-gradient': BlurGradientBg,
-  'chaos-waves': ChaosWavesBg,
-  'curve-gradient': CurveGradientBg,
-  'grid-array': GridArrayBg,
-  'random-cubes': RandomCubesBg,
-  'step-gradient': StepGradientBg,
-  'swirling-curves': SwirlingCurvesBg,
-  'triangles-mosaic': TrianglesMosaicBg,
-  'wavy-waves': WavyWavesBg,
+// color4bg 体积较大，只在真正用到动态背景时才加载，加载一次后复用
+let dynamicBgClassesPromise = null
+const loadDynamicBgClasses = () => {
+  dynamicBgClassesPromise ??= import('color4bg').then((lib) => ({
+    'abstract-shape': lib.AbstractShapeBg,
+    'aesthetic-fluid': lib.AestheticFluidBg,
+    'ambient-light': lib.AmbientLightBg,
+    'big-blob': lib.BigBlobBg,
+    'blur-dot': lib.BlurDotBg,
+    'blur-gradient': lib.BlurGradientBg,
+    'chaos-waves': lib.ChaosWavesBg,
+    'curve-gradient': lib.CurveGradientBg,
+    'grid-array': lib.GridArrayBg,
+    'random-cubes': lib.RandomCubesBg,
+    'step-gradient': lib.StepGradientBg,
+    'swirling-curves': lib.SwirlingCurvesBg,
+    'triangles-mosaic': lib.TrianglesMosaicBg,
+    'wavy-waves': lib.WavyWavesBg,
+  }))
+  return dynamicBgClassesPromise
 }
 
 const thumbnailCache = new Map()
@@ -57,6 +45,8 @@ const withMutedColor4bgConsole = (callback) => {
   }
 }
 
+// 特例：必须保留普通函数写法。color4bg 以 new Math.seedrandom(seed) 调用它，箭头函数不能被 new 调用；
+// 函数返回对象（rng），所以 new 得到的就是这个 rng
 function createSeededRandom(seed) {
   const input = String(seed ?? '')
   let h1 = 1779033703
@@ -110,7 +100,7 @@ export const ensureSeedRandom = () => {
 
 const createDomId = (prefix) => `${prefix}-${crypto.randomUUID()}`
 
-const getDynamicBackgroundClass = (preset) => dynamicBgClasses[preset?.style] || AestheticFluidBg
+const getDynamicBackgroundClass = (classes, preset) => classes[preset?.style] || classes['aesthetic-fluid']
 
 const getDynamicVariantView = (preset) => preset?.variant?.view || {}
 
@@ -210,10 +200,10 @@ const withCapturedAnimationFrames = (callback) => {
   }
 }
 
-const createDynamicBackgroundInstance = (host, preset, domId) => {
+const createDynamicBackgroundInstance = (classes, host, preset, domId) => {
   ensureSeedRandom()
 
-  const BgClass = getDynamicBackgroundClass(preset)
+  const BgClass = getDynamicBackgroundClass(classes, preset)
   const variantParams = preset.variant?.params || {}
   host.id = domId
   host.replaceChildren()
@@ -305,31 +295,44 @@ const waitDynamicAssets = (target) => {
   })
 }
 
+// 库加载完成前，宿主元素上的渐变兜底样式会先显示出来
 export const mountDynamicBackground = (host, preset) => {
   const domId = createDomId('dynamic-bg')
   let instance = null
   let active = true
 
-  try {
-    instance = createDynamicBackgroundInstance(host, preset, domId)
-  } catch {
-    destroyDynamicBackground(instance, host, domId, { loseContext: true })
-    return () => {}
-  }
-
-  const rawUpdate = instance._update
-  instance._update = () => {
+  loadDynamicBgClasses().then((classes) => {
     if (!active) return
 
     try {
-      withMutedColor4bgConsole(() => rawUpdate())
+      instance = createDynamicBackgroundInstance(classes, host, preset, domId)
     } catch {
-      active = false
       destroyDynamicBackground(instance, host, domId, { loseContext: true })
+      instance = null
+      return
     }
-  }
 
-  window.requestAnimationFrame(instance._update)
+    // 系统开启「减弱动态效果」时，渲染出画面后停止循环，保留一张静止背景
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let renderedFrames = 0
+    const rawUpdate = instance._update
+    instance._update = () => {
+      if (!active) return
+
+      try {
+        withMutedColor4bgConsole(() => rawUpdate())
+      } catch {
+        active = false
+        destroyDynamicBackground(instance, host, domId, { loseContext: true })
+        return
+      }
+
+      renderedFrames += 1
+      if (reduceMotion && renderedFrames >= 2) instance.loop = false
+    }
+
+    window.requestAnimationFrame(instance._update)
+  })
 
   return () => {
     active = false
@@ -382,6 +385,7 @@ const rememberDynamicThumbnail = (key, url) => {
 export const captureDynamicThumbnail = async (preset, options = {}) => {
   const width = options.width || DYNAMIC_THUMBNAIL_SIZE.width
   const height = options.height || DYNAMIC_THUMBNAIL_SIZE.height
+  const classes = await loadDynamicBgClasses()
   const host = document.createElement('div')
   const domId = createDomId('dynamic-thumbnail')
   let instance = null
@@ -400,7 +404,7 @@ export const captureDynamicThumbnail = async (preset, options = {}) => {
   document.body.appendChild(host)
 
   try {
-    instance = createDynamicBackgroundInstance(host, preset, domId)
+    instance = createDynamicBackgroundInstance(classes, host, preset, domId)
 
     await waitDynamicAssets(instance)
     await waitAnimationFrame()
